@@ -19,7 +19,6 @@ import { ConsolePanel, useConsoleCapture } from "./console-panel";
 import { cn } from "@/lib/utils";
 
 type PreviewTab = "preview" | "console";
-
 type DeviceMode = "desktop" | "tablet" | "mobile";
 
 const DEVICE_SIZES: Record<DeviceMode, { width: string; label: string }> = {
@@ -28,7 +27,7 @@ const DEVICE_SIZES: Record<DeviceMode, { width: string; label: string }> = {
   mobile: { width: "375px", label: "Mobile" },
 };
 
-const IFRAME_LOAD_TIMEOUT = 15000; // 15 seconds
+const IFRAME_LOAD_TIMEOUT = 15000;
 
 export function PreviewPanel() {
   const { previewUrl, sandboxStatus, consoleEntries, addConsoleEntry, clearConsoleEntries } = useProjectStore();
@@ -42,141 +41,90 @@ export function PreviewPanel() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Console capture from iframe postMessage
   useConsoleCapture(addConsoleEntry);
 
-  // Sync URL input with previewUrl
   useEffect(() => {
     if (previewUrl) setUrlInput(previewUrl);
   }, [previewUrl]);
 
-  // Reset loading/error state when previewUrl changes
   useEffect(() => {
     if (previewUrl) {
       setIframeLoading(true);
       setIframeError(false);
-
-      // Set a timeout - if iframe doesn't load in time, show error
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = setTimeout(() => {
-        // Only trigger error if still loading
-        setIframeLoading((loading) => {
-          if (loading) {
-            setIframeError(true);
-            return false;
-          }
-          return loading;
-        });
+        setIframeLoading((loading) => { if (loading) { setIframeError(true); return false; } return loading; });
       }, IFRAME_LOAD_TIMEOUT);
     } else {
       setIframeLoading(false);
       setIframeError(false);
     }
-
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
+    return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
   }, [previewUrl]);
 
-  const handleIframeLoad = useCallback(() => {
-    setIframeLoading(false);
-    setIframeError(false);
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-  }, []);
-
-  const handleIframeError = useCallback(() => {
-    setIframeLoading(false);
-    setIframeError(true);
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-  }, []);
+  const handleIframeLoad = useCallback(() => { setIframeLoading(false); setIframeError(false); if (timeoutRef.current) clearTimeout(timeoutRef.current); }, []);
+  const handleIframeError = useCallback(() => { setIframeLoading(false); setIframeError(true); if (timeoutRef.current) clearTimeout(timeoutRef.current); }, []);
 
   const handleRefresh = useCallback(() => {
-    if (iframeRef.current) {
-      setIsRefreshing(true);
-      setIframeLoading(true);
-      setIframeError(false);
-      iframeRef.current.src = iframeRef.current.src;
-      setTimeout(() => setIsRefreshing(false), 1000);
-    }
+    if (iframeRef.current) { setIsRefreshing(true); setIframeLoading(true); setIframeError(false); iframeRef.current.src = iframeRef.current.src; setTimeout(() => setIsRefreshing(false), 1000); }
   }, []);
 
   const handleRetry = useCallback(() => {
     if (iframeRef.current && previewUrl) {
-      setIframeLoading(true);
-      setIframeError(false);
-      iframeRef.current.src = previewUrl;
-
+      setIframeLoading(true); setIframeError(false); iframeRef.current.src = previewUrl;
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(() => {
-        setIframeLoading((loading) => {
-          if (loading) {
-            setIframeError(true);
-            return false;
-          }
-          return loading;
-        });
-      }, IFRAME_LOAD_TIMEOUT);
+      timeoutRef.current = setTimeout(() => { setIframeLoading((l) => { if (l) { setIframeError(true); return false; } return l; }); }, IFRAME_LOAD_TIMEOUT);
     }
   }, [previewUrl]);
 
-  const handleOpenExternal = useCallback(() => {
-    if (previewUrl) {
-      window.open(previewUrl, "_blank");
-    }
-  }, [previewUrl]);
+  const handleOpenExternal = useCallback(() => { if (previewUrl) window.open(previewUrl, "_blank"); }, [previewUrl]);
 
   const handleCopyUrl = useCallback(async () => {
     if (previewUrl) {
-      try {
-        await navigator.clipboard.writeText(previewUrl);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      } catch {
-        // Fallback for older browsers
-        const textarea = document.createElement("textarea");
-        textarea.value = previewUrl;
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand("copy");
-        document.body.removeChild(textarea);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      }
+      try { await navigator.clipboard.writeText(previewUrl); } catch { const t = document.createElement("textarea"); t.value = previewUrl; document.body.appendChild(t); t.select(); document.execCommand("copy"); document.body.removeChild(t); }
+      setCopied(true); setTimeout(() => setCopied(false), 2000);
     }
   }, [previewUrl]);
 
   const deviceConfig = DEVICE_SIZES[deviceMode];
 
   return (
-    <div className="flex h-full flex-col bg-background">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between border-b border-border px-3 py-2">
+    <div className="flex h-full flex-col bg-[#0a0a0f]">
+      {/* Browser-style Toolbar */}
+      <div className="flex items-center justify-between border-b border-border bg-[#0e0e14] px-3 py-1.5">
         <div className="flex items-center gap-1">
+          {/* Traffic lights */}
+          <div className="flex items-center gap-1.5 mr-3">
+            <div className="h-2.5 w-2.5 rounded-full bg-[#ef4444]/60" />
+            <div className="h-2.5 w-2.5 rounded-full bg-[#f59e0b]/60" />
+            <div className="h-2.5 w-2.5 rounded-full bg-[#22c55e]/60" />
+          </div>
+
           <button
             onClick={() => setActiveTab("preview")}
             className={cn(
-              "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+              "flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-medium transition-all duration-150",
               activeTab === "preview"
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-[#7c3aed]/10 text-[#a78bfa]"
+                : "text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#1a1a24]"
             )}
           >
-            <Globe className="h-3.5 w-3.5" />
+            <Globe className="h-3 w-3" />
             Preview
           </button>
           <button
             onClick={() => setActiveTab("console")}
             className={cn(
-              "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors relative",
+              "flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-medium transition-all duration-150 relative",
               activeTab === "console"
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-[#7c3aed]/10 text-[#a78bfa]"
+                : "text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#1a1a24]"
             )}
           >
-            <Terminal className="h-3.5 w-3.5" />
+            <Terminal className="h-3 w-3" />
             Console
             {consoleEntries.length > 0 && (
-              <span className="absolute -top-1 -right-1 h-3.5 min-w-[14px] rounded-full bg-primary text-[8px] text-primary-foreground flex items-center justify-center px-0.5">
+              <span className="absolute -top-1 -right-1 h-3.5 min-w-[14px] rounded-full bg-[#7c3aed] text-[8px] text-white flex items-center justify-center px-0.5">
                 {consoleEntries.length > 99 ? "99+" : consoleEntries.length}
               </span>
             )}
@@ -184,74 +132,43 @@ export function PreviewPanel() {
         </div>
 
         <div className="flex items-center gap-1">
-          {/* Device Mode Selector */}
-          <div className="flex items-center rounded-md bg-secondary p-0.5">
-            <button
-              onClick={() => setDeviceMode("desktop")}
-              className={cn(
-                "rounded p-1.5 transition-colors",
-                deviceMode === "desktop"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-              title="Desktop"
-            >
-              <Monitor className="h-3.5 w-3.5" />
-            </button>
-            <button
-              onClick={() => setDeviceMode("tablet")}
-              className={cn(
-                "rounded p-1.5 transition-colors",
-                deviceMode === "tablet"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-              title="Tablet"
-            >
-              <Tablet className="h-3.5 w-3.5" />
-            </button>
-            <button
-              onClick={() => setDeviceMode("mobile")}
-              className={cn(
-                "rounded p-1.5 transition-colors",
-                deviceMode === "mobile"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-              title="Mobile"
-            >
-              <Smartphone className="h-3.5 w-3.5" />
-            </button>
+          {/* Device Mode */}
+          <div className="flex items-center rounded-lg bg-[#13131a] p-0.5">
+            {(["desktop", "tablet", "mobile"] as DeviceMode[]).map((mode) => {
+              const Icon = mode === "desktop" ? Monitor : mode === "tablet" ? Tablet : Smartphone;
+              return (
+                <button
+                  key={mode}
+                  onClick={() => setDeviceMode(mode)}
+                  className={cn(
+                    "rounded-md p-1.5 transition-all duration-150",
+                    deviceMode === mode
+                      ? "bg-[#7c3aed]/15 text-[#a78bfa]"
+                      : "text-[#8888a0] hover:text-[#e2e2e8]"
+                  )}
+                  title={DEVICE_SIZES[mode].label}
+                >
+                  <Icon className="h-3 w-3" />
+                </button>
+              );
+            })}
           </div>
 
-          <div className="mx-1 h-4 w-px bg-border" />
+          <div className="mx-1 h-3.5 w-px bg-border" />
 
-          {/* Refresh */}
-          <button
-            onClick={handleRefresh}
-            className="rounded p-1.5 text-muted-foreground hover:text-foreground transition-colors"
-            title="Refresh preview"
-          >
-            <RefreshCw
-              className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")}
-            />
+          <button onClick={handleRefresh} className="rounded-lg p-1.5 text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#1a1a24] transition-all duration-150" title="Refresh">
+            <RefreshCw className={cn("h-3 w-3", isRefreshing && "animate-spin")} />
           </button>
-
-          {/* Open External */}
-          <button
-            onClick={handleOpenExternal}
-            disabled={!previewUrl}
-            className="rounded p-1.5 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30"
-            title="Open in new tab"
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
+          <button onClick={handleOpenExternal} disabled={!previewUrl} className="rounded-lg p-1.5 text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#1a1a24] transition-all duration-150 disabled:opacity-30" title="Open in new tab">
+            <ExternalLink className="h-3 w-3" />
           </button>
         </div>
       </div>
 
       {/* URL Bar */}
       {activeTab === "preview" && (
-        <div className="flex items-center gap-2 border-b border-border px-3 py-1.5">
+        <div className="flex items-center gap-2 border-b border-border bg-[#0e0e14] px-3 py-1">
+          <Globe className="h-3 w-3 text-[#8888a0]/40 shrink-0" />
           <input
             type="text"
             value={urlInput}
@@ -263,20 +180,12 @@ export function PreviewPanel() {
                 setIframeError(false);
               }
             }}
-            className="flex-1 rounded-md bg-muted px-3 py-1 text-xs text-foreground font-mono outline-none placeholder:text-muted-foreground min-w-0"
+            className="flex-1 bg-transparent px-1 py-0.5 text-[11px] text-[#8888a0] font-mono outline-none placeholder:text-[#8888a0]/30 min-w-0"
             placeholder="No preview available"
           />
           {previewUrl && (
-            <button
-              onClick={handleCopyUrl}
-              className="rounded p-1 text-muted-foreground hover:text-foreground transition-colors shrink-0"
-              title="Copy URL"
-            >
-              {copied ? (
-                <Check className="h-3.5 w-3.5 text-success" />
-              ) : (
-                <Copy className="h-3.5 w-3.5" />
-              )}
+            <button onClick={handleCopyUrl} className="rounded p-1 text-[#8888a0] hover:text-[#e2e2e8] transition-all duration-150 shrink-0" title="Copy URL">
+              {copied ? <Check className="h-3 w-3 text-[#22c55e]" /> : <Copy className="h-3 w-3" />}
             </button>
           )}
         </div>
@@ -291,101 +200,88 @@ export function PreviewPanel() {
 
       {/* Preview Area */}
       {activeTab === "preview" && (
-      <div className="flex-1 flex items-start justify-center overflow-auto bg-muted/30 p-4">
-        {!previewUrl ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            {sandboxStatus === "creating" ? (
-              <>
-                <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
-                <h3 className="text-sm font-medium text-foreground mb-1">
-                  Setting up sandbox...
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  Creating your development environment
-                </p>
-              </>
-            ) : (
-              <>
-                <Monitor className="h-10 w-10 text-muted-foreground/30 mb-4" />
-                <h3 className="text-sm font-medium text-foreground mb-1">
-                  No preview yet
-                </h3>
-                <p className="text-xs text-muted-foreground max-w-[250px]">
-                  Send a message in the chat to start building. The preview will
-                  appear here automatically.
-                </p>
-              </>
-            )}
-          </div>
-        ) : (
-          <div
-            className={cn(
-              "h-full bg-white rounded-lg overflow-hidden shadow-lg transition-all duration-300 relative",
-              deviceMode !== "desktop" && "border border-border"
-            )}
-            style={{
-              width: deviceConfig.width,
-              maxWidth: "100%",
-            }}
-          >
-            {/* Loading Skeleton */}
-            {iframeLoading && !iframeError && (
-              <div className="absolute inset-0 z-10 bg-[#131320] p-6 space-y-4 animate-pulse">
-                {/* Fake nav bar */}
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="h-8 w-8 rounded-md bg-[#1e1e3a]" />
-                  <div className="h-4 w-32 rounded bg-[#1e1e3a]" />
-                  <div className="flex-1" />
-                  <div className="h-4 w-16 rounded bg-[#1e1e3a]" />
-                  <div className="h-4 w-16 rounded bg-[#1e1e3a]" />
+        <div className="flex-1 flex items-start justify-center overflow-auto bg-[#0a0a0f] p-4">
+          {!previewUrl ? (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              {sandboxStatus === "creating" ? (
+                <>
+                  <div className="h-16 w-16 rounded-2xl bg-[#7c3aed]/5 flex items-center justify-center mb-4">
+                    <Loader2 className="h-8 w-8 text-[#7c3aed] animate-spin" />
+                  </div>
+                  <h3 className="text-[13px] font-medium text-[#e2e2e8] mb-1">Setting up sandbox...</h3>
+                  <p className="text-xs text-[#8888a0]">Creating your development environment</p>
+                </>
+              ) : (
+                <>
+                  {/* SVG Illustration */}
+                  <div className="mb-5">
+                    <svg width="120" height="80" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="10" y="5" width="100" height="65" rx="8" stroke="#1e1e2e" strokeWidth="2" />
+                      <rect x="10" y="5" width="100" height="14" rx="8" fill="#13131a" />
+                      <rect x="10" y="17" width="100" height="2" fill="#1e1e2e" />
+                      <circle cx="20" cy="12" r="2.5" fill="#ef4444" opacity="0.4" />
+                      <circle cx="28" cy="12" r="2.5" fill="#f59e0b" opacity="0.4" />
+                      <circle cx="36" cy="12" r="2.5" fill="#22c55e" opacity="0.4" />
+                      <rect x="44" y="9.5" width="40" height="5" rx="2.5" fill="#1e1e2e" />
+                      <rect x="30" y="30" width="60" height="4" rx="2" fill="#1e1e2e" />
+                      <rect x="38" y="38" width="44" height="3" rx="1.5" fill="#1e1e2e" opacity="0.5" />
+                      <rect x="45" y="48" width="30" height="8" rx="4" fill="#7c3aed" opacity="0.15" />
+                      <text x="60" y="54" textAnchor="middle" fill="#7c3aed" fontSize="5" opacity="0.4">Preview</text>
+                    </svg>
+                  </div>
+                  <h3 className="text-[13px] font-medium text-[#e2e2e8] mb-1">No preview yet</h3>
+                  <p className="text-xs text-[#8888a0] max-w-[250px] leading-relaxed">
+                    Send a message in chat to start building. The preview will appear here.
+                  </p>
+                </>
+              )}
+            </div>
+          ) : (
+            <div
+              className={cn(
+                "h-full bg-white rounded-xl overflow-hidden transition-all duration-300 relative",
+                deviceMode !== "desktop" && "border border-border shadow-2xl"
+              )}
+              style={{ width: deviceConfig.width, maxWidth: "100%" }}
+            >
+              {/* Loading Skeleton */}
+              {iframeLoading && !iframeError && (
+                <div className="absolute inset-0 z-10 bg-[#0e0e14] p-6 space-y-4">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="h-8 w-8 rounded-lg bg-[#1a1a24] skeleton-shimmer" />
+                    <div className="h-4 w-32 rounded-md bg-[#1a1a24] skeleton-shimmer" />
+                    <div className="flex-1" />
+                    <div className="h-4 w-16 rounded-md bg-[#1a1a24] skeleton-shimmer" />
+                    <div className="h-4 w-16 rounded-md bg-[#1a1a24] skeleton-shimmer" />
+                  </div>
+                  <div className="h-6 w-3/4 rounded-md bg-[#1a1a24] skeleton-shimmer" />
+                  <div className="h-4 w-1/2 rounded-md bg-[#1a1a24] skeleton-shimmer" />
+                  <div className="h-40 w-full rounded-xl bg-[#1a1a24] skeleton-shimmer mt-4" />
+                  <div className="grid grid-cols-3 gap-4 mt-6">
+                    <div className="h-24 rounded-xl bg-[#1a1a24] skeleton-shimmer" />
+                    <div className="h-24 rounded-xl bg-[#1a1a24] skeleton-shimmer" />
+                    <div className="h-24 rounded-xl bg-[#1a1a24] skeleton-shimmer" />
+                  </div>
                 </div>
-                {/* Fake hero */}
-                <div className="h-6 w-3/4 rounded bg-[#1e1e3a]" />
-                <div className="h-4 w-1/2 rounded bg-[#1e1e3a]" />
-                <div className="h-40 w-full rounded-lg bg-[#1e1e3a] mt-4" />
-                {/* Fake content rows */}
-                <div className="grid grid-cols-3 gap-4 mt-6">
-                  <div className="h-24 rounded-lg bg-[#1e1e3a]" />
-                  <div className="h-24 rounded-lg bg-[#1e1e3a]" />
-                  <div className="h-24 rounded-lg bg-[#1e1e3a]" />
+              )}
+
+              {/* Error Overlay */}
+              {iframeError && (
+                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0e0e14]/95 backdrop-blur-sm">
+                  <AlertCircle className="h-10 w-10 text-[#ef4444] mb-3" />
+                  <h3 className="text-[13px] font-medium text-[#e2e2e8] mb-1">Preview failed to load</h3>
+                  <p className="text-xs text-[#8888a0] mb-4 max-w-[220px] text-center leading-relaxed">The server may still be starting up.</p>
+                  <button onClick={handleRetry} className="inline-flex items-center gap-1.5 rounded-lg btn-gradient px-3 py-1.5 text-[11px] font-medium text-white">
+                    <RefreshCw className="h-3 w-3" /> Retry
+                  </button>
                 </div>
-                <div className="h-4 w-2/3 rounded bg-[#1e1e3a] mt-4" />
-                <div className="h-4 w-1/3 rounded bg-[#1e1e3a]" />
-              </div>
-            )}
+              )}
 
-            {/* Error Overlay */}
-            {iframeError && (
-              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#131320]/95 backdrop-blur-sm">
-                <AlertCircle className="h-10 w-10 text-destructive mb-3" />
-                <h3 className="text-sm font-medium text-foreground mb-1">
-                  Preview failed to load
-                </h3>
-                <p className="text-xs text-muted-foreground mb-4 max-w-[220px] text-center">
-                  The preview could not be loaded. The server may still be starting up.
-                </p>
-                <button
-                  onClick={handleRetry}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-                >
-                  <RefreshCw className="h-3 w-3" />
-                  Retry
-                </button>
-              </div>
-            )}
-
-            <iframe
-              ref={iframeRef}
-              src={previewUrl}
-              className="h-full w-full border-0"
-              title="App Preview"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
-              onLoad={handleIframeLoad}
-              onError={handleIframeError}
-            />
-          </div>
-        )}
-      </div>
+              <iframe ref={iframeRef} src={previewUrl} className="h-full w-full border-0" title="App Preview"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals" onLoad={handleIframeLoad} onError={handleIframeError} />
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

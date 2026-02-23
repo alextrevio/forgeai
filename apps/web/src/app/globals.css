@@ -2,24 +2,24 @@
 
 @theme {
   --color-background: #0a0a0f;
-  --color-foreground: #e4e4e7;
-  --color-card: #131320;
-  --color-card-foreground: #e4e4e7;
-  --color-popover: #131320;
-  --color-popover-foreground: #e4e4e7;
-  --color-primary: #6d5cff;
+  --color-foreground: #e2e2e8;
+  --color-card: #13131a;
+  --color-card-foreground: #e2e2e8;
+  --color-popover: #13131a;
+  --color-popover-foreground: #e2e2e8;
+  --color-primary: #7c3aed;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #1e1e3a;
-  --color-secondary-foreground: #e4e4e7;
-  --color-muted: #18182f;
-  --color-muted-foreground: #71717a;
-  --color-accent: #6d5cff;
+  --color-secondary: #1a1a24;
+  --color-secondary-foreground: #e2e2e8;
+  --color-muted: #16161f;
+  --color-muted-foreground: #8888a0;
+  --color-accent: #7c3aed;
   --color-accent-foreground: #ffffff;
   --color-destructive: #ef4444;
   --color-destructive-foreground: #ffffff;
-  --color-border: #27274a;
-  --color-input: #27274a;
-  --color-ring: #6d5cff;
+  --color-border: #1e1e2e;
+  --color-input: #1e1e2e;
+  --color-ring: #7c3aed;
   --color-success: #22c55e;
   --color-warning: #f59e0b;
   --radius-sm: 0.25rem;
@@ -32,22 +32,24 @@ body {
   background-color: var(--color-background);
   color: var(--color-foreground);
   font-family: "Inter", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
+  background: #1e1e2e;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-muted-foreground);
+  background: #2a2a3e;
 }
 
 /* Monaco editor container */
@@ -72,9 +74,28 @@ body {
   50% { opacity: 0.8; }
 }
 
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes progressPulse {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 .animate-fade-in-up {
   animation: fadeInUp 0.6s ease-out forwards;
   opacity: 0;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
 }
 
 .animation-delay-200 { animation-delay: 200ms; }
@@ -82,17 +103,55 @@ body {
 .animation-delay-600 { animation-delay: 600ms; }
 
 .bg-grid-pattern {
-  background-image: radial-gradient(circle, #6d5cff10 1px, transparent 1px);
+  background-image: radial-gradient(circle, #7c3aed10 1px, transparent 1px);
   background-size: 30px 30px;
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .glass-card:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(109, 92, 255, 0.2);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(124, 58, 237, 0.15);
+}
+
+/* Gradient accent button */
+.btn-gradient {
+  background: linear-gradient(135deg, #7c3aed 0%, #3b82f6 100%);
+  transition: all 150ms ease;
+}
+
+.btn-gradient:hover {
+  background: linear-gradient(135deg, #6d28d9 0%, #2563eb 100%);
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
+}
+
+/* Progress bar animation */
+.progress-animated {
+  background: linear-gradient(90deg, #7c3aed, #3b82f6, #7c3aed);
+  background-size: 200% 100%;
+  animation: progressPulse 2s linear infinite;
+}
+
+/* Loading skeleton shimmer */
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.skeleton-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+  animation: shimmer 1.5s infinite;
+}
+
+/* Tooltip glassmorphism */
+.tooltip-glass {
+  background: rgba(19, 19, 26, 0.9);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(30, 30, 46, 0.8);
 }
