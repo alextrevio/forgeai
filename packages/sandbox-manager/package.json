@@ -1,0 +1,16 @@
+{
+  "name": "@forgeai/sandbox-manager",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^25.3.0",
+    "typescript": "^5.6.0"
+  }
+}
