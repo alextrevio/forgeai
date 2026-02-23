@@ -11,3 +11,4 @@ dist/
 deploys/
 sandboxes/
 backups/
+.sandboxes/
