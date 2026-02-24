@@ -1,6 +1,17 @@
 import { create } from "zustand";
 import { api } from "@/lib/api";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function ensureArray<T>(data: any): T[] {
+  if (Array.isArray(data)) return data;
+  if (data && typeof data === "object") {
+    for (const key of ["data", "notifications", "items"]) {
+      if (Array.isArray((data as Record<string, unknown>)[key])) return (data as Record<string, unknown>)[key] as T[];
+    }
+  }
+  return [];
+}
+
 export interface NotificationItem {
   id: string;
   type: string;
@@ -31,9 +42,12 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     set({ isLoading: true });
     try {
       const data = await api.getNotifications();
+      const notifications = ensureArray<NotificationItem>(
+        data?.notifications ?? data
+      );
       set({
-        notifications: data.notifications,
-        unreadCount: data.unreadCount,
+        notifications,
+        unreadCount: typeof data?.unreadCount === "number" ? data.unreadCount : notifications.filter((n) => !n.read).length,
         isLoading: false,
       });
     } catch {
@@ -45,7 +59,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     try {
       await api.markNotificationRead(id);
       set((state) => ({
-        notifications: state.notifications.map((n) =>
+        notifications: ensureArray<NotificationItem>(state.notifications).map((n) =>
           n.id === id ? { ...n, read: true } : n
         ),
         unreadCount: Math.max(0, state.unreadCount - 1),
@@ -57,7 +71,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     try {
       await api.markAllNotificationsRead();
       set((state) => ({
-        notifications: state.notifications.map((n) => ({ ...n, read: true })),
+        notifications: ensureArray<NotificationItem>(state.notifications).map((n) => ({ ...n, read: true })),
         unreadCount: 0,
       }));
     } catch {}
@@ -65,7 +79,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
 
   addNotification: (notification) => {
     set((state) => ({
-      notifications: [notification, ...state.notifications],
+      notifications: [notification, ...ensureArray<NotificationItem>(state.notifications)],
       unreadCount: state.unreadCount + 1,
     }));
   },

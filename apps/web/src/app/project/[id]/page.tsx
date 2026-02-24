@@ -240,7 +240,9 @@ export default function ProjectPage() {
           break;
 
         case "agent:error":
+          s.setAgentRunning(false);
           s.setAgentThinking(null);
+          s.setActiveAgent(null);
           s.addMessage({
             id: generateId(),
             projectId,

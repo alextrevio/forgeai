@@ -41,7 +41,7 @@ async function createSnapshotAndNotify(
     data: {
       projectId,
       label,
-      files: JSON.stringify(fileContents),
+      files: fileContents,
     },
   });
 

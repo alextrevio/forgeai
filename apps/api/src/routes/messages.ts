@@ -126,7 +126,14 @@ messageRouter.post("/:id/undo", async (req: AuthRequest, res: Response) => {
     }
 
     // Restore files from snapshot
-    const files = snapshot.files as Record<string, string>;
+    // Handle both correctly stored objects and legacy double-serialized strings
+    let files: Record<string, string> = {};
+    const raw = snapshot.files;
+    if (typeof raw === "string") {
+      try { files = JSON.parse(raw) as Record<string, string>; } catch { /* empty */ }
+    } else if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+      files = raw as Record<string, string>;
+    }
     await sandboxManager.restoreFiles(project.sandboxId, files);
 
     // Notify clients
@@ -188,7 +195,14 @@ messageRouter.post("/:id/snapshots/:snapshotId/restore", async (req: AuthRequest
       return res.status(404).json({ error: "Snapshot not found" });
     }
 
-    const files = snapshot.files as Record<string, string>;
+    // Handle both correctly stored objects and legacy double-serialized strings
+    let files: Record<string, string> = {};
+    const raw = snapshot.files;
+    if (typeof raw === "string") {
+      try { files = JSON.parse(raw) as Record<string, string>; } catch { /* empty */ }
+    } else if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+      files = raw as Record<string, string>;
+    }
     await sandboxManager.restoreFiles(project.sandboxId, files);
 
     const io: SocketIOServer = req.app.get("io");
