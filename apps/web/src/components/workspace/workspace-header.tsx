@@ -346,7 +346,7 @@ export function WorkspaceHeader() {
                     <div>
                       <label className="block text-xs font-medium text-[#8888a0] mb-2">Members ({members.length})</label>
                       <div className="space-y-2 max-h-48 overflow-y-auto">
-                        {members.map((m) => (
+                        {safeArray(members).map((m: MemberInfo) => (
                           <div key={m.id} className="flex items-center justify-between rounded-xl bg-[#1a1a24]/50 px-3 py-2">
                             <div className="flex items-center gap-2 min-w-0">
                               <div className="h-6 w-6 rounded-full bg-gradient-to-br from-[#7c3aed]/30 to-[#3b82f6]/30 flex items-center justify-center text-[10px] font-medium text-[#a78bfa] shrink-0">{(m.user.name || m.user.email).charAt(0).toUpperCase()}</div>

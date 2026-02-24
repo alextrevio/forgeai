@@ -161,7 +161,7 @@ export default function UsagePage() {
 
   // Generate dummy daily usage data for the chart if API doesn't return it
   const dailyUsage = useMemo(() => {
-    if (usageData?.dailyUsage && usageData.dailyUsage.length > 0) {
+    if (usageData?.dailyUsage && Array.isArray(usageData.dailyUsage) && usageData.dailyUsage.length > 0) {
       return usageData.dailyUsage.slice(-7);
     }
 

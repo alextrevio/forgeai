@@ -6,6 +6,15 @@ import { useNotificationStore } from "@/stores/notification-store";
 import { cn, formatDate } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
+// Defense-in-depth: guarantee notifications is always an array at render level
+function safeArray<T>(data: T[]): T[];
+function safeArray<T>(data: T[] | null | undefined): T[];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function safeArray(data: any): any[] {
+  if (Array.isArray(data)) return data;
+  return [];
+}
+
 const typeIcons: Record<string, React.ReactNode> = {
   deploy_complete: <Rocket className="h-4 w-4 text-green-500" />,
   deploy_failed: <AlertCircle className="h-4 w-4 text-red-500" />,
@@ -78,13 +87,13 @@ export function NotificationBell() {
 
           {/* List */}
           <div className="max-h-80 overflow-y-auto">
-            {notifications.length === 0 ? (
+            {safeArray(notifications).length === 0 ? (
               <div className="px-4 py-8 text-center">
                 <Bell className="h-8 w-8 text-gray-600 mx-auto mb-2" />
                 <p className="text-xs text-gray-500">No notifications yet</p>
               </div>
             ) : (
-              notifications.slice(0, 20).map((n) => (
+              safeArray(notifications).slice(0, 20).map((n) => (
                 <button
                   key={n.id}
                   onClick={() => handleNotificationClick(n)}
