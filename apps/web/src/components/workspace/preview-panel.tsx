@@ -129,7 +129,7 @@ export function PreviewPanel() {
     };
   }, [currentPlan]);
 
-  const recentFiles = useMemo(() => Array.from(changedFiles).slice(-5), [changedFiles]);
+  const recentFiles = useMemo(() => Array.from(changedFiles || []).slice(-5), [changedFiles]);
 
   const deviceConfig = DEVICE_SIZES[deviceMode];
   const showBuildAnimation = isAgentRunning && !previewUrl;
