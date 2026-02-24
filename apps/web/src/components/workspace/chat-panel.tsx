@@ -77,9 +77,32 @@ export function ChatPanel() {
 
   const handleSubmit = async (overrideContent?: string) => {
     const content = (overrideContent ?? input).trim();
-    if (!content || !currentProjectId || isAgentRunning) return;
+
+    // DEBUG — trace every guard (remove once verified)
+    console.log("[ChatPanel] handleSubmit fired", {
+      content: content || "(empty)",
+      currentProjectId,
+      isAgentRunning,
+      isSending,
+    });
+
+    if (!content) {
+      console.warn("[ChatPanel] empty content — aborting");
+      return;
+    }
+    if (!currentProjectId) {
+      console.error("[ChatPanel] currentProjectId is null — project not loaded yet?");
+      return;
+    }
+    if (isAgentRunning) {
+      console.warn("[ChatPanel] agent already running — aborting");
+      return;
+    }
+
     setInput("");
     setIsSending(true);
+
+    // Optimistic UI — show message immediately
     addMessage({
       id: crypto.randomUUID(),
       projectId: currentProjectId,
@@ -94,12 +117,23 @@ export function ChatPanel() {
       createdAt: new Date().toISOString(),
     });
     setAgentRunning(true);
+
+    // 1) WebSocket emit — isolated so it can't block the HTTP POST
     try {
       const socket = getSocket();
+      console.log("[ChatPanel] socket.connected:", socket.connected, "| emitting message:send");
       socket.emit("message:send", { projectId: currentProjectId, content });
+    } catch (socketErr) {
+      console.error("[ChatPanel] socket.emit failed (non-blocking):", socketErr);
+    }
+
+    // 2) HTTP POST — always runs even if socket fails
+    try {
+      console.log("[ChatPanel] POST /api/projects/" + currentProjectId + "/messages");
       await api.sendMessage(currentProjectId, content);
-    } catch (err) {
-      console.error("Failed to send message:", err);
+      console.log("[ChatPanel] api.sendMessage OK");
+    } catch (apiErr) {
+      console.error("[ChatPanel] api.sendMessage FAILED:", apiErr);
       setAgentRunning(false);
     } finally {
       setIsSending(false);
