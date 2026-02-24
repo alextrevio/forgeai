@@ -24,6 +24,14 @@ import {
 import { cn } from "@/lib/utils";
 import type { Message, AgentPlan, CodeChange, ReviewReport } from "@forgeai/shared";
 
+function safeArray<T>(data: T[]): T[];
+function safeArray<T>(data: T[] | null | undefined): T[];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function safeArray(data: any): any[] {
+  if (Array.isArray(data)) return data;
+  return [];
+}
+
 interface RichMessageProps {
   message: Message;
   onOpenFile?: (path: string) => void;
@@ -96,8 +104,8 @@ function PlanMessage({ plan }: { plan: AgentPlan }) {
       default: return <Circle className="h-3.5 w-3.5 text-[#8888a0]/30" />;
     }
   };
-  const completed = (plan?.steps || []).filter((s) => s.status === "completed").length;
-  const total = (plan?.steps || []).length;
+  const completed = safeArray(plan?.steps).filter((s) => s.status === "completed").length;
+  const total = safeArray(plan?.steps).length;
 
   return (
     <div className="rounded-xl border border-border bg-[#13131a] overflow-hidden">
@@ -112,7 +120,7 @@ function PlanMessage({ plan }: { plan: AgentPlan }) {
       </div>
       <div className="px-4 py-2 text-xs text-[#e2e2e8]/70 leading-relaxed">{plan.understanding}</div>
       <div className="px-4 pb-3 space-y-1">
-        {(plan?.steps || []).map((step) => (
+        {safeArray(plan?.steps).map((step) => (
           <div key={step.id} className="flex items-start gap-2">
             {getStepIcon(step.status)}
             <span className={cn("text-xs leading-5", step.status === "completed" ? "text-[#8888a0] line-through" : step.status === "in_progress" ? "text-[#e2e2e8] font-medium" : step.status === "failed" ? "text-[#f87171]" : "text-[#8888a0]/50")}>
@@ -171,10 +179,10 @@ function FileChangeMessage({ changes, onOpenFile }: { changes: CodeChange[]; onO
   return (
     <div className="rounded-xl border border-border bg-[#13131a] overflow-hidden">
       <div className="px-3 py-2 border-b border-border bg-[#0e0e14]">
-        <span className="text-[10px] font-semibold text-[#8888a0]/60 uppercase tracking-widest">{(changes || []).length} file{(changes || []).length !== 1 ? "s" : ""} changed</span>
+        <span className="text-[10px] font-semibold text-[#8888a0]/60 uppercase tracking-widest">{safeArray(changes).length} file{safeArray(changes).length !== 1 ? "s" : ""} changed</span>
       </div>
       <div className="divide-y divide-border/30">
-        {(changes || []).map((change, i) => (
+        {safeArray(changes).map((change, i) => (
           <button key={i} onClick={() => onOpenFile?.(change.file)} className="flex items-center gap-2 px-3 py-2 w-full text-left hover:bg-[#1a1a24]/50 transition-all duration-100">
             {actionIcons[change.action] || <FileText className="h-3.5 w-3.5" />}
             <span className="text-[11px] font-mono text-[#e2e2e8]/80 flex-1 truncate">{change.file}</span>

@@ -9,6 +9,18 @@ import type {
   ReviewReport,
 } from "@forgeai/shared";
 
+/** Runtime guard — guarantees the return value is always an array */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function ensureArray<T>(data: any): T[] {
+  if (Array.isArray(data)) return data;
+  if (data && typeof data === "object") {
+    for (const key of ["data", "messages", "items", "projects", "files", "snapshots", "plans", "templates", "operations", "steps"]) {
+      if (Array.isArray((data as Record<string, unknown>)[key])) return (data as Record<string, unknown>)[key] as T[];
+    }
+  }
+  return [];
+}
+
 export type ActiveAgent = "planner" | "coder" | "designer" | "debugger" | "reviewer" | "deployer" | null;
 
 export interface SnapshotInfo {
@@ -141,9 +153,9 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     }),
 
   addMessage: (message) =>
-    set((state) => ({ messages: [...state.messages, message] })),
+    set((state) => ({ messages: [...ensureArray<Message>(state.messages), message] })),
 
-  setMessages: (messages) => set({ messages }),
+  setMessages: (messages) => set({ messages: ensureArray<Message>(messages) }),
 
   setAgentRunning: (running) =>
     set({
@@ -161,10 +173,11 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   updateStepStatus: (stepId, status) =>
     set((state) => {
       if (!state.currentPlan) return {};
+      const steps = ensureArray<AgentStep>(state.currentPlan.steps);
       return {
         currentPlan: {
           ...state.currentPlan,
-          steps: state.currentPlan.steps.map((s) =>
+          steps: steps.map((s) =>
             s.id === stepId ? { ...s, status } : s
           ),
         },
@@ -180,23 +193,25 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       return { changedFiles: newSet };
     }),
 
-  setFileTree: (tree) => set({ fileTree: tree, changedFiles: new Set() }),
+  setFileTree: (tree) => set({ fileTree: ensureArray<FileNode>(tree), changedFiles: new Set() }),
 
   openFile: (path, content) =>
     set((state) => {
-      const exists = state.openFiles.find((f) => f.path === path);
+      const files = ensureArray<{ path: string; content: string }>(state.openFiles);
+      const exists = files.find((f) => f.path === path);
       if (exists) {
         return { activeFilePath: path };
       }
       return {
-        openFiles: [...state.openFiles, { path, content }],
+        openFiles: [...files, { path, content }],
         activeFilePath: path,
       };
     }),
 
   closeFile: (path) =>
     set((state) => {
-      const newOpenFiles = state.openFiles.filter((f) => f.path !== path);
+      const files = ensureArray<{ path: string; content: string }>(state.openFiles);
+      const newOpenFiles = files.filter((f) => f.path !== path);
       const newActive =
         state.activeFilePath === path
           ? newOpenFiles[newOpenFiles.length - 1]?.path || null
@@ -208,21 +223,21 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
   updateFileContent: (path, content) =>
     set((state) => ({
-      openFiles: state.openFiles.map((f) =>
+      openFiles: ensureArray<{ path: string; content: string; isDirty?: boolean }>(state.openFiles).map((f) =>
         f.path === path ? { ...f, content, isDirty: true } : f
       ),
     })),
 
   refreshOpenFile: (path, content) =>
     set((state) => ({
-      openFiles: state.openFiles.map((f) =>
+      openFiles: ensureArray<{ path: string; content: string }>(state.openFiles).map((f) =>
         f.path === path ? { ...f, content } : f
       ),
     })),
 
   addTerminalOutput: (output) =>
     set((state) => ({
-      terminalOutput: [...state.terminalOutput, output].slice(-500),
+      terminalOutput: [...ensureArray<string>(state.terminalOutput), output].slice(-500),
     })),
 
   clearTerminalOutput: () => set({ terminalOutput: [] }),
@@ -234,13 +249,13 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   setReviewReport: (report) => set({ lastReviewReport: report }),
 
   addSnapshot: (snapshot) =>
-    set((state) => ({ snapshots: [...state.snapshots, snapshot] })),
+    set((state) => ({ snapshots: [...ensureArray<SnapshotInfo>(state.snapshots), snapshot] })),
 
-  setSnapshots: (snapshots) => set({ snapshots }),
+  setSnapshots: (snapshots) => set({ snapshots: ensureArray<SnapshotInfo>(snapshots) }),
 
   addConsoleEntry: (entry) =>
     set((state) => ({
-      consoleEntries: [...state.consoleEntries, entry].slice(-200),
+      consoleEntries: [...ensureArray<ConsoleEntry>(state.consoleEntries), entry].slice(-200),
     })),
 
   clearConsoleEntries: () => set({ consoleEntries: [] }),

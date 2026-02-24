@@ -22,7 +22,8 @@ const levelStyles: Record<string, { color: string; icon: React.ReactNode; bg: st
   error: { color: "text-[#f87171]", icon: <AlertCircle className="h-3 w-3" />, bg: "bg-[#f87171]/5" },
 };
 
-export function ConsolePanel({ entries, onClear }: ConsolePanelProps) {
+export function ConsolePanel({ entries: rawEntries, onClear }: ConsolePanelProps) {
+  const entries = Array.isArray(rawEntries) ? rawEntries : [];
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

@@ -117,10 +117,12 @@ export function PreviewPanel() {
   }, [previewUrl]);
 
   const { stepsTotal, stepsCompleted, currentStepText, progressPercent } = useMemo(() => {
-    if (!currentPlan?.steps?.length) return { stepsTotal: 0, stepsCompleted: 0, currentStepText: "", progressPercent: 0 };
-    const total = currentPlan.steps.length;
-    const completed = currentPlan.steps.filter((s: { status: string }) => s.status === "completed").length;
-    const inProgress = currentPlan.steps.find((s: { status: string }) => s.status === "in_progress");
+    if (!currentPlan?.steps) return { stepsTotal: 0, stepsCompleted: 0, currentStepText: "", progressPercent: 0 };
+    const steps = Array.isArray(currentPlan.steps) ? currentPlan.steps : [];
+    const total = steps.length;
+    if (total === 0) return { stepsTotal: 0, stepsCompleted: 0, currentStepText: "", progressPercent: 0 };
+    const completed = steps.filter((s: { status: string }) => s.status === "completed").length;
+    const inProgress = steps.find((s: { status: string }) => s.status === "in_progress");
     return {
       stepsTotal: total,
       stepsCompleted: completed,
@@ -130,7 +132,7 @@ export function PreviewPanel() {
   }, [currentPlan]);
 
   const recentFiles = useMemo(() => {
-    try { return Array.from(changedFiles || []).slice(-5); } catch { return []; }
+    try { return Array.from(changedFiles instanceof Set ? changedFiles : new Set<string>()).slice(-5); } catch { return []; }
   }, [changedFiles]);
 
   const deviceConfig = DEVICE_SIZES[deviceMode];
