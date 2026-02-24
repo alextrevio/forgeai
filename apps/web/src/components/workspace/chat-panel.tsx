@@ -76,7 +76,8 @@ export function ChatPanel() {
   } = useProjectStore();
 
   const lastAction = useMemo(() => {
-    const assistantMsgs = (messages || []).filter((m) => m.role === "ASSISTANT");
+    const safeMessages = Array.isArray(messages) ? messages : [];
+    const assistantMsgs = safeMessages.filter((m) => m.role === "ASSISTANT");
     return assistantMsgs[assistantMsgs.length - 1]?.content || null;
   }, [messages]);
 
@@ -216,7 +217,7 @@ export function ChatPanel() {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-        {(messages || []).length === 0 && !isAgentRunning && (
+        {(!Array.isArray(messages) || messages.length === 0) && !isAgentRunning && (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#7c3aed]/10 to-[#3b82f6]/10 flex items-center justify-center mb-4">
               <Sparkles className="h-6 w-6 text-[#a78bfa]" />
@@ -237,7 +238,7 @@ export function ChatPanel() {
           </div>
         )}
 
-        {(messages || []).map((msg) => {
+        {(Array.isArray(messages) ? messages : []).map((msg) => {
           const debugSummary = msg.role === "SYSTEM" ? getDebugSummary(msg.content) : null;
           const isExpanded = expandedDebug.has(msg.id);
 
@@ -345,7 +346,7 @@ export function ChatPanel() {
       </div>
 
       {/* Suggestion Chips */}
-      {!isAgentRunning && (messages || []).some((m) => m.role === "ASSISTANT") && (
+      {!isAgentRunning && (Array.isArray(messages) ? messages : []).some((m) => m.role === "ASSISTANT") && (
         <SuggestionChips lastAction={lastAction} onSelect={(chip) => handleSubmit(chip)} />
       )}
 

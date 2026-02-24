@@ -249,7 +249,7 @@ export function WorkspaceHeader() {
             <span className="text-[11px] font-medium text-[#8888a0]">Version Timeline</span>
             <button onClick={() => setShowTimeline(false)} className="text-[#8888a0] hover:text-[#e2e2e8] transition-colors"><X className="h-3 w-3" /></button>
           </div>
-          {snapshots.length === 0 ? (
+          {!Array.isArray(snapshots) || snapshots.length === 0 ? (
             <p className="text-[11px] text-[#8888a0]/60">No snapshots yet. Snapshots are created automatically before each change.</p>
           ) : (
             <div className="flex items-center gap-1 overflow-x-auto pb-1">

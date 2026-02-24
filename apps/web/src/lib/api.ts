@@ -119,7 +119,8 @@ class ApiClient {
 
   // Projects
   async listProjects() {
-    return this.request<any[]>("/api/projects");
+    const data = await this.request<any>("/api/projects");
+    return ensureArray(data);
   }
 
   async createProject(name: string, framework?: string, description?: string, template?: string) {
@@ -150,7 +151,8 @@ class ApiClient {
 
   // Messages
   async getMessages(projectId: string) {
-    return this.request<any[]>(`/api/projects/${projectId}/messages`);
+    const data = await this.request<any>(`/api/projects/${projectId}/messages`);
+    return ensureArray<any>(data);
   }
 
   async sendMessage(projectId: string, content: string) {
@@ -174,9 +176,8 @@ class ApiClient {
 
   // Snapshots
   async getSnapshots(projectId: string) {
-    return this.request<Array<{ id: string; label: string; createdAt: string }>>(
-      `/api/projects/${projectId}/snapshots`
-    );
+    const data = await this.request<any>(`/api/projects/${projectId}/snapshots`);
+    return ensureArray<{ id: string; label: string; createdAt: string }>(data);
   }
 
   async restoreSnapshot(projectId: string, snapshotId: string) {
@@ -187,7 +188,8 @@ class ApiClient {
 
   // Files
   async getFileTree(projectId: string) {
-    return this.request<any[]>(`/api/projects/${projectId}/files`);
+    const data = await this.request<any>(`/api/projects/${projectId}/files`);
+    return ensureArray(data);
   }
 
   async readFile(projectId: string, path: string) {
@@ -284,7 +286,8 @@ class ApiClient {
   }
 
   async getPlans() {
-    return this.request<any[]>("/api/billing/plans");
+    const data = await this.request<any>("/api/billing/plans");
+    return ensureArray(data);
   }
 
   async upgradePlan(plan: string) {
@@ -296,7 +299,8 @@ class ApiClient {
 
   // Templates
   async getTemplates() {
-    return this.request<any[]>("/api/templates");
+    const data = await this.request<any>("/api/templates");
+    return ensureArray(data);
   }
 
   async getTemplate(id: string) {
@@ -384,6 +388,19 @@ class ApiClient {
       window.location.href = "/login";
     }
   }
+}
+
+/** Safely extract an array from an API response that might be a wrapper object */
+function ensureArray<T>(data: unknown): T[] {
+  if (Array.isArray(data)) return data;
+  if (data && typeof data === "object") {
+    // Try common wrapper keys
+    const obj = data as Record<string, unknown>;
+    for (const key of ["data", "messages", "items", "results", "snapshots", "files", "nodes"]) {
+      if (Array.isArray(obj[key])) return obj[key] as T[];
+    }
+  }
+  return [];
 }
 
 class ApiError extends Error {

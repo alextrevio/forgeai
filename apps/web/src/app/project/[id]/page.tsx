@@ -28,16 +28,18 @@ export default function ProjectPage() {
         store.setProject(project.id, project.name, project.framework);
 
         const messages = await api.getMessages(projectId);
-        store.setMessages(messages);
+        store.setMessages(Array.isArray(messages) ? messages : []);
 
         // Load snapshots
-        api.getSnapshots(projectId).then(store.setSnapshots).catch(() => {});
+        api.getSnapshots(projectId)
+          .then((s) => store.setSnapshots(Array.isArray(s) ? s : []))
+          .catch(() => {});
 
         if (project.sandboxId) {
           store.setSandboxStatus("running");
           try {
             const tree = await api.getFileTree(projectId);
-            store.setFileTree(tree);
+            store.setFileTree(Array.isArray(tree) ? tree : []);
             const preview = await api.getPreviewUrl(projectId);
             store.setPreviewUrl(preview.url);
           } catch { /* sandbox may not be running */ }
@@ -99,7 +101,7 @@ export default function ProjectPage() {
         case "agent:designer_complete":
           s.setActiveAgent("coder");
           // Refresh file tree after designer changes
-          api.getFileTree(projectId).then(s.setFileTree).catch(() => {});
+          api.getFileTree(projectId).then((t) => s.setFileTree(Array.isArray(t) ? t : [])).catch(() => {});
           break;
 
         case "agent:debugger_start":
@@ -203,8 +205,8 @@ export default function ProjectPage() {
             createdAt: new Date().toISOString(),
           });
           // Refresh file tree and snapshots
-          api.getFileTree(projectId).then(s.setFileTree).catch(() => {});
-          api.getSnapshots(projectId).then(s.setSnapshots).catch(() => {});
+          api.getFileTree(projectId).then((t) => s.setFileTree(Array.isArray(t) ? t : [])).catch(() => {});
+          api.getSnapshots(projectId).then((sn) => s.setSnapshots(Array.isArray(sn) ? sn : [])).catch(() => {});
           break;
 
         case "preview:reload":
