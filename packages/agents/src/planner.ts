@@ -67,6 +67,31 @@ export class PlannerAgent {
       plan.steps = this.generateFallbackSteps(userMessage);
     }
 
+    // Consolidate plans with too many steps (max 6) for speed
+    if (plan.steps.length > 6) {
+      const first = plan.steps[0]; // Setup/install
+      const second = plan.steps[1]; // Types/data
+      const middle = plan.steps.slice(2, -2);
+      const secondToLast = plan.steps[plan.steps.length - 2]; // Integration
+      const last = plan.steps[plan.steps.length - 1]; // Polish
+
+      const combined: AgentStep[] = [
+        { ...first, id: 1, dependencies: [] },
+        { ...second, id: 2, dependencies: [1] },
+        {
+          ...middle[0],
+          id: 3,
+          description: middle.map((s) => s.description).join(", "),
+          filesAffected: middle.flatMap((s) => s.filesAffected),
+          dependencies: [2],
+          status: "pending" as const,
+        },
+        { ...secondToLast, id: 4, dependencies: [3], status: "pending" as const },
+        { ...last, id: 5, dependencies: [4], status: "pending" as const },
+      ];
+      plan.steps = combined;
+    }
+
     this.ensureDepsFirst(plan);
 
     return plan;
@@ -140,8 +165,8 @@ export class PlannerAgent {
         id: 2,
         type: "code",
         agent: "coder",
-        description: "Create TypeScript types, store, and mock data",
-        filesAffected: ["src/types/index.ts", "src/store/app-store.ts", "src/data/mock-data.ts"],
+        description: "Create TypeScript types, store, mock data, and utility functions",
+        filesAffected: ["src/types/index.ts", "src/store/app-store.ts", "src/data/mock-data.ts", "src/lib/utils.ts"],
         dependencies: [1],
         status: "pending",
       },
@@ -149,8 +174,8 @@ export class PlannerAgent {
         id: 3,
         type: "code",
         agent: "coder",
-        description: "Create layout components (Sidebar, Header, Layout wrapper)",
-        filesAffected: ["src/components/layout/Sidebar.tsx", "src/components/layout/Header.tsx", "src/components/layout/Layout.tsx"],
+        description: "Create layout components and shared UI components (Sidebar, Header, Layout, Button, Card, Input, Badge, Modal)",
+        filesAffected: ["src/components/layout/Sidebar.tsx", "src/components/layout/Header.tsx", "src/components/layout/Layout.tsx", "src/components/ui/Button.tsx", "src/components/ui/Card.tsx", "src/components/ui/Input.tsx", "src/components/ui/Badge.tsx", "src/components/ui/Modal.tsx"],
         dependencies: [2],
         status: "pending",
       },
@@ -158,36 +183,18 @@ export class PlannerAgent {
         id: 4,
         type: "code",
         agent: "coder",
-        description: "Create shared UI components (Button, Card, Input, Badge, Modal)",
-        filesAffected: ["src/components/ui/Button.tsx", "src/components/ui/Card.tsx", "src/components/ui/Input.tsx", "src/components/ui/Badge.tsx", "src/components/ui/Modal.tsx"],
-        dependencies: [2],
+        description: `Create all feature components, pages, and wire up App.tsx with Router: ${userMessage.slice(0, 60)}`,
+        filesAffected: ["src/pages/Dashboard.tsx", "src/App.tsx"],
+        dependencies: [3],
         status: "pending",
       },
       {
         id: 5,
-        type: "code",
-        agent: "coder",
-        description: `Create feature components: ${userMessage.slice(0, 60)}`,
-        filesAffected: [],
-        dependencies: [3, 4],
-        status: "pending",
-      },
-      {
-        id: 6,
-        type: "code",
-        agent: "coder",
-        description: "Create page components and connect with Router in App.tsx",
-        filesAffected: ["src/pages/Dashboard.tsx", "src/App.tsx"],
-        dependencies: [5],
-        status: "pending",
-      },
-      {
-        id: 7,
         type: "design",
         agent: "coder",
-        description: "Add loading states, empty states, error states, and polish",
+        description: "Add loading states, empty states, error states, responsive adjustments, and polish",
         filesAffected: [],
-        dependencies: [6],
+        dependencies: [4],
         status: "pending",
       },
     ];

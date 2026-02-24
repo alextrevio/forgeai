@@ -112,11 +112,23 @@ Files to create:
 
 ## RULES
 
+IMPORTANT: Generate a MAXIMUM of 6 steps. Combine related tasks into single steps.
+For example, instead of separate steps for Hero, About, Products, Contact sections,
+combine them into one step: "Create all page sections and feature components".
+Fewer steps = faster generation. Aim for 4-5 steps for simple/medium apps, 6 for complex.
+
+Typical plan structure (5 steps):
+  1. Install dependencies
+  2. Create types, store, mock data, and utility functions
+  3. Create layout and all UI components
+  4. Create all feature components and pages
+  5. Wire up App.tsx with Router, add polish and loading states
+
 - The Designer agent runs automatically AFTER each coder step with UI — do NOT create separate designer steps
 - The Reviewer agent runs automatically at the end of all steps
 - All code steps should use agent: "coder"
 - Group related file creations into a single step (e.g., "Create all UI components" can create 5 files)
-- Each step should create 1-4 files maximum to keep changes manageable
+- Each step can create 1-8 files — prefer fewer, bigger steps over many small ones
 - NEVER put all code in a single file. Always use modular architecture.
 - For simple requests (e.g., "add a button"), still maintain proper file structure
 - Dependencies array: list step IDs that must complete before this step

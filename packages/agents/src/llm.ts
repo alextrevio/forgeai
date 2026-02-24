@@ -21,27 +21,27 @@ export const LLM_CONFIGS: Record<string, LLMConfig> = {
   planner: {
     model: "claude-sonnet-4-20250514",
     temperature: 0.3,
-    maxTokens: 8192,
+    maxTokens: 4096,
   },
   coder: {
     model: "claude-sonnet-4-20250514",
     temperature: 0.2,
-    maxTokens: 16384,
+    maxTokens: 8192,
   },
   designer: {
     model: "claude-sonnet-4-20250514",
     temperature: 0.4,
-    maxTokens: 16384,
+    maxTokens: 8192,
   },
   debugger: {
-    model: "claude-sonnet-4-20250514",
-    temperature: 0.1,
-    maxTokens: 8192,
+    model: "claude-haiku-4-5-20251001",
+    temperature: 0.2,
+    maxTokens: 4096,
   },
   reviewer: {
-    model: "claude-sonnet-4-20250514",
-    temperature: 0.2,
-    maxTokens: 8192,
+    model: "claude-haiku-4-5-20251001",
+    temperature: 0.3,
+    maxTokens: 4096,
   },
 };
 

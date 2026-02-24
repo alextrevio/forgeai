@@ -45,6 +45,7 @@ export class Orchestrator {
   private reviewer = new ReviewerAgent();
   private deployer = new DeployerAgent();
   private isFirstRun = true;
+  private hadErrors = false;
 
   // Track all created files across steps for richer context
   private createdFiles = new Map<string, string>();
@@ -62,115 +63,31 @@ export class Orchestrator {
       const plan = await this.planner.createPlan(userMessage, projectContext, signal);
       callbacks.onPlan(plan);
 
-      // Step 2: Execute each step — Coder → Designer → Debugger(if error)
-      for (const step of plan.steps) {
+      // Step 2: Execute steps — group independent ones for parallel execution
+      const stepGroups = this.groupStepsByDependencies(plan.steps);
+
+      for (const group of stepGroups) {
         if (signal?.aborted) {
           callbacks.onError("Agent execution was stopped by user");
           return;
         }
 
-        step.status = "in_progress";
-        callbacks.onStepStart(step);
-        callbacks.onThinking(`Working on: ${step.description}`);
-
-        try {
-          // Build enriched context for this step
-          const stepContext = this.buildStepContext(projectContext, step, plan);
-
-          // === CODER PHASE ===
-          const result = await this.coder.execute(step, stepContext, signal);
-          const modifiedFiles: Record<string, string> = {};
-
-          for (const op of result.operations) {
-            if (signal?.aborted) return;
-            switch (op.action) {
-              case "create":
-              case "edit":
-                if (op.content) {
-                  await sandbox.writeFile(op.path, op.content);
-                  modifiedFiles[op.path] = op.content;
-                  this.createdFiles.set(op.path, op.content);
-                  callbacks.onCodeChange({ file: op.path, action: op.action, content: op.content });
-                  callbacks.onFileChanged(op.path);
-                }
-                break;
-              case "delete":
-                await sandbox.deleteFile(op.path);
-                this.createdFiles.delete(op.path);
-                callbacks.onCodeChange({ file: op.path, action: "delete" });
-                callbacks.onFileChanged(op.path);
-                break;
-            }
-          }
-
-          for (const cmd of result.commands) {
-            if (signal?.aborted) return;
-            callbacks.onTerminalOutput(`$ ${cmd}`);
-            const cmdResult = await sandbox.executeCommand(cmd);
-            if (cmdResult.stdout) callbacks.onTerminalOutput(cmdResult.stdout);
-            if (cmdResult.stderr) callbacks.onTerminalOutput(cmdResult.stderr);
-          }
-
-          // === DESIGNER PHASE (after coder on UI steps) ===
-          const isUIStep = step.type === "code" || step.type === "design";
-          if (isUIStep && Object.keys(modifiedFiles).length > 0) {
-            if (signal?.aborted) return;
-            callbacks.onDesignerStart();
-            callbacks.onThinking("Designer is enhancing the visual design...");
-
-            try {
-              const designResult = await this.designer.review(
-                step, modifiedFiles, stepContext, this.isFirstRun, signal
-              );
-              this.isFirstRun = false;
-
-              for (const op of designResult.operations) {
-                if (signal?.aborted) return;
-                if (op.action !== "delete" && op.content) {
-                  await sandbox.writeFile(op.path, op.content);
-                  this.createdFiles.set(op.path, op.content);
-                  callbacks.onCodeChange({ file: op.path, action: op.action, content: op.content });
-                  callbacks.onFileChanged(op.path);
-                }
-              }
-              for (const cmd of designResult.commands) {
-                if (signal?.aborted) return;
-                callbacks.onTerminalOutput(`$ ${cmd}`);
-                const cmdResult = await sandbox.executeCommand(cmd);
-                if (cmdResult.stdout) callbacks.onTerminalOutput(cmdResult.stdout);
-                if (cmdResult.stderr) callbacks.onTerminalOutput(cmdResult.stderr);
-              }
-              callbacks.onDesignerComplete();
-            } catch (err) {
-              const msg = err instanceof Error ? err.message : String(err);
-              callbacks.onError(`Designer error (non-fatal): ${msg}`);
-              callbacks.onDesignerComplete();
-            }
-          }
-
-          // === DEBUGGER PHASE (check for compilation errors + Vite errors) ===
-          if (!signal?.aborted) {
-            await this.checkAndFixErrors(sandbox, stepContext, callbacks, signal);
-          }
-
-          step.status = "completed";
-          callbacks.onStepComplete(step);
-          callbacks.onPreviewReload();
-
-          // Update project context with new file tree and key file contents
-          projectContext = await this.buildProjectContext(sandbox, projectContext);
-
-        } catch (err) {
-          step.status = "failed";
-          callbacks.onStepComplete(step);
-          const errorMessage = err instanceof Error ? err.message : String(err);
-          callbacks.onError(`Step "${step.description}" failed: ${errorMessage}`);
-          continue;
+        // Execute independent steps in parallel
+        if (group.length > 1) {
+          callbacks.onThinking(`Executing ${group.length} steps in parallel...`);
+          await Promise.all(group.map((step) =>
+            this.executeStep(step, plan, projectContext, sandbox, callbacks, signal)
+              .then(async (newCtx) => { if (newCtx) projectContext = newCtx; })
+          ));
+        } else {
+          const step = group[0];
+          const newCtx = await this.executeStep(step, plan, projectContext, sandbox, callbacks, signal);
+          if (newCtx) projectContext = newCtx;
         }
       }
 
-      // === REVIEWER PHASE (after all steps) ===
-      if (!signal?.aborted) {
+      // === REVIEWER PHASE — only if debugger found errors during execution ===
+      if (!signal?.aborted && this.hadErrors) {
         callbacks.onReviewerStart();
         callbacks.onThinking("Reviewing code quality and best practices...");
         try {
@@ -231,6 +148,151 @@ export class Orchestrator {
       const msg = err instanceof Error ? err.message : String(err);
       callbacks.onDeployFailed(msg);
       return { success: false, url: null, logs: [msg], buildTime: 0 };
+    }
+  }
+
+  /**
+   * Group steps by their dependencies so independent steps can run in parallel.
+   * Returns arrays of step groups — each group contains steps that can execute concurrently.
+   */
+  private groupStepsByDependencies(steps: AgentStep[]): AgentStep[][] {
+    const groups: AgentStep[][] = [];
+    const completed = new Set<number>();
+
+    let remaining = [...steps];
+    while (remaining.length > 0) {
+      // Find steps whose dependencies are all in the completed set
+      const ready = remaining.filter((step) =>
+        step.dependencies.every((depId) => completed.has(depId))
+      );
+
+      if (ready.length === 0) {
+        // Avoid infinite loop — just run remaining sequentially
+        groups.push(...remaining.map((s) => [s]));
+        break;
+      }
+
+      groups.push(ready);
+      for (const step of ready) {
+        completed.add(step.id);
+      }
+      remaining = remaining.filter((s) => !completed.has(s.id));
+    }
+
+    return groups;
+  }
+
+  /**
+   * Execute a single step: coder → designer → debugger
+   * Returns updated project context, or null if aborted.
+   */
+  private async executeStep(
+    step: AgentStep,
+    plan: AgentPlan,
+    projectContext: string,
+    sandbox: SandboxInterface,
+    callbacks: OrchestratorCallbacks,
+    signal?: AbortSignal
+  ): Promise<string | null> {
+    if (signal?.aborted) return null;
+
+    step.status = "in_progress";
+    callbacks.onStepStart(step);
+    callbacks.onThinking(`Working on: ${step.description}`);
+
+    try {
+      // Build enriched context for this step
+      const stepContext = this.buildStepContext(projectContext, step, plan);
+
+      // === CODER PHASE ===
+      const result = await this.coder.execute(step, stepContext, signal);
+      const modifiedFiles: Record<string, string> = {};
+
+      for (const op of result.operations) {
+        if (signal?.aborted) return null;
+        switch (op.action) {
+          case "create":
+          case "edit":
+            if (op.content) {
+              await sandbox.writeFile(op.path, op.content);
+              modifiedFiles[op.path] = op.content;
+              this.createdFiles.set(op.path, op.content);
+              callbacks.onCodeChange({ file: op.path, action: op.action, content: op.content });
+              callbacks.onFileChanged(op.path);
+            }
+            break;
+          case "delete":
+            await sandbox.deleteFile(op.path);
+            this.createdFiles.delete(op.path);
+            callbacks.onCodeChange({ file: op.path, action: "delete" });
+            callbacks.onFileChanged(op.path);
+            break;
+        }
+      }
+
+      for (const cmd of result.commands) {
+        if (signal?.aborted) return null;
+        callbacks.onTerminalOutput(`$ ${cmd}`);
+        const cmdResult = await sandbox.executeCommand(cmd);
+        if (cmdResult.stdout) callbacks.onTerminalOutput(cmdResult.stdout);
+        if (cmdResult.stderr) callbacks.onTerminalOutput(cmdResult.stderr);
+      }
+
+      // === DESIGNER PHASE (after coder on UI steps) ===
+      const isUIStep = step.type === "code" || step.type === "design";
+      if (isUIStep && Object.keys(modifiedFiles).length > 0) {
+        if (signal?.aborted) return null;
+        callbacks.onDesignerStart();
+        callbacks.onThinking("Designer is enhancing the visual design...");
+
+        try {
+          const designResult = await this.designer.review(
+            step, modifiedFiles, stepContext, this.isFirstRun, signal
+          );
+          this.isFirstRun = false;
+
+          for (const op of designResult.operations) {
+            if (signal?.aborted) return null;
+            if (op.action !== "delete" && op.content) {
+              await sandbox.writeFile(op.path, op.content);
+              this.createdFiles.set(op.path, op.content);
+              callbacks.onCodeChange({ file: op.path, action: op.action, content: op.content });
+              callbacks.onFileChanged(op.path);
+            }
+          }
+          for (const cmd of designResult.commands) {
+            if (signal?.aborted) return null;
+            callbacks.onTerminalOutput(`$ ${cmd}`);
+            const cmdResult = await sandbox.executeCommand(cmd);
+            if (cmdResult.stdout) callbacks.onTerminalOutput(cmdResult.stdout);
+            if (cmdResult.stderr) callbacks.onTerminalOutput(cmdResult.stderr);
+          }
+          callbacks.onDesignerComplete();
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          callbacks.onError(`Designer error (non-fatal): ${msg}`);
+          callbacks.onDesignerComplete();
+        }
+      }
+
+      // === DEBUGGER PHASE (check for compilation errors + Vite errors) ===
+      if (!signal?.aborted) {
+        await this.checkAndFixErrors(sandbox, stepContext, callbacks, signal);
+      }
+
+      step.status = "completed";
+      callbacks.onStepComplete(step);
+      callbacks.onPreviewReload();
+
+      // Update project context with new file tree and key file contents
+      return await this.buildProjectContext(sandbox, projectContext);
+
+    } catch (err) {
+      step.status = "failed";
+      callbacks.onStepComplete(step);
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      callbacks.onError(`Step "${step.description}" failed: ${errorMessage}`);
+      return null;
     }
   }
 
@@ -338,6 +400,7 @@ export class Orchestrator {
 
     if (allErrors.length === 0) return;
 
+    this.hadErrors = true;
     callbacks.onDebuggerStart();
     callbacks.onThinking(`Debugger detected ${allErrors.length} error(s), attempting fix...`);
 
