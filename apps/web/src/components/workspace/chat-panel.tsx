@@ -8,7 +8,6 @@ import {
   XCircle,
   Bot,
   User,
-  AlertTriangle,
   Paintbrush,
   Bug,
   FileSearch,
@@ -17,6 +16,8 @@ import {
   Sparkles,
   ClipboardList,
   ArrowUp,
+  Wrench,
+  ChevronDown,
 } from "lucide-react";
 import { useProjectStore } from "@/stores/project-store";
 import { api } from "@/lib/api";
@@ -49,9 +50,17 @@ function formatTime(dateStr: string): string {
   }
 }
 
+/** Detect debugger-style SYSTEM messages and return a short summary */
+function getDebugSummary(content: string): string | null {
+  if (content.startsWith("Debugger fix:")) return content.replace("Debugger fix: ", "Fixed: ");
+  if (content.startsWith("Debugger failed:")) return "Debugger failed to fix automatically";
+  return null;
+}
+
 export function ChatPanel() {
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [expandedDebug, setExpandedDebug] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -78,7 +87,6 @@ export function ChatPanel() {
   const handleSubmit = async (overrideContent?: string) => {
     const content = (overrideContent ?? input).trim();
 
-    // DEBUG — trace every guard (remove once verified)
     console.log("[ChatPanel] handleSubmit fired", {
       content: content || "(empty)",
       currentProjectId,
@@ -102,7 +110,6 @@ export function ChatPanel() {
     setInput("");
     setIsSending(true);
 
-    // Optimistic UI — show message immediately
     addMessage({
       id: generateId(),
       projectId: currentProjectId,
@@ -118,7 +125,6 @@ export function ChatPanel() {
     });
     setAgentRunning(true);
 
-    // 1) WebSocket emit — isolated so it can't block the HTTP POST
     try {
       const socket = getSocket();
       console.log("[ChatPanel] socket.connected:", socket.connected, "| emitting message:send");
@@ -127,7 +133,6 @@ export function ChatPanel() {
       console.error("[ChatPanel] socket.emit failed (non-blocking):", socketErr);
     }
 
-    // 2) HTTP POST — always runs even if socket fails
     try {
       console.log("[ChatPanel] POST /api/projects/" + currentProjectId + "/messages");
       await api.sendMessage(currentProjectId, content);
@@ -154,7 +159,6 @@ export function ChatPanel() {
     }
   }, [input]);
 
-  // Auto-focus on mount
   useEffect(() => {
     textareaRef.current?.focus();
   }, []);
@@ -168,14 +172,22 @@ export function ChatPanel() {
 
   const getStepIcon = (status: string) => {
     switch (status) {
-      case "completed": return <CheckCircle2 className="h-3.5 w-3.5 text-[#22c55e]" />;
-      case "in_progress": return <Loader2 className="h-3.5 w-3.5 text-[#a78bfa] animate-spin" />;
-      case "failed": return <XCircle className="h-3.5 w-3.5 text-[#ef4444]" />;
-      default: return <Circle className="h-3.5 w-3.5 text-[#8888a0]/40" />;
+      case "completed": return <CheckCircle2 className="h-3 w-3 text-[#22c55e]" />;
+      case "in_progress": return <Loader2 className="h-3 w-3 text-[#a78bfa] animate-spin" />;
+      case "failed": return <XCircle className="h-3 w-3 text-[#ef4444]" />;
+      default: return <Circle className="h-3 w-3 text-[#8888a0]/30" />;
     }
   };
 
   const agentLabel = activeAgent ? AGENT_LABELS[activeAgent] : null;
+
+  const toggleDebug = (id: string) => {
+    setExpandedDebug((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   return (
     <div className="flex h-full flex-col bg-[#0e0e14]">
@@ -198,33 +210,25 @@ export function ChatPanel() {
       {/* Progress Bar */}
       {currentPlan && isAgentRunning && (
         <div className="w-full h-[2px] bg-[#1a1a24] relative overflow-hidden">
-          <div
-            className="h-full progress-animated transition-all duration-500 ease-out"
-            style={{ width: `${progressPercent}%` }}
-          />
+          <div className="h-full progress-animated transition-all duration-500 ease-out" style={{ width: `${progressPercent}%` }} />
         </div>
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {messages.length === 0 && !isAgentRunning && (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#7c3aed]/10 to-[#3b82f6]/10 flex items-center justify-center mb-4">
               <Sparkles className="h-6 w-6 text-[#a78bfa]" />
             </div>
-            <h3 className="text-[15px] font-semibold text-[#e2e2e8] mb-1">
-              What would you like to build?
-            </h3>
+            <h3 className="text-[15px] font-semibold text-[#e2e2e8] mb-1">What would you like to build?</h3>
             <p className="text-xs text-[#8888a0] max-w-[280px] mb-6 leading-relaxed">
               Describe your app in natural language and I&apos;ll build it for you.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-2 max-w-[320px]">
               {INITIAL_CHIPS.map((chip) => (
-                <button
-                  key={chip}
-                  onClick={() => handleSubmit(chip)}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-[#13131a] px-3 py-1.5 text-xs text-[#8888a0] hover:text-[#e2e2e8] hover:border-[#7c3aed]/30 hover:bg-[#7c3aed]/5 transition-all duration-150 hover:scale-[1.02] cursor-pointer"
-                >
+                <button key={chip} onClick={() => handleSubmit(chip)}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-[#13131a] px-3 py-1.5 text-xs text-[#8888a0] hover:text-[#e2e2e8] hover:border-[#7c3aed]/30 hover:bg-[#7c3aed]/5 transition-all duration-150 hover:scale-[1.02] cursor-pointer">
                   <Sparkles className="h-3 w-3 text-[#7c3aed]/60" />
                   {chip}
                 </button>
@@ -233,67 +237,87 @@ export function ChatPanel() {
           </div>
         )}
 
-        {messages.map((msg, index) => {
-          const prevMsg = index > 0 ? messages[index - 1] : null;
-          const showSeparator = prevMsg && prevMsg.role !== msg.role;
+        {messages.map((msg) => {
+          const debugSummary = msg.role === "SYSTEM" ? getDebugSummary(msg.content) : null;
+          const isExpanded = expandedDebug.has(msg.id);
 
+          // ── USER bubble ──
+          if (msg.role === "USER") {
+            return (
+              <div key={msg.id} className="flex justify-end animate-fade-in">
+                <div className="max-w-[85%] rounded-2xl rounded-br-md bg-gradient-to-br from-[#7c3aed]/15 to-[#3b82f6]/10 border border-[#7c3aed]/10 px-3.5 py-2">
+                  <div className="text-sm text-[#e2e2e8] whitespace-pre-wrap break-words leading-relaxed">{msg.content}</div>
+                  {msg.createdAt && (
+                    <div className="text-[9px] text-[#8888a0]/40 text-right mt-1">{formatTime(msg.createdAt)}</div>
+                  )}
+                </div>
+              </div>
+            );
+          }
+
+          // ── Debugger SYSTEM message — collapsible ──
+          if (debugSummary) {
+            return (
+              <div key={msg.id} className="animate-fade-in">
+                <button onClick={() => toggleDebug(msg.id)}
+                  className="flex items-center gap-2 text-[11px] text-[#8888a0] hover:text-[#e2e2e8] transition-colors w-full text-left py-1">
+                  <Wrench className="h-3 w-3 text-[#f59e0b] shrink-0" />
+                  <span className="truncate">{debugSummary}</span>
+                  <ChevronDown className={cn("h-3 w-3 shrink-0 transition-transform", isExpanded && "rotate-180")} />
+                </button>
+                {isExpanded && (
+                  <div className="ml-5 pl-2 border-l border-border text-[11px] text-[#8888a0]/70 whitespace-pre-wrap mt-1 mb-1">{msg.content}</div>
+                )}
+              </div>
+            );
+          }
+
+          // ── Other SYSTEM messages ──
+          if (msg.role === "SYSTEM") {
+            return (
+              <div key={msg.id} className="animate-fade-in">
+                <div className="flex items-start gap-2 py-1">
+                  <div className="h-4 w-4 rounded bg-[#f59e0b]/10 flex items-center justify-center shrink-0 mt-0.5">
+                    <span className="text-[9px]">!</span>
+                  </div>
+                  <div className="text-xs text-[#8888a0] leading-relaxed">{msg.content}</div>
+                </div>
+              </div>
+            );
+          }
+
+          // ── ASSISTANT message ──
           return (
             <div key={msg.id} className="animate-fade-in">
-              {showSeparator && <div className="h-px bg-border/30 my-2" />}
-              <div className="flex gap-3 py-2 group">
-                <div
-                  className={cn(
-                    "h-6 w-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5",
-                    msg.role === "USER"
-                      ? "bg-gradient-to-br from-[#7c3aed]/20 to-[#3b82f6]/20"
-                      : msg.role === "SYSTEM"
-                        ? "bg-[#f59e0b]/10"
-                        : "bg-[#1a1a24]"
-                  )}
-                >
-                  {msg.role === "USER" ? (
-                    <User className="h-3 w-3 text-[#a78bfa]" />
-                  ) : msg.role === "SYSTEM" ? (
-                    <AlertTriangle className="h-3 w-3 text-[#f59e0b]" />
-                  ) : (
-                    <Bot className="h-3 w-3 text-[#8888a0]" />
-                  )}
+              <div className="flex gap-3 py-1">
+                <div className="h-6 w-6 rounded-lg bg-[#1a1a24] flex items-center justify-center shrink-0 mt-0.5">
+                  <Bot className="h-3 w-3 text-[#8888a0]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-[11px] font-medium text-[#8888a0]">
-                      {msg.role === "USER" ? "You" : msg.role === "SYSTEM" ? "System" : "ForgeAI"}
-                    </span>
-                    {msg.createdAt && (
-                      <span className="text-[10px] text-[#8888a0]/40">{formatTime(msg.createdAt)}</span>
-                    )}
+                    <span className="text-[11px] font-medium text-[#8888a0]">ForgeAI</span>
+                    {msg.createdAt && <span className="text-[10px] text-[#8888a0]/40">{formatTime(msg.createdAt)}</span>}
                   </div>
-                  {msg.role === "ASSISTANT" ? (
-                    <RichMessage message={msg} />
-                  ) : (
-                    <div className="text-sm text-[#e2e2e8] whitespace-pre-wrap break-words leading-relaxed">{msg.content}</div>
-                  )}
+                  <RichMessage message={msg} />
                 </div>
               </div>
             </div>
           );
         })}
 
-        {/* Agent Plan */}
+        {/* Agent Plan — compact checklist */}
         {currentPlan && (
-          <div className="rounded-xl border border-border bg-[#13131a] p-3 animate-fade-in">
-            <div className="text-[11px] font-medium text-[#8888a0] mb-2 uppercase tracking-wider">Plan</div>
-            <p className="text-xs text-[#e2e2e8]/80 mb-3 leading-relaxed">{currentPlan.understanding}</p>
-            <div className="space-y-1.5">
+          <div className="rounded-xl border border-border bg-[#13131a]/80 px-3 py-2.5 animate-fade-in">
+            <div className="space-y-1">
               {currentPlan.steps.map((step) => (
-                <div key={step.id} className="flex items-start gap-2">
+                <div key={step.id} className="flex items-center gap-2 py-0.5">
                   {getStepIcon(step.status)}
                   <span className={cn(
-                    "text-xs leading-5",
+                    "text-[11px] leading-4",
                     step.status === "completed" ? "text-[#8888a0] line-through" :
-                    step.status === "in_progress" ? "text-[#e2e2e8] font-medium" :
+                    step.status === "in_progress" ? "text-[#e2e2e8]" :
                     step.status === "failed" ? "text-[#ef4444]" :
-                    "text-[#8888a0]/60"
+                    "text-[#8888a0]/50"
                   )}>
                     {step.description}
                   </span>
@@ -303,30 +327,24 @@ export function ChatPanel() {
           </div>
         )}
 
-        {/* Agent Typing Indicator */}
+        {/* Typing indicator — just dots */}
         {isAgentRunning && (
-          <div className="flex gap-3 animate-fade-in">
+          <div className="flex items-center gap-2 py-2 animate-fade-in">
             <div className="h-6 w-6 rounded-lg bg-[#1a1a24] flex items-center justify-center shrink-0">
-              <Loader2 className="h-3 w-3 text-[#a78bfa] animate-spin" />
+              <Bot className="h-3 w-3 text-[#8888a0]" />
             </div>
-            <div className="flex-1">
-              <div className="text-[11px] text-[#8888a0] mb-0.5">ForgeAI</div>
-              <div className="text-sm text-[#8888a0] italic flex items-center gap-2">
-                {agentThinking || "ForgeAI is thinking..."}
-                <span className="inline-flex gap-1">
-                  <span className="h-1 w-1 rounded-full bg-[#a78bfa] animate-bounce [animation-delay:0ms]" />
-                  <span className="h-1 w-1 rounded-full bg-[#a78bfa] animate-bounce [animation-delay:200ms]" />
-                  <span className="h-1 w-1 rounded-full bg-[#a78bfa] animate-bounce [animation-delay:400ms]" />
-                </span>
-              </div>
-            </div>
+            <span className="inline-flex gap-1 items-center">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#a78bfa] animate-bounce [animation-delay:0ms]" />
+              <span className="h-1.5 w-1.5 rounded-full bg-[#a78bfa] animate-bounce [animation-delay:200ms]" />
+              <span className="h-1.5 w-1.5 rounded-full bg-[#a78bfa] animate-bounce [animation-delay:400ms]" />
+            </span>
           </div>
         )}
 
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Suggestion Chips — only after agent has responded at least once */}
+      {/* Suggestion Chips */}
       {!isAgentRunning && messages.some((m) => m.role === "ASSISTANT") && (
         <SuggestionChips lastAction={lastAction} onSelect={(chip) => handleSubmit(chip)} />
       )}
@@ -362,9 +380,7 @@ export function ChatPanel() {
           </button>
         </div>
         <div className="mt-1.5 px-1">
-          <span className="text-[10px] text-[#8888a0]/40">
-            Enter to send, Shift+Enter for new line
-          </span>
+          <span className="text-[10px] text-[#8888a0]/40">Enter to send, Shift+Enter for new line</span>
         </div>
       </div>
     </div>

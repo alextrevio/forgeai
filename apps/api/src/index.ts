@@ -10,7 +10,7 @@ import { prisma } from "@forgeai/db";
 import { authRouter } from "./routes/auth";
 import { projectRouter } from "./routes/projects";
 import { messageRouter } from "./routes/messages";
-import { sandboxRouter } from "./routes/sandbox";
+import { sandboxRouter, previewProxyRouter } from "./routes/sandbox";
 import { githubRouter } from "./routes/github";
 import { billingRouter } from "./routes/billing";
 import { templateRouter } from "./routes/templates";
@@ -73,6 +73,9 @@ if (!existsSync(deploysDir)) {
   mkdirSync(deploysDir, { recursive: true });
 }
 app.use("/preview", express.static(deploysDir));
+
+// Preview proxy — no auth required (loaded by iframe)
+app.use("/api/projects", previewProxyRouter);
 
 // General rate limit for all API routes
 const generalLimiter = rateLimit({ windowMs: 60_000, max: 100, keyPrefix: "general" });
