@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import {
-  Send,
   Loader2,
   CheckCircle2,
   Circle,
@@ -21,6 +20,7 @@ import {
 } from "lucide-react";
 import { useProjectStore } from "@/stores/project-store";
 import { api } from "@/lib/api";
+import { getSocket } from "@/lib/socket";
 import { cn } from "@/lib/utils";
 import { RichMessage } from "./rich-message";
 import { SuggestionChips } from "./suggestion-chips";
@@ -51,6 +51,7 @@ function formatTime(dateStr: string): string {
 
 export function ChatPanel() {
   const [input, setInput] = useState("");
+  const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -78,6 +79,7 @@ export function ChatPanel() {
     const content = (overrideContent ?? input).trim();
     if (!content || !currentProjectId || isAgentRunning) return;
     setInput("");
+    setIsSending(true);
     addMessage({
       id: crypto.randomUUID(),
       projectId: currentProjectId,
@@ -93,10 +95,14 @@ export function ChatPanel() {
     });
     setAgentRunning(true);
     try {
+      const socket = getSocket();
+      socket.emit("message:send", { projectId: currentProjectId, content });
       await api.sendMessage(currentProjectId, content);
     } catch (err) {
       console.error("Failed to send message:", err);
       setAgentRunning(false);
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -113,6 +119,11 @@ export function ChatPanel() {
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
     }
   }, [input]);
+
+  // Auto-focus on mount
+  useEffect(() => {
+    textareaRef.current?.focus();
+  }, []);
 
   const progressPercent = useMemo(() => {
     if (!currentPlan?.steps?.length) return 0;
@@ -258,8 +269,8 @@ export function ChatPanel() {
           </div>
         )}
 
-        {/* Agent Typing */}
-        {agentThinking && (
+        {/* Agent Typing Indicator */}
+        {isAgentRunning && (
           <div className="flex gap-3 animate-fade-in">
             <div className="h-6 w-6 rounded-lg bg-[#1a1a24] flex items-center justify-center shrink-0">
               <Loader2 className="h-3 w-3 text-[#a78bfa] animate-spin" />
@@ -267,11 +278,11 @@ export function ChatPanel() {
             <div className="flex-1">
               <div className="text-[11px] text-[#8888a0] mb-0.5">ForgeAI</div>
               <div className="text-sm text-[#8888a0] italic flex items-center gap-2">
-                {agentThinking}
+                {agentThinking || "ForgeAI is thinking..."}
                 <span className="inline-flex gap-1">
-                  <span className="h-1 w-1 rounded-full bg-[#8888a0] animate-bounce [animation-delay:0ms]" />
-                  <span className="h-1 w-1 rounded-full bg-[#8888a0] animate-bounce [animation-delay:200ms]" />
-                  <span className="h-1 w-1 rounded-full bg-[#8888a0] animate-bounce [animation-delay:400ms]" />
+                  <span className="h-1 w-1 rounded-full bg-[#a78bfa] animate-bounce [animation-delay:0ms]" />
+                  <span className="h-1 w-1 rounded-full bg-[#a78bfa] animate-bounce [animation-delay:200ms]" />
+                  <span className="h-1 w-1 rounded-full bg-[#a78bfa] animate-bounce [animation-delay:400ms]" />
                 </span>
               </div>
             </div>
@@ -281,8 +292,8 @@ export function ChatPanel() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Suggestion Chips */}
-      {!isAgentRunning && messages.length > 0 && (
+      {/* Suggestion Chips — only after agent has responded at least once */}
+      {!isAgentRunning && messages.some((m) => m.role === "ASSISTANT") && (
         <SuggestionChips lastAction={lastAction} onSelect={(chip) => handleSubmit(chip)} />
       )}
 
@@ -301,15 +312,15 @@ export function ChatPanel() {
           />
           <button
             onClick={() => handleSubmit()}
-            disabled={!input.trim() || isAgentRunning}
+            disabled={!input.trim() || isAgentRunning || isSending}
             className={cn(
               "flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-150 shrink-0",
-              input.trim() && !isAgentRunning
+              input.trim() && !isAgentRunning && !isSending
                 ? "btn-gradient text-white hover:scale-[1.05]"
                 : "bg-[#1a1a24] text-[#8888a0]/40 cursor-not-allowed"
             )}
           >
-            {isAgentRunning ? (
+            {isSending || isAgentRunning ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <ArrowUp className="h-4 w-4" />
