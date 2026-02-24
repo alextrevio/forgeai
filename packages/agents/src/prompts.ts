@@ -40,7 +40,7 @@ Generate steps in this EXACT order. Each layer builds on the previous:
 
 ### Layer A — PROJECT SETUP (if new project)
 - Install required npm packages (react-router-dom, zustand, lucide-react, recharts, date-fns, etc.)
-- Configure tailwind theme if custom colors needed
+- Configure tailwind theme if custom fonts or animations needed (do NOT add custom colors — use standard Tailwind colors only)
 
 ### Layer B — DATA LAYER
 - Create TypeScript types/interfaces in src/types/index.ts
@@ -253,7 +253,7 @@ onClick={() => { complexLogic(); moreLogic(); }}
 1. **Mobile-first** responsive design: base styles → sm: → md: → lg: → xl:
 2. **Dark mode ready**: Include dark: variants on backgrounds, text, borders
 3. **Hover/focus states** on ALL interactive elements:
-   \`hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50\`
+   \`hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500/50\`
 4. **Transitions** on hover effects: \`transition-colors duration-200\`, \`transition-all duration-300\`
 5. **Consistent spacing**: Use Tailwind scale (p-2, p-3, p-4, p-6, p-8) — no arbitrary values
 6. **NEVER** use \`style={{}}\` inline — everything with Tailwind classes
@@ -366,6 +366,16 @@ When the plan requires shared UI components, generate them with these patterns:
 6. DO NOT duplicate code. Use map() for lists. Extract repeated patterns.
 7. Each component should have ONE responsibility. No god-components.
 
+## CRITICAL TAILWIND RULES
+
+- NEVER use custom color names like 'primary-500', 'primary-600', 'secondary-400'. These do NOT exist in Tailwind by default and will produce invisible/broken CSS.
+- ONLY use standard Tailwind colors: slate, gray, zinc, neutral, stone, red, orange, amber, yellow, lime, green, emerald, teal, cyan, sky, blue, indigo, violet, purple, fuchsia, pink, rose.
+- For brand/primary colors, use violet (e.g. bg-violet-600, text-violet-500, ring-violet-500/50) or blue (e.g. bg-blue-600, text-blue-500) instead of 'primary'.
+- For neutral backgrounds use slate or zinc (e.g. bg-slate-900, bg-zinc-800).
+- NEVER define custom colors in tailwind.config.ts extend.colors. Use only the built-in Tailwind color palette.
+- NEVER use classes like: bg-primary, text-primary-500, border-secondary-300, ring-primary/50. These will silently fail and render nothing.
+- Use standard Tailwind utility classes only.
+
 ## OUTPUT FORMAT
 
 Respond ONLY with a JSON object:
@@ -414,15 +424,6 @@ export default {
   darkMode: "class",
   theme: {
     extend: {
-      colors: {
-        // Contextual colors — adapt based on the app type
-        primary: {
-          50: "#eff6ff", 100: "#dbeafe", 200: "#bfdbfe",
-          300: "#93c5fd", 400: "#60a5fa", 500: "#3b82f6",
-          600: "#2563eb", 700: "#1d4ed8", 800: "#1e40af", 900: "#1e3a8a",
-        },
-        // Add secondary, accent colors as needed
-      },
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
       },
@@ -442,16 +443,20 @@ export default {
 } satisfies Config;
 \`\`\`
 
+IMPORTANT: Do NOT add custom colors to extend.colors. Use only standard Tailwind colors (violet, blue, indigo, slate, zinc, etc.).
+
 ## COLOR SCHEMES BY APP TYPE
 
-Choose colors that match the app's purpose:
-- **Dashboard/Analytics**: Blue primary (#3b82f6), slate neutrals
-- **E-commerce**: Amber/orange primary (#f59e0b), warm neutrals
-- **Healthcare**: Teal/green primary (#14b8a6), clean whites
-- **Finance**: Deep blue/indigo (#4f46e5), professional grays
-- **Social/Creative**: Purple/pink primary (#8b5cf6), playful accents
-- **Developer Tools**: Green primary (#22c55e), dark mode default
-- **Education**: Blue-purple (#6366f1), friendly rounded shapes
+Choose standard Tailwind color families that match the app's purpose:
+- **Dashboard/Analytics**: blue-500/blue-600 for accents, slate for neutrals
+- **E-commerce**: amber-500/orange-500 for accents, stone for neutrals
+- **Healthcare**: teal-500/emerald-500 for accents, gray for neutrals
+- **Finance**: indigo-600/blue-700 for accents, gray for neutrals
+- **Social/Creative**: violet-500/purple-500 for accents, zinc for neutrals
+- **Developer Tools**: green-500/emerald-500 for accents, zinc/slate dark backgrounds
+- **Education**: indigo-500/violet-500 for accents, slate for neutrals
+
+IMPORTANT: Only use standard Tailwind color names. NEVER define custom color names like 'primary' or 'secondary'.
 
 ## DESIGN PRINCIPLES
 
@@ -472,7 +477,7 @@ Choose colors that match the app's purpose:
 
 3. **Interactive States** (ALL clickable elements MUST have):
    - hover: background/color change
-   - focus-visible: ring (focus:ring-2 focus:ring-primary-500/50)
+   - focus-visible: ring (focus:ring-2 focus:ring-violet-500/50)
    - active: slight press effect (active:scale-[0.98])
    - disabled: opacity-50 cursor-not-allowed
    - transition: transition-all duration-200
