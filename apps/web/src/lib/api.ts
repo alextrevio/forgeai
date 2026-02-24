@@ -391,16 +391,16 @@ class ApiClient {
 }
 
 /** Safely extract an array from an API response that might be a wrapper object */
-function ensureArray<T>(data: unknown): T[] {
-  if (Array.isArray(data)) return data;
+function ensureArray<T = any>(data: unknown): T[] {
+  if (Array.isArray(data)) return data as T[];
   if (data && typeof data === "object") {
     // Try common wrapper keys
     const obj = data as Record<string, unknown>;
-    for (const key of ["data", "messages", "items", "results", "snapshots", "files", "nodes"]) {
+    for (const key of ["data", "messages", "items", "results", "projects", "snapshots", "files", "templates", "nodes"]) {
       if (Array.isArray(obj[key])) return obj[key] as T[];
     }
   }
-  return [];
+  return [] as T[];
 }
 
 class ApiError extends Error {
