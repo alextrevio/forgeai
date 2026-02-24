@@ -6,6 +6,7 @@ import { useProjectStore } from "@/stores/project-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { api } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
+import { generateId } from "@/lib/utils";
 import { WorkspaceLayout } from "@/components/workspace/workspace-layout";
 
 export default function ProjectPage() {
@@ -108,7 +109,7 @@ export default function ProjectPage() {
 
         case "agent:debugger_fix":
           s.addMessage({
-            id: crypto.randomUUID(),
+            id: generateId(),
             projectId,
             role: "SYSTEM",
             content: `Debugger fix: ${event.data.explanation}`,
@@ -119,7 +120,7 @@ export default function ProjectPage() {
 
         case "agent:debugger_failed":
           s.addMessage({
-            id: crypto.randomUUID(),
+            id: generateId(),
             projectId,
             role: "SYSTEM",
             content: `Debugger failed: ${event.data.error}`,
@@ -137,7 +138,7 @@ export default function ProjectPage() {
           s.setReviewReport(event.data.report);
           s.setActiveAgent(null);
           s.addMessage({
-            id: crypto.randomUUID(),
+            id: generateId(),
             projectId,
             role: "SYSTEM",
             content: `Code Review (Score: ${event.data.report.score}/100): ${event.data.report.summary}${event.data.report.issues.length > 0 ? `\n\nIssues found: ${event.data.report.issues.length}` : ""}`,
@@ -155,7 +156,7 @@ export default function ProjectPage() {
           s.setActiveAgent(null);
           s.setAgentThinking(null);
           s.addMessage({
-            id: crypto.randomUUID(),
+            id: generateId(),
             projectId,
             role: "ASSISTANT",
             content: `Deploy successful! URL: ${event.data.url} (Build time: ${Math.round(event.data.buildTime / 1000)}s)`,
@@ -168,7 +169,7 @@ export default function ProjectPage() {
           s.setActiveAgent(null);
           s.setAgentThinking(null);
           s.addMessage({
-            id: crypto.randomUUID(),
+            id: generateId(),
             projectId,
             role: "SYSTEM",
             content: `Deploy failed: ${event.data.error}`,
@@ -180,7 +181,7 @@ export default function ProjectPage() {
         case "agent:error":
           s.setAgentThinking(null);
           s.addMessage({
-            id: crypto.randomUUID(),
+            id: generateId(),
             projectId,
             role: "SYSTEM",
             content: `Error: ${event.data.message}`,
@@ -194,7 +195,7 @@ export default function ProjectPage() {
           s.setAgentThinking(null);
           s.setActiveAgent(null);
           s.addMessage({
-            id: crypto.randomUUID(),
+            id: generateId(),
             projectId,
             role: "ASSISTANT",
             content: event.data.summary,

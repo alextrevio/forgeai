@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, createContext, useContext } from "react";
 import { X, CheckCircle2, AlertTriangle, XCircle, Info } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, generateId } from "@/lib/utils";
 
 type ToastType = "success" | "error" | "warning" | "info";
 
@@ -27,7 +27,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const addToast = useCallback((type: ToastType, message: string, duration = 4000) => {
-    const id = crypto.randomUUID();
+    const id = generateId();
     setToasts((prev) => [...prev, { id, type, message, duration }]);
   }, []);
 

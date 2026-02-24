@@ -21,7 +21,7 @@ import {
 import { useProjectStore } from "@/stores/project-store";
 import { api } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
-import { cn } from "@/lib/utils";
+import { cn, generateId } from "@/lib/utils";
 import { RichMessage } from "./rich-message";
 import { SuggestionChips } from "./suggestion-chips";
 
@@ -104,7 +104,7 @@ export function ChatPanel() {
 
     // Optimistic UI — show message immediately
     addMessage({
-      id: crypto.randomUUID(),
+      id: generateId(),
       projectId: currentProjectId,
       role: "USER",
       content,
