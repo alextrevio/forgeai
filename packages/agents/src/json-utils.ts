@@ -15,10 +15,13 @@ export interface ExtractionResult<T = unknown> {
 
 /**
  * Extract JSON from an LLM response using multiple fallback strategies:
- *   1. Direct JSON.parse
- *   2. Extract from ```json ... ``` code blocks
- *   3. Brace-matching to find the outermost { } or [ ]
- *   4. Attempt to repair common LLM JSON mistakes
+ *   1. Clean & strip non-JSON wrapper text
+ *   2. Direct JSON.parse
+ *   3. Extract from ```json ... ``` code blocks
+ *   4. Brace-matching to find the outermost { } or [ ]
+ *   5. Attempt to repair common LLM JSON mistakes
+ *   6. Truncation repair for large responses cut at max_tokens
+ *   7. Regex-based fallback for coder operations
  */
 export function extractJSON<T = unknown>(response: string): ExtractionResult<T> {
   const trimmed = response.trim();
@@ -26,14 +29,27 @@ export function extractJSON<T = unknown>(response: string): ExtractionResult<T> 
     return { success: false, data: null, error: "Empty response" };
   }
 
-  // Strategy 1: Direct parse
+  // Pre-clean: strip markdown fences
+  let cleaned = trimmed;
+  cleaned = cleaned.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
+
+  // Strip text before the first { or [ and after the last } or ]
+  const firstBrace = cleaned.search(/[{[]/);
+  if (firstBrace > 0) cleaned = cleaned.slice(firstBrace);
+  const lastBrace = Math.max(cleaned.lastIndexOf("}"), cleaned.lastIndexOf("]"));
+  if (lastBrace > 0 && lastBrace < cleaned.length - 1) cleaned = cleaned.slice(0, lastBrace + 1);
+
+  // Strategy 1: Direct parse (cleaned)
+  try {
+    return { success: true, data: JSON.parse(cleaned) as T };
+  } catch { /* continue */ }
+
+  // Strategy 2: Direct parse (original)
   try {
     return { success: true, data: JSON.parse(trimmed) as T };
-  } catch {
-    // continue to next strategy
-  }
+  } catch { /* continue */ }
 
-  // Strategy 2: Code-block extraction (```json ... ``` or ``` ... ```)
+  // Strategy 3: Code-block extraction (```json ... ``` or ``` ... ```)
   const codeBlockRegex = /```(?:json)?\s*([\s\S]*?)```/;
   const codeBlockMatch = trimmed.match(codeBlockRegex);
   if (codeBlockMatch?.[1]) {
@@ -41,19 +57,26 @@ export function extractJSON<T = unknown>(response: string): ExtractionResult<T> 
     try {
       return { success: true, data: JSON.parse(inner) as T };
     } catch {
-      // The code block content might still need brace matching
       const braceResult = extractByBraceMatching<T>(inner);
       if (braceResult.success) return braceResult;
     }
   }
 
-  // Strategy 3: Brace matching — find the outermost { ... } or [ ... ]
-  const braceResult = extractByBraceMatching<T>(trimmed);
+  // Strategy 4: Brace matching
+  const braceResult = extractByBraceMatching<T>(cleaned);
   if (braceResult.success) return braceResult;
 
-  // Strategy 4: Attempt to repair common issues
-  const repairResult = attemptJSONRepair<T>(trimmed);
+  // Strategy 5: Repair common issues
+  const repairResult = attemptJSONRepair<T>(cleaned);
   if (repairResult.success) return repairResult;
+
+  // Strategy 6: Truncation repair for large responses
+  const truncationResult = repairTruncatedJSON<T>(cleaned);
+  if (truncationResult.success) return truncationResult;
+
+  // Strategy 7: Regex fallback for coder responses
+  const regexResult = extractOperationsWithRegex<T>(trimmed);
+  if (regexResult.success) return regexResult;
 
   return {
     success: false,
@@ -66,7 +89,6 @@ export function extractJSON<T = unknown>(response: string): ExtractionResult<T> 
  * Find the outermost balanced { } or [ ] in a string and parse it.
  */
 function extractByBraceMatching<T>(text: string): ExtractionResult<T> {
-  // Try object first, then array
   for (const [open, close] of [
     ["{", "}"],
     ["[", "]"],
@@ -81,18 +103,9 @@ function extractByBraceMatching<T>(text: string): ExtractionResult<T> {
     for (let i = startIdx; i < text.length; i++) {
       const ch = text[i];
 
-      if (escape) {
-        escape = false;
-        continue;
-      }
-      if (ch === "\\") {
-        escape = true;
-        continue;
-      }
-      if (ch === '"') {
-        inString = !inString;
-        continue;
-      }
+      if (escape) { escape = false; continue; }
+      if (ch === "\\") { escape = true; continue; }
+      if (ch === '"') { inString = !inString; continue; }
       if (inString) continue;
 
       if (ch === open) depth++;
@@ -103,10 +116,9 @@ function extractByBraceMatching<T>(text: string): ExtractionResult<T> {
           try {
             return { success: true, data: JSON.parse(candidate) as T };
           } catch {
-            // Brace-matched substring isn't valid JSON; try repairing it
             const repaired = attemptJSONRepair<T>(candidate);
             if (repaired.success) return repaired;
-            break; // don't try further for this bracket type
+            break;
           }
         }
       }
@@ -119,34 +131,158 @@ function extractByBraceMatching<T>(text: string): ExtractionResult<T> {
 /**
  * Attempt to fix common LLM JSON mistakes:
  *   - Trailing commas before } or ]
- *   - Single quotes instead of double quotes (outside of values)
  *   - Missing closing brackets (try to close them)
- *   - Unescaped newlines in string values
  */
 function attemptJSONRepair<T>(text: string): ExtractionResult<T> {
   let repaired = text;
 
-  // Fix 1: Remove trailing commas  →  ,} → }  and  ,] → ]
+  // Fix 1: Remove trailing commas
   repaired = repaired.replace(/,\s*([}\]])/g, "$1");
 
-  // Fix 2: Try parsing after trailing-comma fix
   try {
     return { success: true, data: JSON.parse(repaired) as T };
-  } catch {
-    // continue
-  }
+  } catch { /* continue */ }
 
-  // Fix 3: Try to close unclosed brackets
+  // Fix 2: Close unclosed brackets
   const closed = tryCloseBrackets(repaired);
   if (closed !== repaired) {
     try {
       return { success: true, data: JSON.parse(closed) as T };
-    } catch {
-      // continue
-    }
+    } catch { /* continue */ }
   }
 
   return { success: false, data: null, error: "JSON repair failed" };
+}
+
+/**
+ * Repair truncated JSON from large responses that hit max_tokens.
+ * Finds the last complete operation object and closes all brackets.
+ */
+function repairTruncatedJSON<T>(text: string): ExtractionResult<T> {
+  // Find the last complete nested object (one that has both "path" and either "content" or "action")
+  const lastGoodEnd = findLastCompleteObjectIndex(text);
+  if (lastGoodEnd > 0) {
+    let truncated = text.slice(0, lastGoodEnd + 1);
+    truncated = truncated.replace(/,\s*$/, "");
+    truncated = tryCloseBrackets(truncated);
+    try {
+      return { success: true, data: JSON.parse(truncated) as T };
+    } catch { /* continue */ }
+  }
+
+  // Generic: just try to close brackets on the whole text
+  const closed = tryCloseBrackets(text.replace(/,\s*$/, ""));
+  try {
+    return { success: true, data: JSON.parse(closed) as T };
+  } catch {
+    return { success: false, data: null, error: "Truncation repair failed" };
+  }
+}
+
+/**
+ * Find the index of the last closing brace } that ends a complete
+ * operation object (contains "path" and "content" or "action").
+ */
+function findLastCompleteObjectIndex(text: string): number {
+  let lastGoodEnd = -1;
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+  let objStart = -1;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (escape) { escape = false; continue; }
+    if (ch === "\\") { escape = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+
+    if (ch === "{") {
+      if (depth === 1) objStart = i;
+      depth++;
+    } else if (ch === "}") {
+      depth--;
+      if (depth === 1 && objStart >= 0) {
+        const objText = text.slice(objStart, i + 1);
+        if (objText.includes('"path"') && (objText.includes('"content"') || objText.includes('"action"'))) {
+          lastGoodEnd = i;
+        }
+      }
+    }
+  }
+
+  return lastGoodEnd;
+}
+
+/**
+ * Last-resort regex fallback: extract coder operations from raw text.
+ * Searches for "path"/"content"/"action" patterns and reconstructs a response.
+ */
+function extractOperationsWithRegex<T>(text: string): ExtractionResult<T> {
+  if (!text.includes('"operations"') && !text.includes('"path"')) {
+    return { success: false, data: null, error: "Not a coder response" };
+  }
+
+  const operations: Array<{ action: string; path: string; content: string }> = [];
+  const pathRegex = /"path"\s*:\s*"([^"]+)"/g;
+  let match;
+
+  while ((match = pathRegex.exec(text)) !== null) {
+    const path = match[1];
+    const searchStart = Math.max(0, match.index - 200);
+    const neighborhood = text.slice(searchStart, Math.min(text.length, match.index + 500));
+
+    const actionMatch = neighborhood.match(/"action"\s*:\s*"(create|edit|delete)"/);
+    const action = actionMatch ? actionMatch[1] : "create";
+
+    if (action === "delete") {
+      operations.push({ action, path, content: "" });
+      continue;
+    }
+
+    // Find the "content" value — scan for the string end handling escapes
+    const contentStart = text.indexOf(`"content"`, match.index);
+    if (contentStart === -1 || contentStart > match.index + 100) continue;
+
+    const valueStart = text.indexOf('"', contentStart + 9);
+    if (valueStart === -1) continue;
+
+    let end = valueStart + 1;
+    let escaped = false;
+    while (end < text.length) {
+      if (escaped) { escaped = false; end++; continue; }
+      if (text[end] === "\\") { escaped = true; end++; continue; }
+      if (text[end] === '"') break;
+      end++;
+    }
+
+    if (end < text.length) {
+      try {
+        const contentRaw = text.slice(valueStart, end + 1);
+        const content = JSON.parse(contentRaw) as string;
+        if (content && content.length > 0) {
+          operations.push({ action, path, content });
+        }
+      } catch { /* skip */ }
+    }
+  }
+
+  if (operations.length > 0) {
+    const commands: string[] = [];
+    const cmdMatch = text.match(/"commands"\s*:\s*\[([\s\S]*?)\]/);
+    if (cmdMatch) {
+      const cmdStrs = cmdMatch[1].match(/"([^"]+)"/g);
+      if (cmdStrs) {
+        for (const cs of cmdStrs) {
+          try { commands.push(JSON.parse(cs) as string); } catch { /* skip */ }
+        }
+      }
+    }
+
+    return { success: true, data: { operations, commands } as unknown as T };
+  }
+
+  return { success: false, data: null, error: "Regex extraction found no operations" };
 }
 
 /**
@@ -159,18 +295,9 @@ function tryCloseBrackets(text: string): string {
   const stack: string[] = [];
 
   for (const ch of text) {
-    if (escape) {
-      escape = false;
-      continue;
-    }
-    if (ch === "\\") {
-      escape = true;
-      continue;
-    }
-    if (ch === '"') {
-      inString = !inString;
-      continue;
-    }
+    if (escape) { escape = false; continue; }
+    if (ch === "\\") { escape = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
     if (inString) continue;
 
     if (ch === "{") stack.push("}");
@@ -182,15 +309,8 @@ function tryCloseBrackets(text: string): string {
     }
   }
 
-  // If we're still inside a string, close it first
-  if (inString) {
-    text += '"';
-  }
-
-  // Close any remaining open brackets in reverse order
-  while (stack.length > 0) {
-    text += stack.pop();
-  }
+  if (inString) text += '"';
+  while (stack.length > 0) text += stack.pop();
 
   return text;
 }

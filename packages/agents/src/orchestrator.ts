@@ -11,6 +11,7 @@ export interface OrchestratorCallbacks {
   onPlan: (plan: AgentPlan) => void;
   onStepStart: (step: AgentStep) => void;
   onStepComplete: (step: AgentStep) => void;
+  onStepMessage: (message: string) => void;
   onCodeChange: (change: CodeChange) => void;
   onFileChanged: (path: string) => void;
   onTerminalOutput: (output: string) => void;
@@ -284,6 +285,10 @@ export class Orchestrator {
       callbacks.onStepComplete(step);
       callbacks.onPreviewReload();
 
+      // Emit a conversational message about what was just done (Manus-style)
+      const stepMsg = this.generateStepMessage(step);
+      if (stepMsg) callbacks.onStepMessage(stepMsg);
+
       // Update project context with new file tree and key file contents
       return await this.buildProjectContext(sandbox, projectContext);
 
@@ -294,6 +299,40 @@ export class Orchestrator {
       callbacks.onError(`Step "${step.description}" failed: ${errorMessage}`);
       return null;
     }
+  }
+
+  /**
+   * Generate a natural-language conversational message after a step completes.
+   * Uses keyword matching on the step description — no LLM call needed.
+   */
+  private generateStepMessage(step: AgentStep): string | null {
+    const desc = step.description.toLowerCase();
+    const files = step.filesAffected.length;
+
+    if (desc.includes("install") || desc.includes("dependencies") || step.type === "config") {
+      return "He instalado las dependencias necesarias para el proyecto. Ahora voy a crear la estructura de datos y los componentes.";
+    }
+    if (desc.includes("type") || desc.includes("store") || desc.includes("data") || desc.includes("interface")) {
+      return "He creado los tipos TypeScript, el store de datos y las utilidades del proyecto. Ahora voy a construir los componentes de la interfaz.";
+    }
+    if (desc.includes("layout") || desc.includes("sidebar") || desc.includes("header")) {
+      return "He creado los componentes de layout (sidebar, header, navegación). Ahora voy a crear los componentes de UI reutilizables.";
+    }
+    if (desc.includes("ui component") || desc.includes("button") || desc.includes("card") || desc.includes("shared")) {
+      return `He creado ${files > 0 ? files + " componentes" : "los componentes"} de UI reutilizables. Ahora voy a crear las páginas y funcionalidades principales.`;
+    }
+    if (desc.includes("page") || desc.includes("section") || desc.includes("feature") || desc.includes("component")) {
+      return `He creado ${files > 0 ? files + " archivos con" : ""} las páginas y componentes principales. Ahora voy a integrar todo y pulir el diseño.`;
+    }
+    if (desc.includes("router") || desc.includes("wire") || desc.includes("connect") || desc.includes("integration") || desc.includes("app.tsx")) {
+      return "He integrado todos los componentes con el router y la navegación. Verificando que todo funcione correctamente.";
+    }
+    if (desc.includes("polish") || desc.includes("loading") || desc.includes("empty") || desc.includes("error state") || step.type === "design") {
+      return "¡Listo! He terminado de pulir el diseño, animaciones y estados de carga. Tu aplicación está lista.";
+    }
+
+    // Generic fallback
+    return `He completado: ${step.description}`;
   }
 
   private buildStepContext(baseContext: string, currentStep: AgentStep, plan: AgentPlan): string {

@@ -100,6 +100,8 @@ export async function runAgent(
       emit(io, room, "sandbox:status", { status: "running" });
     } else {
       sandboxManager.resetTTL(projectId);
+      // Ensure sandbox dev server is still running before proceeding
+      await sandboxManager.ensureSandboxRunning(projectId);
     }
 
     // Build project context
@@ -140,6 +142,9 @@ export async function runAgent(
         onPlan: (plan: AgentPlan) => emit(io, room, "agent:plan", { plan }),
         onStepStart: (step: AgentStep) => emit(io, room, "agent:step_start", { step }),
         onStepComplete: (step: AgentStep) => emit(io, room, "agent:step_complete", { step }),
+        onStepMessage: (message: string) => {
+          emit(io, room, "agent:step_message", { message });
+        },
         onCodeChange: (change: CodeChange) => {
           allCodeChanges.push(change);
           emit(io, room, "agent:code_change", { change });
@@ -193,6 +198,7 @@ export async function runDeploy(
     onPlan: () => {},
     onStepStart: () => {},
     onStepComplete: () => {},
+    onStepMessage: () => {},
     onCodeChange: () => {},
     onFileChanged: () => {},
     onTerminalOutput: (output) => emit(io, room, "agent:terminal_output", { output }),

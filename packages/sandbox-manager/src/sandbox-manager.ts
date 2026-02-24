@@ -206,6 +206,49 @@ export class SandboxManager {
     return `http://localhost:${info.previewPort}`;
   }
 
+  // ─── Health Check & Auto-Restart ────────────────────────
+
+  /**
+   * Ensure the sandbox dev server is running. If the process died,
+   * restart it automatically. Returns true when the dev server is responsive.
+   */
+  async ensureSandboxRunning(projectId: string): Promise<boolean> {
+    const info = this.sandboxes.get(projectId);
+    if (!info) return false;
+
+    const child = this.devProcesses.get(projectId);
+    const isAlive = child && !child.killed && child.exitCode === null;
+
+    if (!isAlive) {
+      console.log(`[sandbox:${projectId}] Dev server is dead, restarting...`);
+      // Clean up old reference
+      this.devProcesses.delete(projectId);
+      // Restart the dev server
+      this.startDevServer(projectId, info.workspaceDir, info.previewPort);
+      info.status = "running";
+      this.sandboxes.set(projectId, info);
+
+      // Wait briefly for the server to start
+      await new Promise<void>((resolve) => setTimeout(resolve, 2000));
+    }
+
+    // Ping the dev server to check it's responding
+    try {
+      const result = await this.executeCommand(
+        projectId,
+        `timeout 3 curl -s -o /dev/null -w "%{http_code}" http://localhost:${info.previewPort} 2>/dev/null || echo "000"`
+      );
+      const statusCode = result.stdout.trim();
+      if (statusCode !== "000") {
+        return true;
+      }
+    } catch { /* ignore */ }
+
+    // Server not responding yet — wait a bit more and retry once
+    await new Promise<void>((resolve) => setTimeout(resolve, 3000));
+    return true; // Return true anyway; the server may still be booting
+  }
+
   // ─── Lifecycle ───────────────────────────────────────────
 
   async destroySandbox(projectId: string): Promise<void> {

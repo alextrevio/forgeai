@@ -76,6 +76,17 @@ export default function ProjectPage() {
           s.updateStepStatus(event.data.step.id, event.data.step.status);
           break;
 
+        case "agent:step_message":
+          s.addMessage({
+            id: generateId(),
+            projectId,
+            role: "ASSISTANT",
+            content: event.data.message,
+            messageType: null, plan: null, codeChanges: null, tokensUsed: null, creditsConsumed: 0, model: null,
+            createdAt: new Date().toISOString(),
+          });
+          break;
+
         case "agent:code_change":
           s.addCodeChange(event.data.change);
           // If the file is open, refresh its content

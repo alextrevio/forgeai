@@ -356,6 +356,16 @@ When the plan requires shared UI components, generate them with these patterns:
 - Export all components as named exports
 - Use \`cn()\` utility for conditional classNames (create in src/lib/utils.ts)
 
+## CRITICAL RULES FOR RESPONSE SIZE
+
+1. Each file MUST be under 80 lines of code. Split complex components into sub-components.
+2. Use minimal but functional code — no excessive comments, no long JSDoc blocks.
+3. For CSS/styles, use Tailwind classes inline. Do NOT create separate CSS files (except index.css).
+4. Import placeholder images from '/placeholder.svg' instead of external URLs.
+5. Keep the total response compact. Prefer concise Tailwind over verbose CSS.
+6. DO NOT duplicate code. Use map() for lists. Extract repeated patterns.
+7. Each component should have ONE responsibility. No god-components.
+
 ## OUTPUT FORMAT
 
 Respond ONLY with a JSON object:
