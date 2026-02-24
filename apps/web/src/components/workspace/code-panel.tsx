@@ -25,6 +25,14 @@ import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { FileNode } from "@forgeai/shared";
 
+function safeArray<T>(data: T[]): T[];
+function safeArray<T>(data: T[] | null | undefined): T[];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function safeArray(data: any): any[] {
+  if (Array.isArray(data)) return data;
+  return [];
+}
+
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
   loading: () => (
@@ -89,8 +97,8 @@ function FileTreeItem({ node, depth, onSelect, changedFiles }: {
         <span className="truncate text-[#e2e2e8]/80">{node.name}</span>
         {isChanged && <Circle className="h-1.5 w-1.5 fill-[#7c3aed] text-[#7c3aed] shrink-0 ml-auto" />}
       </button>
-      {isDir && expanded && Array.isArray(node.children) && (
-        <div>{node.children.map((child) => <FileTreeItem key={child.path} node={child} depth={depth + 1} onSelect={onSelect} changedFiles={changedFiles} />)}</div>
+      {isDir && expanded && safeArray(node.children).length > 0 && (
+        <div>{safeArray(node.children).map((child) => <FileTreeItem key={child.path} node={child} depth={depth + 1} onSelect={onSelect} changedFiles={changedFiles} />)}</div>
       )}
     </div>
   );
@@ -104,12 +112,12 @@ export function CodePanel() {
 
   const handleFileSelect = useCallback(async (path: string) => {
     if (!currentProjectId) return;
-    const existing = (Array.isArray(openFiles) ? openFiles : []).find((f) => f.path === path);
+    const existing = safeArray(openFiles).find((f) => f.path === path);
     if (existing) { setActiveFile(path); return; }
     try { const data = await api.readFile(currentProjectId, path); openFile(path, data.content); } catch (err) { console.error("Failed to read file:", err); }
   }, [currentProjectId, openFiles, openFile, setActiveFile]);
 
-  const activeFileContent = (Array.isArray(openFiles) ? openFiles : []).find((f) => f.path === activeFilePath)?.content || "";
+  const activeFileContent = safeArray(openFiles).find((f) => f.path === activeFilePath)?.content || "";
 
   const handleEditorChange = useCallback((value: string | undefined) => {
     if (activeFilePath && value !== undefined) updateFileContent(activeFilePath, value);
@@ -120,7 +128,7 @@ export function CodePanel() {
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
         e.preventDefault();
         if (currentProjectId && activeFilePath) {
-          const file = (Array.isArray(openFiles) ? openFiles : []).find((f) => f.path === activeFilePath);
+          const file = safeArray(openFiles).find((f) => f.path === activeFilePath);
           if (file) { try { await api.writeFile(currentProjectId, activeFilePath, file.content); } catch (err) { console.error("Failed to save:", err); } }
         }
       }
@@ -154,10 +162,10 @@ export function CodePanel() {
         <Panel defaultSize={28} minSize={15} maxSize={45}>
           <div className="h-full overflow-y-auto border-r border-[#1e1e2e] bg-[#0a0a12]">
             <div className="px-3 py-2 text-[10px] font-semibold text-[#8888a0]/60 uppercase tracking-widest">Explorer</div>
-            {!Array.isArray(fileTree) || fileTree.length === 0 ? (
+            {safeArray(fileTree).length === 0 ? (
               <div className="px-3 py-4 text-[11px] text-[#8888a0]/40 text-center">No hay archivos</div>
             ) : (
-              fileTree.map((node) => <FileTreeItem key={node.path} node={node} depth={0} onSelect={handleFileSelect} changedFiles={changedFiles} />)
+              safeArray(fileTree).map((node) => <FileTreeItem key={node.path} node={node} depth={0} onSelect={handleFileSelect} changedFiles={changedFiles} />)
             )}
           </div>
         </Panel>
@@ -167,9 +175,9 @@ export function CodePanel() {
         {/* Editor */}
         <Panel defaultSize={72}>
           <div className="flex h-full flex-col">
-            {Array.isArray(openFiles) && openFiles.length > 0 && (
+            {safeArray(openFiles).length > 0 && (
               <div className="flex items-center overflow-x-auto border-b border-[#1e1e2e] bg-[#0a0a12]">
-                {openFiles.map((file) => {
+                {safeArray(openFiles).map((file) => {
                   const fileName = file.path.split("/").pop() || file.path;
                   return (
                     <div

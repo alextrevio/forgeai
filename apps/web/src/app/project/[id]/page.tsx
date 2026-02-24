@@ -1,13 +1,61 @@
 "use client";
 
-import { useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, Component, type ReactNode } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { useProjectStore } from "@/stores/project-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { api } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
 import { generateId } from "@/lib/utils";
 import { WorkspaceLayout } from "@/components/workspace/workspace-layout";
+
+/** Safely extract an array from API responses that may be objects with wrapper keys */
+function safeArray<T>(data: unknown): T[] {
+  if (Array.isArray(data)) return data as T[];
+  if (data && typeof data === "object" && !Array.isArray(data)) {
+    const obj = data as Record<string, unknown>;
+    for (const key of ["data", "messages", "items", "projects", "files", "snapshots", "plans", "templates", "operations"]) {
+      if (Array.isArray(obj[key])) return obj[key] as T[];
+    }
+  }
+  return [];
+}
+
+/** Error boundary — shows a "Volver al Dashboard" button instead of crashing */
+class ProjectErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: Error) {
+    console.error("[ProjectErrorBoundary]", error);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex h-screen flex-col items-center justify-center bg-[#0f0f17] gap-4">
+          <div className="h-16 w-16 rounded-2xl bg-[#ef4444]/10 flex items-center justify-center">
+            <span className="text-3xl">!</span>
+          </div>
+          <h2 className="text-lg font-semibold text-[#e2e2e8]">Algo salió mal</h2>
+          <p className="text-sm text-[#8888a0] max-w-xs text-center">
+            Ocurrió un error inesperado. Intenta volver al dashboard.
+          </p>
+          <a
+            href="/dashboard"
+            className="mt-2 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#7c3aed] to-[#3b82f6] px-5 py-2.5 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+          >
+            Volver al Dashboard
+          </a>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export default function ProjectPage() {
   const params = useParams();
@@ -28,18 +76,18 @@ export default function ProjectPage() {
         store.setProject(project.id, project.name, project.framework);
 
         const messages = await api.getMessages(projectId);
-        store.setMessages(Array.isArray(messages) ? messages : []);
+        store.setMessages(safeArray(messages));
 
         // Load snapshots
         api.getSnapshots(projectId)
-          .then((s) => store.setSnapshots(Array.isArray(s) ? s : []))
+          .then((s) => store.setSnapshots(safeArray(s)))
           .catch(() => {});
 
         if (project.sandboxId) {
           store.setSandboxStatus("running");
           try {
             const tree = await api.getFileTree(projectId);
-            store.setFileTree(Array.isArray(tree) ? tree : []);
+            store.setFileTree(safeArray(tree));
             const preview = await api.getPreviewUrl(projectId);
             store.setPreviewUrl(preview.url);
           } catch { /* sandbox may not be running */ }
@@ -112,7 +160,7 @@ export default function ProjectPage() {
         case "agent:designer_complete":
           s.setActiveAgent("coder");
           // Refresh file tree after designer changes
-          api.getFileTree(projectId).then((t) => s.setFileTree(Array.isArray(t) ? t : [])).catch(() => {});
+          api.getFileTree(projectId).then((t) => s.setFileTree(safeArray(t))).catch(() => {});
           break;
 
         case "agent:debugger_start":
@@ -216,8 +264,8 @@ export default function ProjectPage() {
             createdAt: new Date().toISOString(),
           });
           // Refresh file tree and snapshots
-          api.getFileTree(projectId).then((t) => s.setFileTree(Array.isArray(t) ? t : [])).catch(() => {});
-          api.getSnapshots(projectId).then((sn) => s.setSnapshots(Array.isArray(sn) ? sn : [])).catch(() => {});
+          api.getFileTree(projectId).then((t) => s.setFileTree(safeArray(t))).catch(() => {});
+          api.getSnapshots(projectId).then((sn) => s.setSnapshots(safeArray(sn))).catch(() => {});
           break;
 
         case "preview:reload":
@@ -251,5 +299,9 @@ export default function ProjectPage() {
     );
   }
 
-  return <WorkspaceLayout />;
+  return (
+    <ProjectErrorBoundary>
+      <WorkspaceLayout />
+    </ProjectErrorBoundary>
+  );
 }

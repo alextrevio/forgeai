@@ -28,6 +28,14 @@ import { CodePanel } from "./code-panel";
 import { cn } from "@/lib/utils";
 import { WorkspaceHeader } from "./workspace-header";
 
+function safeArray<T>(data: T[]): T[];
+function safeArray<T>(data: T[] | null | undefined): T[];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function safeArray(data: any): any[] {
+  if (Array.isArray(data)) return data;
+  return [];
+}
+
 type ComputerTab = "preview" | "code" | "terminal";
 type DeviceMode = "desktop" | "tablet" | "mobile";
 
@@ -135,15 +143,15 @@ export function ComputerPanel() {
 
   const { stepsTotal, stepsCompleted, currentStepText, progressPercent } = useMemo(() => {
     if (!currentPlan?.steps?.length) return { stepsTotal: 0, stepsCompleted: 0, currentStepText: "", progressPercent: 0 };
-    const steps = Array.isArray(currentPlan.steps) ? currentPlan.steps : [];
+    const steps = safeArray(currentPlan.steps);
     const total = steps.length;
     const completed = steps.filter((s: { status: string }) => s.status === "completed").length;
     const inProgress = steps.find((s: { status: string }) => s.status === "in_progress");
-    return { stepsTotal: total, stepsCompleted: completed, currentStepText: inProgress?.description || "", progressPercent: Math.round((completed / total) * 100) };
+    return { stepsTotal: total, stepsCompleted: completed, currentStepText: inProgress?.description || "", progressPercent: total > 0 ? Math.round((completed / total) * 100) : 0 };
   }, [currentPlan]);
 
   const recentFiles = useMemo(() => {
-    try { return Array.from(changedFiles || []).slice(-5); } catch { return []; }
+    try { return Array.from(changedFiles instanceof Set ? changedFiles : new Set<string>()).slice(-5); } catch { return []; }
   }, [changedFiles]);
 
   const deviceConfig = DEVICE_SIZES[deviceMode];
@@ -221,7 +229,7 @@ export function ComputerPanel() {
             )}
           >
             <Terminal className="h-3.5 w-3.5" /> {">_"} Terminal
-            {(Array.isArray(terminalOutput) ? terminalOutput : []).length > 0 && activeTab !== "terminal" && (
+            {safeArray(terminalOutput).length > 0 && activeTab !== "terminal" && (
               <span className="ml-1 rounded-full bg-[#7c3aed]/15 px-1.5 py-0.5 text-[9px] text-[#a78bfa]">
                 {terminalOutput.length}
               </span>
@@ -413,7 +421,7 @@ export function ComputerPanel() {
         {/* === Terminal Tab === */}
         {activeTab === "terminal" && (
           <div className="h-full overflow-y-auto bg-[#0a0a12] p-3 font-mono text-[11px]">
-            {!Array.isArray(terminalOutput) || terminalOutput.length === 0 ? (
+            {safeArray(terminalOutput).length === 0 ? (
               <div className="flex h-full items-center justify-center">
                 <div className="text-center">
                   <Terminal className="h-8 w-8 text-[#8888a0]/15 mx-auto mb-3" />
@@ -422,7 +430,7 @@ export function ComputerPanel() {
               </div>
             ) : (
               <>
-                {terminalOutput.map((line, i) => (
+                {safeArray(terminalOutput).map((line, i) => (
                   <div
                     key={i}
                     className={cn(

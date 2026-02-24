@@ -21,6 +21,14 @@ import { cn, generateId } from "@/lib/utils";
 import { RichMessage } from "./rich-message";
 import { SuggestionChips } from "./suggestion-chips";
 
+function safeArray<T>(data: T[]): T[];
+function safeArray<T>(data: null | undefined): T[];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function safeArray(data: any): any[] {
+  if (Array.isArray(data)) return data;
+  return [];
+}
+
 const INITIAL_CHIPS = [
   "Build a todo app",
   "Create a landing page",
@@ -50,8 +58,9 @@ function StepGroup({ title, steps, defaultExpanded = false }: {
   defaultExpanded?: boolean;
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
-  const allCompleted = steps.every((s) => s.status === "completed");
-  const hasInProgress = steps.some((s) => s.status === "in_progress");
+  const safeSteps = safeArray<{ id: number; description: string; status: string }>(steps);
+  const allCompleted = safeSteps.every((s) => s.status === "completed");
+  const hasInProgress = safeSteps.some((s) => s.status === "in_progress");
 
   return (
     <div className="step-group-enter">
@@ -80,7 +89,7 @@ function StepGroup({ title, steps, defaultExpanded = false }: {
 
       {expanded && (
         <div className="ml-3 pl-4 border-l border-[#1e1e2e] space-y-0.5 mt-1 mb-2">
-          {steps.map((step) => (
+          {safeSteps.map((step) => (
             <div key={step.id} className="flex items-center gap-2 py-0.5 step-item-enter">
               {step.status === "completed" ? (
                 <CheckCircle2 className="h-3.5 w-3.5 text-[#22c55e] shrink-0" />
@@ -128,8 +137,7 @@ export function ChatPanel() {
   } = useProjectStore();
 
   const lastAction = useMemo(() => {
-    const safeMessages = Array.isArray(messages) ? messages : [];
-    const assistantMsgs = safeMessages.filter((m) => m.role === "ASSISTANT");
+    const assistantMsgs = safeArray(messages).filter((m) => m.role === "ASSISTANT");
     return assistantMsgs[assistantMsgs.length - 1]?.content || null;
   }, [messages]);
 
@@ -205,7 +213,7 @@ export function ChatPanel() {
   // Group plan steps into a single collapsible block
   const planSteps = useMemo(() => {
     if (!currentPlan?.steps) return [];
-    return Array.isArray(currentPlan.steps) ? currentPlan.steps : [];
+    return safeArray(currentPlan.steps);
   }, [currentPlan]);
 
   const hasInProgressStep = planSteps.some((s) => s.status === "in_progress");
@@ -233,7 +241,7 @@ export function ChatPanel() {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-        {(!Array.isArray(messages) || messages.length === 0) && !isAgentRunning && (
+        {(safeArray(messages).length === 0) && !isAgentRunning && (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[#7c3aed]/10 to-[#3b82f6]/10 flex items-center justify-center mb-4">
               <Sparkles className="h-7 w-7 text-[#a78bfa]" />
@@ -254,7 +262,7 @@ export function ChatPanel() {
           </div>
         )}
 
-        {(Array.isArray(messages) ? messages : []).map((msg) => {
+        {safeArray(messages).map((msg) => {
           const debugSummary = msg.role === "SYSTEM" ? getDebugSummary(msg.content) : null;
           const isExpanded = expandedDebug.has(msg.id);
 
@@ -332,7 +340,7 @@ export function ChatPanel() {
         )}
 
         {/* Project card — shown when project initializes */}
-        {!isAgentRunning && (Array.isArray(messages) ? messages : []).length > 0 && projectName && (
+        {!isAgentRunning && safeArray(messages).length > 0 && projectName && (
           <div className="msg-enter">
             <div className="rounded-xl border border-[#1e1e2e] bg-[#13131a] p-3 flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#7c3aed]/20 to-[#3b82f6]/20 flex items-center justify-center shrink-0">
@@ -370,7 +378,7 @@ export function ChatPanel() {
       </div>
 
       {/* Suggestion Chips */}
-      {!isAgentRunning && (Array.isArray(messages) ? messages : []).some((m) => m.role === "ASSISTANT") && (
+      {!isAgentRunning && safeArray(messages).some((m) => m.role === "ASSISTANT") && (
         <SuggestionChips lastAction={lastAction} onSelect={(chip) => handleSubmit(chip)} />
       )}
 

@@ -29,6 +29,14 @@ import { useAuthStore } from "@/stores/auth-store";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
+function safeArray<T>(data: T[]): T[];
+function safeArray<T>(data: T[] | null | undefined): T[];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function safeArray(data: any): any[] {
+  if (Array.isArray(data)) return data;
+  return [];
+}
+
 type ModalType = "github" | "supabase" | "settings" | "share" | null;
 
 interface MemberInfo {
@@ -87,7 +95,7 @@ export function WorkspaceHeader() {
     try {
       await api.undoChange(currentProjectId);
       const tree = await api.getFileTree(currentProjectId);
-      setFileTree(tree);
+      setFileTree(safeArray(tree));
       const preview = await api.getPreviewUrl(currentProjectId);
       setPreviewUrl(preview.url);
     } catch (err) { console.error("Undo failed:", err); }
@@ -98,7 +106,7 @@ export function WorkspaceHeader() {
     try {
       await api.restoreSnapshot(currentProjectId, snapshotId);
       const tree = await api.getFileTree(currentProjectId);
-      setFileTree(tree);
+      setFileTree(safeArray(tree));
       setShowTimeline(false);
     } catch (err) { console.error("Restore failed:", err); }
   };
@@ -129,7 +137,7 @@ export function WorkspaceHeader() {
   const handlePullGitHub = async () => {
     if (!currentProjectId) return;
     setIsPulling(true);
-    try { await api.pullFromGitHub(currentProjectId); const tree = await api.getFileTree(currentProjectId); setFileTree(tree); setExportResult("pulled"); } catch (err) { console.error("Pull failed:", err); } finally { setIsPulling(false); }
+    try { await api.pullFromGitHub(currentProjectId); const tree = await api.getFileTree(currentProjectId); setFileTree(safeArray(tree)); setExportResult("pulled"); } catch (err) { console.error("Pull failed:", err); } finally { setIsPulling(false); }
   };
 
   const openSupabase = async () => {
@@ -146,7 +154,7 @@ export function WorkspaceHeader() {
   const handleGenerateClient = async () => {
     if (!currentProjectId) return;
     setIsConnecting(true);
-    try { await api.generateSupabaseClient(currentProjectId); const tree = await api.getFileTree(currentProjectId); setFileTree(tree); } catch (err) { console.error("Generate client failed:", err); } finally { setIsConnecting(false); }
+    try { await api.generateSupabaseClient(currentProjectId); const tree = await api.getFileTree(currentProjectId); setFileTree(safeArray(tree)); } catch (err) { console.error("Generate client failed:", err); } finally { setIsConnecting(false); }
   };
 
   const openSettings = async () => {
@@ -167,13 +175,13 @@ export function WorkspaceHeader() {
 
   const openShare = async () => {
     setModal("share"); setShareEmail(""); setShareSuccess(false);
-    if (currentProjectId) { try { const data = await api.getProjectMembers(currentProjectId); setMembers(data.members || data || []); } catch { /* ignore */ } }
+    if (currentProjectId) { try { const data = await api.getProjectMembers(currentProjectId); setMembers(safeArray(data?.members ?? data)); } catch { /* ignore */ } }
   };
 
   const handleShare = async () => {
     if (!currentProjectId || !shareEmail.trim()) return;
     setIsSharing(true);
-    try { await api.shareProject(currentProjectId, shareEmail.trim(), shareRole); setShareSuccess(true); setShareEmail(""); setTimeout(() => setShareSuccess(false), 2000); const data = await api.getProjectMembers(currentProjectId); setMembers(data.members || data || []); } catch (err) { console.error("Share failed:", err); } finally { setIsSharing(false); }
+    try { await api.shareProject(currentProjectId, shareEmail.trim(), shareRole); setShareSuccess(true); setShareEmail(""); setTimeout(() => setShareSuccess(false), 2000); const data = await api.getProjectMembers(currentProjectId); setMembers(safeArray(data?.members ?? data)); } catch (err) { console.error("Share failed:", err); } finally { setIsSharing(false); }
   };
 
   const handleRemoveMember = async (memberId: string) => {
@@ -224,11 +232,11 @@ export function WorkspaceHeader() {
             <span className="text-[12px] font-medium text-[#8888a0]">Version Timeline</span>
             <button onClick={() => setShowTimeline(false)} className="text-[#8888a0] hover:text-[#e2e2e8] transition-colors"><X className="h-3.5 w-3.5" /></button>
           </div>
-          {!Array.isArray(snapshots) || snapshots.length === 0 ? (
+          {safeArray(snapshots).length === 0 ? (
             <p className="text-[11px] text-[#8888a0]/60">No snapshots yet. Snapshots are created automatically before each change.</p>
           ) : (
             <div className="flex flex-col gap-1.5 max-h-[300px] overflow-y-auto">
-              {snapshots.map((snap) => (
+              {safeArray(snapshots).map((snap) => (
                 <button key={snap.id} onClick={() => handleRestoreSnapshot(snap.id)} className="group flex items-center gap-3 rounded-lg border border-[#1e1e2e] px-3 py-2 hover:border-[#7c3aed]/30 hover:bg-[#7c3aed]/5 transition-all duration-150 text-left">
                   <div className="h-2 w-2 rounded-full bg-[#7c3aed]/60 group-hover:bg-[#7c3aed] shrink-0" />
                   <div className="flex-1 min-w-0">
@@ -295,7 +303,7 @@ export function WorkspaceHeader() {
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 rounded-xl bg-[#22c55e]/10 p-3"><Check className="h-4 w-4 text-[#22c55e]" /><span className="text-sm text-[#22c55e] truncate">Connected to {supabaseStatus.url}</span></div>
                     <button onClick={handleGenerateClient} disabled={isConnecting} className="w-full flex items-center justify-center gap-2 rounded-xl btn-gradient px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50">{isConnecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />} Generate Client + Auth Helpers</button>
-                    <button onClick={async () => { if (!currentProjectId) return; setIsConnecting(true); try { await api.generateSupabaseTypes(currentProjectId); const tree = await api.getFileTree(currentProjectId); setFileTree(tree); } catch (err) { console.error(err); } finally { setIsConnecting(false); } }} disabled={isConnecting} className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1a1a24] px-4 py-2.5 text-sm font-medium text-[#e2e2e8] hover:bg-[#1e1e2e] disabled:opacity-50 transition-colors">Generate Database Types</button>
+                    <button onClick={async () => { if (!currentProjectId) return; setIsConnecting(true); try { await api.generateSupabaseTypes(currentProjectId); const tree = await api.getFileTree(currentProjectId); setFileTree(safeArray(tree)); } catch (err) { console.error(err); } finally { setIsConnecting(false); } }} disabled={isConnecting} className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1a1a24] px-4 py-2.5 text-sm font-medium text-[#e2e2e8] hover:bg-[#1e1e2e] disabled:opacity-50 transition-colors">Generate Database Types</button>
                     <button onClick={async () => { await api.disconnectSupabase(); setSupabaseStatus({ connected: false, url: null }); }} className="w-full text-xs text-[#8888a0] hover:text-[#ef4444] transition-colors">Disconnect Supabase</button>
                   </div>
                 )}
@@ -334,7 +342,7 @@ export function WorkspaceHeader() {
                     </div>
                   </div>
                   <button onClick={handleShare} disabled={!shareEmail.trim() || isSharing} className="w-full flex items-center justify-center gap-2 rounded-xl btn-gradient px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50">{isSharing ? <Loader2 className="h-4 w-4 animate-spin" /> : shareSuccess ? <Check className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />} {shareSuccess ? "Invited!" : "Send Invite"}</button>
-                  {Array.isArray(members) && members.length > 0 && (
+                  {safeArray(members).length > 0 && (
                     <div>
                       <label className="block text-xs font-medium text-[#8888a0] mb-2">Members ({members.length})</label>
                       <div className="space-y-2 max-h-48 overflow-y-auto">

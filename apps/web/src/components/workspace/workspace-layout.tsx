@@ -7,6 +7,14 @@ import { ComputerPanel } from "./computer-panel";
 import { useProjectStore } from "@/stores/project-store";
 import { cn } from "@/lib/utils";
 
+function safeArray<T>(data: T[]): T[];
+function safeArray<T>(data: T[] | null | undefined): T[];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function safeArray(data: any): any[] {
+  if (Array.isArray(data)) return data;
+  return [];
+}
+
 export function WorkspaceLayout() {
   const [isVertical, setIsVertical] = useState(false);
   const {
@@ -25,7 +33,7 @@ export function WorkspaceLayout() {
   // Compute progress for the bottom bar
   const { stepsTotal, stepsCompleted, currentStepText, progressPercent } = (() => {
     if (!currentPlan?.steps?.length) return { stepsTotal: 0, stepsCompleted: 0, currentStepText: "", progressPercent: 0 };
-    const steps = Array.isArray(currentPlan.steps) ? currentPlan.steps : [];
+    const steps = safeArray(currentPlan.steps);
     const total = steps.length;
     const completed = steps.filter((s: { status: string }) => s.status === "completed").length;
     const inProgress = steps.find((s: { status: string }) => s.status === "in_progress");
