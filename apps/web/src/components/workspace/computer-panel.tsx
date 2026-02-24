@@ -1,0 +1,451 @@
+"use client";
+
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import {
+  Monitor,
+  Tablet,
+  Smartphone,
+  RefreshCw,
+  ExternalLink,
+  Loader2,
+  Globe,
+  Copy,
+  Check,
+  AlertCircle,
+  Code2,
+  Terminal,
+  Zap,
+  FileCode2,
+  Minus,
+  X,
+  ChevronRight,
+  ArrowLeft,
+  ArrowRight,
+} from "lucide-react";
+import { useProjectStore } from "@/stores/project-store";
+import { ConsolePanel, useConsoleCapture } from "./console-panel";
+import { CodePanel } from "./code-panel";
+import { cn } from "@/lib/utils";
+import { WorkspaceHeader } from "./workspace-header";
+
+type ComputerTab = "preview" | "code" | "terminal";
+type DeviceMode = "desktop" | "tablet" | "mobile";
+
+const DEVICE_SIZES: Record<DeviceMode, { width: string; label: string }> = {
+  desktop: { width: "100%", label: "Desktop" },
+  tablet: { width: "768px", label: "Tablet" },
+  mobile: { width: "375px", label: "Mobile" },
+};
+
+const IFRAME_LOAD_TIMEOUT = 15000;
+
+const BUILD_TEXTS = [
+  "Configurando la estructura del proyecto...",
+  "Instalando dependencias...",
+  "Creando componentes...",
+  "Configurando estilos...",
+  "Conectando rutas...",
+  "Añadiendo interactividad...",
+  "Puliendo la interfaz...",
+  "Ejecutando verificaciones finales...",
+];
+
+export function ComputerPanel() {
+  const {
+    previewUrl,
+    sandboxStatus,
+    consoleEntries,
+    addConsoleEntry,
+    clearConsoleEntries,
+    isAgentRunning,
+    currentPlan,
+    changedFiles,
+    activeAgent,
+    activeFilePath,
+    terminalOutput,
+  } = useProjectStore();
+
+  const [activeTab, setActiveTab] = useState<ComputerTab>("preview");
+  const [deviceMode, setDeviceMode] = useState<DeviceMode>("desktop");
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [iframeLoading, setIframeLoading] = useState(true);
+  const [iframeError, setIframeError] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [urlInput, setUrlInput] = useState(previewUrl || "");
+  const [buildTextIdx, setBuildTextIdx] = useState(0);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const terminalEndRef = useRef<HTMLDivElement>(null);
+
+  useConsoleCapture(addConsoleEntry);
+
+  useEffect(() => {
+    if (previewUrl) setUrlInput(previewUrl);
+  }, [previewUrl]);
+
+  useEffect(() => {
+    if (!isAgentRunning) return;
+    const interval = setInterval(() => setBuildTextIdx((i) => (i + 1) % BUILD_TEXTS.length), 3000);
+    return () => clearInterval(interval);
+  }, [isAgentRunning]);
+
+  useEffect(() => {
+    if (previewUrl) {
+      setIframeLoading(true);
+      setIframeError(false);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => {
+        setIframeLoading((loading) => { if (loading) { setIframeError(true); return false; } return loading; });
+      }, IFRAME_LOAD_TIMEOUT);
+    } else {
+      setIframeLoading(false);
+      setIframeError(false);
+    }
+    return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
+  }, [previewUrl]);
+
+  // Auto-scroll terminal
+  useEffect(() => {
+    if (activeTab === "terminal") terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [terminalOutput, activeTab]);
+
+  const handleIframeLoad = useCallback(() => { setIframeLoading(false); setIframeError(false); if (timeoutRef.current) clearTimeout(timeoutRef.current); }, []);
+  const handleIframeError = useCallback(() => { setIframeLoading(false); setIframeError(true); if (timeoutRef.current) clearTimeout(timeoutRef.current); }, []);
+
+  const handleRefresh = useCallback(() => {
+    if (iframeRef.current) { setIsRefreshing(true); setIframeLoading(true); setIframeError(false); iframeRef.current.src = iframeRef.current.src; setTimeout(() => setIsRefreshing(false), 1000); }
+  }, []);
+
+  const handleRetry = useCallback(() => {
+    if (iframeRef.current && previewUrl) {
+      setIframeLoading(true); setIframeError(false); iframeRef.current.src = previewUrl;
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => { setIframeLoading((l) => { if (l) { setIframeError(true); return false; } return l; }); }, IFRAME_LOAD_TIMEOUT);
+    }
+  }, [previewUrl]);
+
+  const handleOpenExternal = useCallback(() => { if (previewUrl) window.open(previewUrl, "_blank"); }, [previewUrl]);
+
+  const handleCopyUrl = useCallback(async () => {
+    if (previewUrl) {
+      try { await navigator.clipboard.writeText(previewUrl); } catch { /* fallback */ }
+      setCopied(true); setTimeout(() => setCopied(false), 2000);
+    }
+  }, [previewUrl]);
+
+  const { stepsTotal, stepsCompleted, currentStepText, progressPercent } = useMemo(() => {
+    if (!currentPlan?.steps?.length) return { stepsTotal: 0, stepsCompleted: 0, currentStepText: "", progressPercent: 0 };
+    const steps = Array.isArray(currentPlan.steps) ? currentPlan.steps : [];
+    const total = steps.length;
+    const completed = steps.filter((s: { status: string }) => s.status === "completed").length;
+    const inProgress = steps.find((s: { status: string }) => s.status === "in_progress");
+    return { stepsTotal: total, stepsCompleted: completed, currentStepText: inProgress?.description || "", progressPercent: Math.round((completed / total) * 100) };
+  }, [currentPlan]);
+
+  const recentFiles = useMemo(() => {
+    try { return Array.from(changedFiles || []).slice(-5); } catch { return []; }
+  }, [changedFiles]);
+
+  const deviceConfig = DEVICE_SIZES[deviceMode];
+  const showBuildAnimation = isAgentRunning && !previewUrl;
+
+  // Sub-header status text
+  const subHeaderText = useMemo(() => {
+    if (!isAgentRunning) return null;
+    if (activeAgent === "coder" && activeFilePath) {
+      const fileName = activeFilePath.split("/").pop();
+      return `ForgeAI está usando el Editor • Editando ${fileName}`;
+    }
+    if (activeAgent === "designer") return "ForgeAI está usando el Editor • Diseñando componentes";
+    if (activeAgent === "debugger") return "ForgeAI está usando la Terminal • Corrigiendo errores";
+    if (activeAgent === "deployer") return "ForgeAI está usando la Terminal • Desplegando";
+    if (activeAgent === "planner") return "ForgeAI está planificando la tarea";
+    if (currentStepText) return `ForgeAI está trabajando • ${currentStepText}`;
+    return "ForgeAI está pensando...";
+  }, [isAgentRunning, activeAgent, activeFilePath, currentStepText]);
+
+  return (
+    <div className="flex h-full flex-col bg-[#0f0f17]">
+      {/* Header — "Computadora de ForgeAI" */}
+      <div className="flex items-center justify-between border-b border-[#1e1e2e] bg-[#0a0a12] px-4 py-2">
+        <div className="flex items-center gap-2">
+          <div className="h-5 w-5 rounded-md bg-gradient-to-br from-[#7c3aed] to-[#3b82f6] flex items-center justify-center">
+            <Monitor className="h-3 w-3 text-white" />
+          </div>
+          <span className="text-[13px] font-semibold text-[#e2e2e8]">Computadora de ForgeAI</span>
+        </div>
+        {/* Header actions (header functionality merged here) */}
+        <WorkspaceHeader />
+      </div>
+
+      {/* Sub-header — agent activity */}
+      {isAgentRunning && subHeaderText && (
+        <div className="flex items-center gap-2 border-b border-[#1e1e2e] bg-[#0a0a12]/80 px-4 py-1.5">
+          <Loader2 className="h-3 w-3 text-[#7c3aed] animate-spin shrink-0" />
+          <span className="text-[11px] text-[#8888a0] truncate">{subHeaderText}</span>
+        </div>
+      )}
+
+      {/* Tabs — Vista previa, Código, Terminal */}
+      <div className="flex items-center justify-between border-b border-[#1e1e2e] bg-[#0a0a12] px-2">
+        <div className="flex items-center">
+          <button
+            onClick={() => setActiveTab("preview")}
+            className={cn(
+              "flex items-center gap-1.5 px-4 py-2.5 text-[12px] font-medium transition-all duration-200 border-b-2",
+              activeTab === "preview"
+                ? "border-[#7c3aed] text-[#e2e2e8]"
+                : "border-transparent text-[#8888a0] hover:text-[#e2e2e8]"
+            )}
+          >
+            <Globe className="h-3.5 w-3.5" /> Vista previa
+          </button>
+          <button
+            onClick={() => setActiveTab("code")}
+            className={cn(
+              "flex items-center gap-1.5 px-4 py-2.5 text-[12px] font-medium transition-all duration-200 border-b-2",
+              activeTab === "code"
+                ? "border-[#7c3aed] text-[#e2e2e8]"
+                : "border-transparent text-[#8888a0] hover:text-[#e2e2e8]"
+            )}
+          >
+            <Code2 className="h-3.5 w-3.5" /> {"<>"} Código
+          </button>
+          <button
+            onClick={() => setActiveTab("terminal")}
+            className={cn(
+              "flex items-center gap-1.5 px-4 py-2.5 text-[12px] font-medium transition-all duration-200 border-b-2 relative",
+              activeTab === "terminal"
+                ? "border-[#7c3aed] text-[#e2e2e8]"
+                : "border-transparent text-[#8888a0] hover:text-[#e2e2e8]"
+            )}
+          >
+            <Terminal className="h-3.5 w-3.5" /> {">_"} Terminal
+            {(Array.isArray(terminalOutput) ? terminalOutput : []).length > 0 && activeTab !== "terminal" && (
+              <span className="ml-1 rounded-full bg-[#7c3aed]/15 px-1.5 py-0.5 text-[9px] text-[#a78bfa]">
+                {terminalOutput.length}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Preview toolbar — only shown on preview tab */}
+        {activeTab === "preview" && (
+          <div className="flex items-center gap-1">
+            <div className="flex items-center rounded-lg bg-[#13131a] p-0.5">
+              {(["desktop", "tablet", "mobile"] as DeviceMode[]).map((mode) => {
+                const Icon = mode === "desktop" ? Monitor : mode === "tablet" ? Tablet : Smartphone;
+                return (
+                  <button key={mode} onClick={() => setDeviceMode(mode)}
+                    className={cn("rounded-md p-1.5 transition-all duration-150", deviceMode === mode ? "bg-[#7c3aed]/15 text-[#a78bfa]" : "text-[#8888a0] hover:text-[#e2e2e8]")}
+                    title={DEVICE_SIZES[mode].label}>
+                    <Icon className="h-3 w-3" />
+                  </button>
+                );
+              })}
+            </div>
+            <button onClick={handleRefresh} className="rounded-lg p-1.5 text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#1a1a24] transition-all duration-150" title="Refresh">
+              <RefreshCw className={cn("h-3 w-3", isRefreshing && "animate-spin")} />
+            </button>
+            <button onClick={handleOpenExternal} disabled={!previewUrl} className="rounded-lg p-1.5 text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#1a1a24] transition-all duration-150 disabled:opacity-30" title="Open in new tab">
+              <ExternalLink className="h-3 w-3" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Preview URL bar */}
+      {activeTab === "preview" && (
+        <div className="flex items-center gap-2 border-b border-[#1e1e2e] bg-[#0a0a12] px-3 py-1.5">
+          <button className="rounded p-1 text-[#8888a0]/40 hover:text-[#8888a0] transition-colors">
+            <ArrowLeft className="h-3 w-3" />
+          </button>
+          <button className="rounded p-1 text-[#8888a0]/40 hover:text-[#8888a0] transition-colors">
+            <ArrowRight className="h-3 w-3" />
+          </button>
+          <button onClick={handleRefresh} className="rounded p-1 text-[#8888a0]/40 hover:text-[#8888a0] transition-colors">
+            <RefreshCw className={cn("h-3 w-3", isRefreshing && "animate-spin")} />
+          </button>
+          <div className="flex-1 flex items-center gap-1.5 rounded-lg bg-[#13131a] border border-[#1e1e2e] px-2.5 py-1">
+            <Globe className="h-3 w-3 text-[#8888a0]/40 shrink-0" />
+            <input
+              type="text"
+              value={urlInput}
+              onChange={(e) => setUrlInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && iframeRef.current && urlInput.trim()) { iframeRef.current.src = urlInput.trim(); setIframeLoading(true); setIframeError(false); } }}
+              className="flex-1 bg-transparent text-[11px] text-[#8888a0] font-mono outline-none placeholder:text-[#8888a0]/30 min-w-0"
+              placeholder="No preview available"
+            />
+            {previewUrl && (
+              <button onClick={handleCopyUrl} className="rounded p-0.5 text-[#8888a0] hover:text-[#e2e2e8] transition-all duration-150 shrink-0" title="Copy URL">
+                {copied ? <Check className="h-3 w-3 text-[#22c55e]" /> : <Copy className="h-3 w-3" />}
+              </button>
+            )}
+          </div>
+          <button onClick={handleOpenExternal} disabled={!previewUrl} className="rounded p-1 text-[#8888a0]/40 hover:text-[#8888a0] transition-colors disabled:opacity-30">
+            <ExternalLink className="h-3 w-3" />
+          </button>
+        </div>
+      )}
+
+      {/* Tab Content */}
+      <div className="flex-1 overflow-hidden">
+        {/* === Preview Tab === */}
+        {activeTab === "preview" && (
+          <div className="h-full flex items-start justify-center overflow-auto bg-[#0f0f17] p-4">
+            {showBuildAnimation ? (
+              <div className="flex flex-col items-center justify-center h-full w-full relative overflow-hidden">
+                {/* Wireframe background */}
+                <div className="absolute inset-0 opacity-[0.03]" style={{
+                  backgroundImage: "linear-gradient(#7c3aed 1px, transparent 1px), linear-gradient(90deg, #7c3aed 1px, transparent 1px)",
+                  backgroundSize: "40px 40px",
+                }} />
+
+                {/* Pulsing logo */}
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#7c3aed] to-[#3b82f6] opacity-20 blur-xl animate-pulse" />
+                  <div className="relative h-16 w-16 rounded-2xl bg-gradient-to-br from-[#7c3aed] to-[#3b82f6] flex items-center justify-center shadow-lg shadow-[#7c3aed]/20">
+                    <Zap className="h-7 w-7 text-white" />
+                  </div>
+                </div>
+
+                <p className="text-[14px] text-[#e2e2e8] font-medium mb-1 transition-all duration-300">
+                  ForgeAI está construyendo tu app
+                </p>
+                <p className="text-[12px] text-[#8888a0] mb-5">
+                  {currentStepText || BUILD_TEXTS[buildTextIdx]}
+                </p>
+
+                <div className="w-64 h-1.5 rounded-full bg-[#1e1e2e] overflow-hidden mb-6">
+                  {stepsTotal > 0 ? (
+                    <div className="h-full rounded-full progress-bar-gradient shimmer-bar transition-all duration-700 ease-out" style={{ width: `${progressPercent}%` }} />
+                  ) : (
+                    <div className="h-full w-1/3 rounded-full progress-bar-gradient animate-pulse" />
+                  )}
+                </div>
+
+                {recentFiles.length > 0 && (
+                  <div className="flex flex-col items-center gap-1.5 max-w-[300px]">
+                    {recentFiles.map((file) => (
+                      <div key={file} className="flex items-center gap-2 rounded-lg bg-[#13131a] border border-[#1e1e2e] px-3 py-1.5 file-slide-in">
+                        <FileCode2 className="h-3 w-3 text-[#3b82f6] shrink-0" />
+                        <span className="text-[11px] text-[#8888a0] font-mono truncate">{file}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+            ) : !previewUrl ? (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                {sandboxStatus === "creating" ? (
+                  <>
+                    <div className="h-16 w-16 rounded-2xl bg-[#7c3aed]/5 flex items-center justify-center mb-4">
+                      <Loader2 className="h-8 w-8 text-[#7c3aed] animate-spin" />
+                    </div>
+                    <h3 className="text-[13px] font-medium text-[#e2e2e8] mb-1">Configurando sandbox...</h3>
+                    <p className="text-[12px] text-[#8888a0]">Creando tu entorno de desarrollo</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="mb-5">
+                      <svg width="120" height="80" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="10" y="5" width="100" height="65" rx="8" stroke="#1e1e2e" strokeWidth="2" />
+                        <rect x="10" y="5" width="100" height="14" rx="8" fill="#13131a" />
+                        <rect x="10" y="17" width="100" height="2" fill="#1e1e2e" />
+                        <circle cx="20" cy="12" r="2.5" fill="#ef4444" opacity="0.4" />
+                        <circle cx="28" cy="12" r="2.5" fill="#f59e0b" opacity="0.4" />
+                        <circle cx="36" cy="12" r="2.5" fill="#22c55e" opacity="0.4" />
+                        <rect x="44" y="9.5" width="40" height="5" rx="2.5" fill="#1e1e2e" />
+                        <rect x="30" y="30" width="60" height="4" rx="2" fill="#1e1e2e" />
+                        <rect x="38" y="38" width="44" height="3" rx="1.5" fill="#1e1e2e" opacity="0.5" />
+                        <rect x="45" y="48" width="30" height="8" rx="4" fill="#7c3aed" opacity="0.15" />
+                        <text x="60" y="54" textAnchor="middle" fill="#7c3aed" fontSize="5" opacity="0.4">Preview</text>
+                      </svg>
+                    </div>
+                    <h3 className="text-[13px] font-medium text-[#e2e2e8] mb-1">Sin vista previa</h3>
+                    <p className="text-[12px] text-[#8888a0] max-w-[250px] leading-relaxed">
+                      Envía un mensaje en el chat para comenzar. La vista previa aparecerá aquí.
+                    </p>
+                  </>
+                )}
+              </div>
+
+            ) : (
+              <div className={cn("h-full bg-white rounded-xl overflow-hidden transition-all duration-300 relative",
+                deviceMode !== "desktop" && "border border-[#1e1e2e] shadow-2xl")}
+                style={{ width: deviceConfig.width, maxWidth: "100%" }}>
+                {iframeLoading && !iframeError && (
+                  <div className="absolute inset-0 z-10 bg-[#0f0f17] p-6 space-y-4">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="h-8 w-8 rounded-lg bg-[#1a1a24] skeleton-shimmer" />
+                      <div className="h-4 w-32 rounded-md bg-[#1a1a24] skeleton-shimmer" />
+                    </div>
+                    <div className="h-6 w-3/4 rounded-md bg-[#1a1a24] skeleton-shimmer" />
+                    <div className="h-4 w-1/2 rounded-md bg-[#1a1a24] skeleton-shimmer" />
+                    <div className="h-40 w-full rounded-xl bg-[#1a1a24] skeleton-shimmer mt-4" />
+                  </div>
+                )}
+
+                {iframeError && (
+                  <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0f0f17]/95 backdrop-blur-sm">
+                    <AlertCircle className="h-10 w-10 text-[#ef4444] mb-3" />
+                    <h3 className="text-[13px] font-medium text-[#e2e2e8] mb-1">Error al cargar la vista previa</h3>
+                    <p className="text-[12px] text-[#8888a0] mb-4 max-w-[220px] text-center leading-relaxed">El servidor puede estar iniciando.</p>
+                    <button onClick={handleRetry} className="inline-flex items-center gap-1.5 rounded-lg btn-gradient px-3 py-1.5 text-[11px] font-medium text-white">
+                      <RefreshCw className="h-3 w-3" /> Reintentar
+                    </button>
+                  </div>
+                )}
+
+                <iframe ref={iframeRef} src={previewUrl} className="h-full w-full border-0" title="App Preview"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals" onLoad={handleIframeLoad} onError={handleIframeError} />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* === Code Tab === */}
+        {activeTab === "code" && (
+          <CodePanel />
+        )}
+
+        {/* === Terminal Tab === */}
+        {activeTab === "terminal" && (
+          <div className="h-full overflow-y-auto bg-[#0a0a12] p-3 font-mono text-[11px]">
+            {!Array.isArray(terminalOutput) || terminalOutput.length === 0 ? (
+              <div className="flex h-full items-center justify-center">
+                <div className="text-center">
+                  <Terminal className="h-8 w-8 text-[#8888a0]/15 mx-auto mb-3" />
+                  <p className="text-[#8888a0]/30">Sin output de terminal</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                {terminalOutput.map((line, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      "py-0.5 whitespace-pre-wrap break-all leading-relaxed",
+                      line.startsWith("$") ? "text-[#22c55e] font-medium" :
+                      line.toLowerCase().includes("error") || line.toLowerCase().includes("fail") ? "text-[#f87171]" :
+                      line.toLowerCase().includes("warn") ? "text-[#fbbf24]" :
+                      line.toLowerCase().includes("success") || line.toLowerCase().includes("done") || line.toLowerCase().includes("ready") ? "text-[#4ade80]" :
+                      line.includes("http://") || line.includes("https://") ? "text-[#60a5fa]" :
+                      "text-[#8888a0]"
+                    )}
+                  >
+                    {line.startsWith("$") ? (
+                      <><span className="text-[#22c55e]">ubuntu@sandbox:~$ </span><span className="text-[#e2e2e8]">{line.slice(1).trim()}</span></>
+                    ) : line}
+                  </div>
+                ))}
+                <div ref={terminalEndRef} />
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

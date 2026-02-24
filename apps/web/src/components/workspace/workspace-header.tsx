@@ -23,7 +23,6 @@ import {
   UserPlus,
   Trash2,
   Crown,
-  ChevronRight,
 } from "lucide-react";
 import { useProjectStore } from "@/stores/project-store";
 import { useAuthStore } from "@/stores/auth-store";
@@ -195,83 +194,59 @@ export function WorkspaceHeader() {
 
   return (
     <>
-      <header className="flex h-11 items-center justify-between border-b border-border bg-[#0e0e14] px-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-[11px] text-[#8888a0] shrink-0">ForgeAI</span>
-          <ChevronRight className="h-3 w-3 text-[#8888a0]/40 shrink-0" />
-          <span className="text-[13px] font-medium text-[#e2e2e8] truncate max-w-[200px]">{projectName || "Untitled Project"}</span>
-          <div className={cn("h-1.5 w-1.5 rounded-full shrink-0", sandboxStatus === "running" ? "bg-[#22c55e]" : sandboxStatus === "creating" ? "bg-[#f59e0b] animate-pulse" : "bg-[#8888a0]/40")} />
-          {activeAgent && <span className="text-[10px] text-[#a78bfa] bg-[#7c3aed]/10 rounded-full px-2 py-0.5 capitalize shrink-0">{activeAgent}</span>}
-        </div>
-
-        <div className="flex items-center gap-1">
-          {isAgentRunning && (
-            <button onClick={handleStop} className="flex items-center gap-1.5 rounded-lg bg-[#ef4444]/10 px-2.5 py-1 text-[11px] font-medium text-[#ef4444] hover:bg-[#ef4444]/20 transition-all duration-150">
-              <Square className="h-3 w-3" /> Stop
-            </button>
-          )}
-          <IconBtn onClick={handleUndo} title="Undo"><Undo2 className="h-3.5 w-3.5" /></IconBtn>
-          <IconBtn onClick={() => setShowTimeline(!showTimeline)} title="Timeline" className={showTimeline ? "bg-[#7c3aed]/15 text-[#a78bfa]" : ""}>
-            <History className="h-3.5 w-3.5" />
-          </IconBtn>
-        </div>
-
-        <div className="flex items-center gap-1">
-          <button onClick={handleDeploy} disabled={isDeploying || isAgentRunning} className="btn-gradient flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed">
-            {isDeploying ? <Loader2 className="h-3 w-3 animate-spin" /> : <Rocket className="h-3 w-3" />}
-            {isDeploying ? "Deploying..." : "Deploy"}
+      {/* Inline action buttons — rendered inside the computer panel header */}
+      <div className="flex items-center gap-1">
+        {isAgentRunning && (
+          <button onClick={handleStop} className="flex items-center gap-1.5 rounded-lg bg-[#ef4444]/10 px-2.5 py-1 text-[11px] font-medium text-[#ef4444] hover:bg-[#ef4444]/20 transition-all duration-150">
+            <Square className="h-3 w-3" /> Stop
           </button>
-          <div className="mx-1 h-4 w-px bg-border" />
-          <IconBtn onClick={handleDownloadZip} title="Download ZIP">{isDownloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}</IconBtn>
-          <IconBtn onClick={openShare} title="Share"><Share2 className="h-3.5 w-3.5" /></IconBtn>
-          <IconBtn onClick={openGitHub} title="GitHub"><Github className="h-3.5 w-3.5" /></IconBtn>
-          <IconBtn onClick={openSupabase} title="Supabase"><Database className="h-3.5 w-3.5" /></IconBtn>
-          <IconBtn onClick={openSettings} title="Settings"><Settings className="h-3.5 w-3.5" /></IconBtn>
-          {members.length > 0 && (
-            <>
-              <div className="mx-1 h-4 w-px bg-border" />
-              <div className="flex items-center -space-x-1.5">
-                {members.slice(0, 3).map((m) => (
-                  <div key={m.id} className="h-6 w-6 rounded-full bg-[#1a1a24] border-2 border-[#0e0e14] flex items-center justify-center text-[9px] font-medium text-[#8888a0]" title={m.user.name || m.user.email}>
-                    {(m.user.name || m.user.email).charAt(0).toUpperCase()}
-                  </div>
-                ))}
-                {members.length > 3 && <div className="h-6 w-6 rounded-full bg-[#1a1a24] border-2 border-[#0e0e14] flex items-center justify-center text-[9px] font-medium text-[#8888a0]">+{members.length - 3}</div>}
-              </div>
-            </>
-          )}
-        </div>
-      </header>
+        )}
+        <IconBtn onClick={handleUndo} title="Undo"><Undo2 className="h-3.5 w-3.5" /></IconBtn>
+        <IconBtn onClick={() => setShowTimeline(!showTimeline)} title="Timeline" className={showTimeline ? "bg-[#7c3aed]/15 text-[#a78bfa]" : ""}>
+          <History className="h-3.5 w-3.5" />
+        </IconBtn>
+        <button onClick={handleDeploy} disabled={isDeploying || isAgentRunning} className="btn-gradient flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed">
+          {isDeploying ? <Loader2 className="h-3 w-3 animate-spin" /> : <Rocket className="h-3 w-3" />}
+          {isDeploying ? "..." : "Deploy"}
+        </button>
+        <div className="mx-0.5 h-4 w-px bg-[#1e1e2e]" />
+        <IconBtn onClick={handleDownloadZip} title="Download ZIP">{isDownloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}</IconBtn>
+        <IconBtn onClick={openShare} title="Share"><Share2 className="h-3.5 w-3.5" /></IconBtn>
+        <IconBtn onClick={openGitHub} title="GitHub"><Github className="h-3.5 w-3.5" /></IconBtn>
+        <IconBtn onClick={openSupabase} title="Supabase"><Database className="h-3.5 w-3.5" /></IconBtn>
+        <IconBtn onClick={openSettings} title="Settings"><Settings className="h-3.5 w-3.5" /></IconBtn>
+      </div>
 
+      {/* Timeline panel */}
       {showTimeline && (
-        <div className="border-b border-border bg-[#0e0e14] px-4 py-3">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-medium text-[#8888a0]">Version Timeline</span>
-            <button onClick={() => setShowTimeline(false)} className="text-[#8888a0] hover:text-[#e2e2e8] transition-colors"><X className="h-3 w-3" /></button>
+        <div className="fixed top-12 right-4 z-40 w-[400px] rounded-xl border border-[#1e1e2e] bg-[#13131a] p-4 shadow-2xl animate-fade-in">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[12px] font-medium text-[#8888a0]">Version Timeline</span>
+            <button onClick={() => setShowTimeline(false)} className="text-[#8888a0] hover:text-[#e2e2e8] transition-colors"><X className="h-3.5 w-3.5" /></button>
           </div>
           {!Array.isArray(snapshots) || snapshots.length === 0 ? (
             <p className="text-[11px] text-[#8888a0]/60">No snapshots yet. Snapshots are created automatically before each change.</p>
           ) : (
-            <div className="flex items-center gap-1 overflow-x-auto pb-1">
-              {snapshots.map((snap, i) => (
-                <div key={snap.id} className="flex items-center gap-1 shrink-0">
-                  {i > 0 && <div className="w-4 h-px bg-border" />}
-                  <button onClick={() => handleRestoreSnapshot(snap.id)} className="group flex flex-col items-center gap-1 rounded-xl border border-border px-3 py-2 hover:border-[#7c3aed]/30 hover:bg-[#7c3aed]/5 transition-all duration-150 min-w-[120px]">
-                    <div className="h-2 w-2 rounded-full bg-[#7c3aed]/60 group-hover:bg-[#7c3aed]" />
-                    <span className="text-[10px] text-[#e2e2e8] font-medium truncate max-w-[100px]">{snap.label}</span>
-                    <span className="text-[9px] text-[#8888a0]">{new Date(snap.createdAt).toLocaleTimeString()}</span>
-                    <span className="text-[9px] text-[#7c3aed] opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity"><RotateCcw className="h-2 w-2" /> Restore</span>
-                  </button>
-                </div>
+            <div className="flex flex-col gap-1.5 max-h-[300px] overflow-y-auto">
+              {snapshots.map((snap) => (
+                <button key={snap.id} onClick={() => handleRestoreSnapshot(snap.id)} className="group flex items-center gap-3 rounded-lg border border-[#1e1e2e] px-3 py-2 hover:border-[#7c3aed]/30 hover:bg-[#7c3aed]/5 transition-all duration-150 text-left">
+                  <div className="h-2 w-2 rounded-full bg-[#7c3aed]/60 group-hover:bg-[#7c3aed] shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[11px] text-[#e2e2e8] font-medium truncate block">{snap.label}</span>
+                    <span className="text-[10px] text-[#8888a0]">{new Date(snap.createdAt).toLocaleTimeString()}</span>
+                  </div>
+                  <span className="text-[9px] text-[#7c3aed] opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity shrink-0"><RotateCcw className="h-2.5 w-2.5" /> Restore</span>
+                </button>
               ))}
             </div>
           )}
         </div>
       )}
 
+      {/* Modals */}
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl border border-border bg-[#13131a] p-6 shadow-2xl animate-fade-in">
+          <div className="w-full max-w-md rounded-xl border border-[#1e1e2e] bg-[#13131a] p-6 shadow-2xl animate-fade-in">
             {modal === "github" && (
               <>
                 <div className="flex items-center justify-between mb-4">
@@ -281,7 +256,7 @@ export function WorkspaceHeader() {
                 {!githubStatus.connected ? (
                   <div className="space-y-3">
                     <p className="text-sm text-[#8888a0]">Connect your GitHub account with a personal access token.</p>
-                    <input type="password" value={githubToken} onChange={(e) => setGithubToken(e.target.value)} className="w-full rounded-xl border border-border bg-[#0a0a0f] px-4 py-2.5 text-sm text-[#e2e2e8] placeholder:text-[#8888a0]/50 outline-none focus:border-[#7c3aed]/50 transition-colors" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" />
+                    <input type="password" value={githubToken} onChange={(e) => setGithubToken(e.target.value)} className="w-full rounded-xl border border-[#1e1e2e] bg-[#0a0a12] px-4 py-2.5 text-sm text-[#e2e2e8] placeholder:text-[#8888a0]/50 outline-none focus:border-[#7c3aed]/50 transition-colors" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" />
                     <button onClick={connectGitHub} disabled={!githubToken.trim() || isConnecting} className="w-full flex items-center justify-center gap-2 rounded-xl btn-gradient px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50">{isConnecting && <Loader2 className="h-4 w-4 animate-spin" />} Connect GitHub</button>
                   </div>
                 ) : (
@@ -312,8 +287,8 @@ export function WorkspaceHeader() {
                 {!supabaseStatus.connected ? (
                   <div className="space-y-3">
                     <p className="text-sm text-[#8888a0]">Connect your Supabase project to add database and auth.</p>
-                    <input type="text" value={supabaseUrl} onChange={(e) => setSupabaseUrl(e.target.value)} className="w-full rounded-xl border border-border bg-[#0a0a0f] px-4 py-2.5 text-sm text-[#e2e2e8] placeholder:text-[#8888a0]/50 outline-none focus:border-[#7c3aed]/50 transition-colors" placeholder="https://your-project.supabase.co" />
-                    <input type="password" value={supabaseKey} onChange={(e) => setSupabaseKey(e.target.value)} className="w-full rounded-xl border border-border bg-[#0a0a0f] px-4 py-2.5 text-sm text-[#e2e2e8] placeholder:text-[#8888a0]/50 outline-none focus:border-[#7c3aed]/50 transition-colors" placeholder="anon key" />
+                    <input type="text" value={supabaseUrl} onChange={(e) => setSupabaseUrl(e.target.value)} className="w-full rounded-xl border border-[#1e1e2e] bg-[#0a0a12] px-4 py-2.5 text-sm text-[#e2e2e8] placeholder:text-[#8888a0]/50 outline-none focus:border-[#7c3aed]/50 transition-colors" placeholder="https://your-project.supabase.co" />
+                    <input type="password" value={supabaseKey} onChange={(e) => setSupabaseKey(e.target.value)} className="w-full rounded-xl border border-[#1e1e2e] bg-[#0a0a12] px-4 py-2.5 text-sm text-[#e2e2e8] placeholder:text-[#8888a0]/50 outline-none focus:border-[#7c3aed]/50 transition-colors" placeholder="anon key" />
                     <button onClick={connectSupabase} disabled={!supabaseUrl.trim() || !supabaseKey.trim() || isConnecting} className="w-full flex items-center justify-center gap-2 rounded-xl btn-gradient px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50">{isConnecting && <Loader2 className="h-4 w-4 animate-spin" />} Connect Supabase</button>
                   </div>
                 ) : (
@@ -337,7 +312,7 @@ export function WorkspaceHeader() {
                   <div>
                     <label className="block text-sm font-medium text-[#e2e2e8] mb-1.5">Custom Instructions</label>
                     <p className="text-xs text-[#8888a0] mb-2">Injected into all agent prompts for this project.</p>
-                    <textarea value={customInstructions} onChange={(e) => setCustomInstructions(e.target.value)} rows={6} className="w-full rounded-xl border border-border bg-[#0a0a0f] px-4 py-2.5 text-sm text-[#e2e2e8] placeholder:text-[#8888a0]/50 outline-none focus:border-[#7c3aed]/50 resize-none transition-colors" placeholder="e.g., Use dark theme, prefer shadcn/ui components..." />
+                    <textarea value={customInstructions} onChange={(e) => setCustomInstructions(e.target.value)} rows={6} className="w-full rounded-xl border border-[#1e1e2e] bg-[#0a0a12] px-4 py-2.5 text-sm text-[#e2e2e8] placeholder:text-[#8888a0]/50 outline-none focus:border-[#7c3aed]/50 resize-none transition-colors" placeholder="e.g., Use dark theme, prefer shadcn/ui components..." />
                   </div>
                   <button onClick={saveSettings} className="w-full flex items-center justify-center gap-2 rounded-xl btn-gradient px-4 py-2.5 text-sm font-medium text-white">{settingsSaved ? (<><Check className="h-4 w-4" /> Saved!</>) : "Save Settings"}</button>
                 </div>
@@ -354,12 +329,12 @@ export function WorkspaceHeader() {
                   <div>
                     <label className="block text-sm font-medium text-[#e2e2e8] mb-1.5">Invite by email</label>
                     <div className="flex gap-2">
-                      <input type="email" value={shareEmail} onChange={(e) => setShareEmail(e.target.value)} className="flex-1 rounded-xl border border-border bg-[#0a0a0f] px-3 py-2 text-sm text-[#e2e2e8] placeholder:text-[#8888a0]/50 outline-none focus:border-[#7c3aed]/50 transition-colors" placeholder="teammate@example.com" onKeyDown={(e) => { if (e.key === "Enter") handleShare(); }} />
-                      <select value={shareRole} onChange={(e) => setShareRole(e.target.value as "viewer" | "editor")} className="rounded-xl border border-border bg-[#0a0a0f] px-2 py-2 text-sm text-[#e2e2e8] outline-none focus:border-[#7c3aed]/50 transition-colors"><option value="editor">Editor</option><option value="viewer">Viewer</option></select>
+                      <input type="email" value={shareEmail} onChange={(e) => setShareEmail(e.target.value)} className="flex-1 rounded-xl border border-[#1e1e2e] bg-[#0a0a12] px-3 py-2 text-sm text-[#e2e2e8] placeholder:text-[#8888a0]/50 outline-none focus:border-[#7c3aed]/50 transition-colors" placeholder="teammate@example.com" onKeyDown={(e) => { if (e.key === "Enter") handleShare(); }} />
+                      <select value={shareRole} onChange={(e) => setShareRole(e.target.value as "viewer" | "editor")} className="rounded-xl border border-[#1e1e2e] bg-[#0a0a12] px-2 py-2 text-sm text-[#e2e2e8] outline-none focus:border-[#7c3aed]/50 transition-colors"><option value="editor">Editor</option><option value="viewer">Viewer</option></select>
                     </div>
                   </div>
                   <button onClick={handleShare} disabled={!shareEmail.trim() || isSharing} className="w-full flex items-center justify-center gap-2 rounded-xl btn-gradient px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50">{isSharing ? <Loader2 className="h-4 w-4 animate-spin" /> : shareSuccess ? <Check className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />} {shareSuccess ? "Invited!" : "Send Invite"}</button>
-                  {members.length > 0 && (
+                  {Array.isArray(members) && members.length > 0 && (
                     <div>
                       <label className="block text-xs font-medium text-[#8888a0] mb-2">Members ({members.length})</label>
                       <div className="space-y-2 max-h-48 overflow-y-auto">

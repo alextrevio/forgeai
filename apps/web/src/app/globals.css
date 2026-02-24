@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #0a0a0f;
+  --color-background: #0f0f17;
   --color-foreground: #e2e2e8;
   --color-card: #13131a;
   --color-card-foreground: #e2e2e8;
@@ -58,7 +58,8 @@ body {
   width: 100%;
 }
 
-/* Landing page animations */
+/* ─── Keyframes ─── */
+
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
@@ -89,6 +90,33 @@ body {
   100% { background-position: -200% 0; }
 }
 
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes livePulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+  50% { opacity: 0.8; box-shadow: 0 0 0 4px rgba(34, 197, 94, 0); }
+}
+
+@keyframes shimmerBar {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes tabFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ─── Animation classes ─── */
+
 .animate-fade-in-up {
   animation: fadeInUp 0.6s ease-out forwards;
   opacity: 0;
@@ -101,6 +129,38 @@ body {
 .animation-delay-200 { animation-delay: 200ms; }
 .animation-delay-400 { animation-delay: 400ms; }
 .animation-delay-600 { animation-delay: 600ms; }
+
+/* Message enter animation */
+.msg-enter {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Step group enter */
+.step-group-enter {
+  animation: slideInDown 0.35s ease-out forwards;
+}
+
+/* Step item enter */
+.step-item-enter {
+  animation: fadeIn 0.25s ease-out forwards;
+}
+
+/* File slide-in animation */
+.file-slide-in {
+  animation: slideInRight 0.3s ease-out forwards;
+}
+
+/* Live pulse — green dot */
+.live-pulse {
+  animation: livePulse 2s ease-in-out infinite;
+}
+
+/* Tab content fade */
+.tab-fade {
+  animation: tabFade 0.2s ease-out forwards;
+}
+
+/* ─── Component styles ─── */
 
 .bg-grid-pattern {
   background-image: radial-gradient(circle, #7c3aed10 1px, transparent 1px);
@@ -129,7 +189,18 @@ body {
   box-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
 }
 
-/* Progress bar animation */
+/* Progress bar — violet→blue gradient */
+.progress-bar-gradient {
+  background: linear-gradient(90deg, #7c3aed, #3b82f6, #7c3aed);
+  background-size: 200% 100%;
+}
+
+/* Shimmer animation for progress bar */
+.shimmer-bar {
+  animation: shimmerBar 2s linear infinite;
+}
+
+/* Old progress animation (kept for backwards compat) */
 .progress-animated {
   background: linear-gradient(90deg, #7c3aed, #3b82f6, #7c3aed);
   background-size: 200% 100%;
