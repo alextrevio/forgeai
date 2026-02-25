@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import {
   Loader2,
   CheckCircle2,
@@ -10,9 +10,16 @@ import {
   ArrowUp,
   Wrench,
   ChevronDown,
-  ChevronRight,
   Zap,
   Eye,
+  Upload,
+  ShoppingCart,
+  BarChart3,
+  Palette,
+  MessageSquare,
+  Figma,
+  Globe,
+  LayoutTemplate,
 } from "lucide-react";
 import { useProjectStore } from "@/stores/project-store";
 import { api } from "@/lib/api";
@@ -29,11 +36,49 @@ function safeArray(data: any): any[] {
   return [];
 }
 
-const INITIAL_CHIPS = [
-  "Crea una app de tareas",
-  "Crea una landing page",
-  "Dashboard con gráficos",
-  "Tienda e-commerce",
+const SUGGESTION_CARDS = [
+  {
+    icon: <ShoppingCart className="h-5 w-5" />,
+    emoji: "",
+    title: "E-commerce con carrito y pagos",
+    description: "Tienda online completa con catálogo, carrito y checkout",
+    prompt: "Crea un e-commerce con carrito de compras y página de pagos",
+  },
+  {
+    icon: <BarChart3 className="h-5 w-5" />,
+    emoji: "",
+    title: "Dashboard de analytics",
+    description: "Panel de métricas con gráficas interactivas en tiempo real",
+    prompt: "Crea un dashboard de analytics con gráficas interactivas",
+  },
+  {
+    icon: <Palette className="h-5 w-5" />,
+    emoji: "",
+    title: "Portfolio con animaciones",
+    description: "Sitio personal con transiciones y efectos visuales modernos",
+    prompt: "Crea un portfolio personal con animaciones suaves y moderno",
+  },
+  {
+    icon: <MessageSquare className="h-5 w-5" />,
+    emoji: "",
+    title: "Chat app en tiempo real",
+    description: "Aplicación de mensajería con WebSockets y notificaciones",
+    prompt: "Crea una app de chat en tiempo real con WebSockets",
+  },
+];
+
+const ACTION_CHIPS = [
+  { icon: <Figma className="h-3 w-3" />, label: "Importar desde Figma", prompt: "Importar diseño desde Figma: " },
+  { icon: <Globe className="h-3 w-3" />, label: "Clonar sitio web", prompt: "Clonar el sitio web: " },
+  { icon: <LayoutTemplate className="h-3 w-3" />, label: "Usar template", prompt: "Usar un template de " },
+];
+
+const PLACEHOLDERS = [
+  "Describe tu app...",
+  "Pega un diseño de Figma...",
+  "¿Qué quieres construir hoy?",
+  "Describe una landing page...",
+  "Crea un dashboard con...",
 ];
 
 function formatTime(dateStr: string): string {
@@ -44,14 +89,13 @@ function formatTime(dateStr: string): string {
   }
 }
 
-/** Detect debugger-style SYSTEM messages and return a short summary */
 function getDebugSummary(content: string): string | null {
   if (content.startsWith("Debugger fix:")) return content.replace("Debugger fix: ", "");
   if (content.startsWith("Debugger failed:")) return "No se pudo corregir automáticamente";
   return null;
 }
 
-/** Collapsible Step Group — like Manus */
+/** Collapsible Step Group */
 function StepGroup({ title, steps, defaultExpanded = false }: {
   title: string;
   steps: Array<{ id: number; description: string; status: string }>;
@@ -86,7 +130,6 @@ function StepGroup({ title, steps, defaultExpanded = false }: {
           !expanded && "-rotate-90"
         )} />
       </button>
-
       {expanded && (
         <div className="ml-3 pl-4 border-l border-[#1a1a1f] space-y-0.5 mt-1 mb-2">
           {safeSteps.map((step) => (
@@ -121,8 +164,11 @@ export function ChatPanel() {
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [expandedDebug, setExpandedDebug] = useState<Set<string>>(new Set());
+  const [placeholderIdx, setPlaceholderIdx] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const dragCounter = useRef(0);
 
   const {
     currentProjectId,
@@ -136,10 +182,22 @@ export function ChatPanel() {
     setAgentRunning,
   } = useProjectStore();
 
+  const safeMessages = useMemo(() => safeArray(messages), [messages]);
+  const isEmpty = safeMessages.length === 0 && !isAgentRunning;
+
   const lastAction = useMemo(() => {
-    const assistantMsgs = safeArray(messages).filter((m) => m.role === "ASSISTANT");
+    const assistantMsgs = safeMessages.filter((m) => m.role === "ASSISTANT");
     return assistantMsgs[assistantMsgs.length - 1]?.content || null;
-  }, [messages]);
+  }, [safeMessages]);
+
+  // Rotating placeholder
+  useEffect(() => {
+    if (!isEmpty) return;
+    const interval = setInterval(() => {
+      setPlaceholderIdx((i) => (i + 1) % PLACEHOLDERS.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [isEmpty]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -184,6 +242,11 @@ export function ChatPanel() {
     }
   };
 
+  const insertText = useCallback((text: string) => {
+    setInput(text);
+    setTimeout(() => textareaRef.current?.focus(), 50);
+  }, []);
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -210,24 +273,59 @@ export function ChatPanel() {
     });
   };
 
-  // Group plan steps into a single collapsible block
+  // Drag & drop handlers
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounter.current++;
+    if (dragCounter.current === 1) setIsDragging(true);
+  };
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounter.current--;
+    if (dragCounter.current === 0) setIsDragging(false);
+  };
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); };
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounter.current = 0;
+    setIsDragging(false);
+    // Accept dropped text
+    const text = e.dataTransfer.getData("text/plain");
+    if (text) { setInput((prev) => prev + text); return; }
+  };
+
   const planSteps = useMemo(() => {
     if (!currentPlan?.steps) return [];
     return safeArray(currentPlan.steps);
   }, [currentPlan]);
-
   const hasInProgressStep = planSteps.some((s) => s.status === "in_progress");
 
   return (
-    <div className="flex h-full flex-col bg-background">
+    <div
+      className="flex h-full flex-col bg-[#0A0A0A] relative"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {/* Drag overlay */}
+      {isDragging && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#0A0A0A]/80 backdrop-blur-sm animate-overlay-fade">
+          <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-[#7c3aed]/50 bg-[#7c3aed]/5 px-12 py-10">
+            <Upload className="h-8 w-8 text-[#7c3aed]" />
+            <span className="text-sm font-medium text-[#EDEDED]">Suelta tu imagen aquí</span>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-[#1a1a1f] px-4 py-3">
+      <div className="flex items-center justify-between border-b border-[#2A2A2A] px-4 py-3">
         <div className="flex items-center gap-2.5">
           <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-[#7c3aed] to-[#3b82f6] flex items-center justify-center">
             <Zap className="h-4 w-4 text-white" />
           </div>
           <div>
-            <h1 className="text-[14px] font-semibold text-[#e2e2e8] leading-tight">ForgeAI</h1>
+            <h1 className="text-[14px] font-semibold text-[#EDEDED] leading-tight">Arya AI</h1>
             <span className="text-[11px] text-[#8888a0]">{projectName || "Nuevo proyecto"}</span>
           </div>
         </div>
@@ -239,30 +337,68 @@ export function ChatPanel() {
         )}
       </div>
 
-      {/* Messages */}
+      {/* Messages / Empty State */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-        {(safeArray(messages).length === 0) && !isAgentRunning && (
-          <div className="flex flex-col items-center justify-center h-full text-center px-4">
-            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[#7c3aed]/10 to-[#3b82f6]/10 flex items-center justify-center mb-4">
-              <Sparkles className="h-7 w-7 text-[#a78bfa]" />
+        {/* ─── Empty State: Welcome Screen ─── */}
+        {isEmpty && (
+          <div className="flex flex-col items-center justify-center h-full text-center px-2">
+            {/* Hero */}
+            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[#7c3aed]/15 to-[#3b82f6]/10 flex items-center justify-center mb-5 animate-sparkle-pulse">
+              <Sparkles className="h-8 w-8 text-[#a78bfa]" />
             </div>
-            <h3 className="text-[16px] font-semibold text-[#e2e2e8] mb-1">¿Qué quieres construir?</h3>
-            <p className="text-[13px] text-[#8888a0] max-w-[300px] mb-6 leading-relaxed">
-              Describe tu app y la construiré para ti.
+            <h2 className="text-3xl font-light text-[#EDEDED] mb-2">
+              ¿Qué quieres construir?
+            </h2>
+            <p className="text-[13px] text-[#8888a0] max-w-[360px] mb-8 leading-relaxed">
+              Describe tu idea y Arya la construirá para ti en minutos.
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-2 max-w-[340px]">
-              {INITIAL_CHIPS.map((chip) => (
-                <button key={chip} onClick={() => handleSubmit(chip)}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-[#1a1a1f] bg-[#111114] px-3.5 py-2 text-[12px] text-[#8888a0] hover:text-[#e2e2e8] hover:border-[#7c3aed]/30 hover:bg-[#7c3aed]/5 transition-all duration-150 cursor-pointer">
-                  <Sparkles className="h-3 w-3 text-[#7c3aed]/60" />
-                  {chip}
+
+            {/* Suggestion Cards 2x2 */}
+            <div className="grid grid-cols-2 gap-3 w-full max-w-[420px] mb-6">
+              {SUGGESTION_CARDS.map((card, i) => (
+                <button
+                  key={card.title}
+                  onClick={() => insertText(card.prompt)}
+                  className={cn(
+                    "group flex flex-col items-start gap-2 rounded-xl border border-[#2A2A2A] bg-[#0A0A0A] p-4 text-left transition-all duration-200",
+                    "hover:border-[#7c3aed]/40 hover:shadow-lg hover:shadow-[#7c3aed]/5 hover:-translate-y-0.5",
+                    i === 0 ? "animate-card-enter" :
+                    i === 1 ? "animate-card-enter-d1" :
+                    i === 2 ? "animate-card-enter-d2" :
+                    "animate-card-enter-d3"
+                  )}
+                >
+                  <span className="text-[#7c3aed] group-hover:text-[#a78bfa] transition-colors">
+                    {card.icon}
+                  </span>
+                  <span className="text-[13px] font-medium text-[#EDEDED] leading-snug">
+                    {card.title}
+                  </span>
+                  <span className="text-[11px] text-[#8888a0] leading-relaxed">
+                    {card.description}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Action chips */}
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {ACTION_CHIPS.map((chip) => (
+                <button
+                  key={chip.label}
+                  onClick={() => insertText(chip.prompt)}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[#2A2A2A] bg-[#111114] px-3 py-1.5 text-[11px] text-[#8888a0] hover:text-[#EDEDED] hover:border-[#7c3aed]/30 hover:bg-[#7c3aed]/5 transition-all duration-150 cursor-pointer"
+                >
+                  <span className="text-[#7c3aed]/60">{chip.icon}</span>
+                  {chip.label}
                 </button>
               ))}
             </div>
           </div>
         )}
 
-        {safeArray(messages).map((msg) => {
+        {/* ─── Message list ─── */}
+        {safeMessages.map((msg) => {
           const debugSummary = msg.role === "SYSTEM" ? getDebugSummary(msg.content) : null;
           const isExpanded = expandedDebug.has(msg.id);
 
@@ -270,8 +406,8 @@ export function ChatPanel() {
           if (msg.role === "USER") {
             return (
               <div key={msg.id} className="flex justify-end msg-enter">
-                <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-gradient-to-br from-[#7c3aed]/20 to-[#3b82f6]/10 border border-[#7c3aed]/15 px-4 py-2.5">
-                  <div className="text-[13px] text-[#e2e2e8] whitespace-pre-wrap break-words leading-relaxed">{msg.content}</div>
+                <div className="max-w-[85%] rounded-2xl rounded-br-md bg-[#7c3aed]/10 border border-[#7c3aed]/15 px-4 py-2.5">
+                  <div className="text-[13px] text-[#EDEDED] whitespace-pre-wrap break-words leading-relaxed">{msg.content}</div>
                   {msg.createdAt && (
                     <div className="text-[10px] text-[#8888a0]/40 text-right mt-1.5">{formatTime(msg.createdAt)}</div>
                   )}
@@ -280,18 +416,18 @@ export function ChatPanel() {
             );
           }
 
-          // ── Debugger SYSTEM message — compact 1-line ──
+          // ── Debugger SYSTEM message ──
           if (debugSummary) {
             return (
               <div key={msg.id} className="msg-enter">
                 <button onClick={() => toggleDebug(msg.id)}
-                  className="flex items-center gap-2 text-[11px] text-[#8888a0] hover:text-[#e2e2e8] transition-colors w-full text-left py-1 px-2 rounded-lg hover:bg-[#161619]/30">
+                  className="flex items-center gap-2 text-[11px] text-[#8888a0] hover:text-[#EDEDED] transition-colors w-full text-left py-1 px-2 rounded-lg hover:bg-[#161619]/30">
                   <Wrench className="h-3 w-3 text-[#f59e0b] shrink-0" />
                   <span className="truncate">Corregido automáticamente: {debugSummary}</span>
                   <ChevronDown className={cn("h-3 w-3 shrink-0 transition-transform", isExpanded && "rotate-180")} />
                 </button>
                 {isExpanded && (
-                  <div className="ml-5 pl-3 border-l border-[#1a1a1f] text-[11px] text-[#8888a0]/60 whitespace-pre-wrap mt-1 mb-1">{msg.content}</div>
+                  <div className="ml-5 pl-3 border-l border-[#2A2A2A] text-[11px] text-[#8888a0]/60 whitespace-pre-wrap mt-1 mb-1">{msg.content}</div>
                 )}
               </div>
             );
@@ -311,16 +447,16 @@ export function ChatPanel() {
             );
           }
 
-          // ── ASSISTANT message — Manus style with avatar ──
+          // ── ASSISTANT message — left aligned with avatar ──
           return (
             <div key={msg.id} className="msg-enter">
               <div className="flex gap-3 py-1">
                 <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-[#7c3aed] to-[#3b82f6] flex items-center justify-center shrink-0 mt-0.5">
-                  <Zap className="h-3.5 w-3.5 text-white" />
+                  <Sparkles className="h-3.5 w-3.5 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[12px] font-bold text-[#e2e2e8]">forgeai</span>
+                    <span className="text-[12px] font-bold text-[#EDEDED]">Arya</span>
                     {msg.createdAt && <span className="text-[10px] text-[#8888a0]/40">{formatTime(msg.createdAt)}</span>}
                   </div>
                   <RichMessage message={msg} />
@@ -330,7 +466,7 @@ export function ChatPanel() {
           );
         })}
 
-        {/* Plan steps — collapsible group (Manus style) */}
+        {/* Plan steps */}
         {planSteps.length > 0 && (
           <StepGroup
             title={currentPlan?.understanding?.split(".")[0] || "Ejecutando plan"}
@@ -339,15 +475,15 @@ export function ChatPanel() {
           />
         )}
 
-        {/* Project card — shown when project initializes */}
-        {!isAgentRunning && safeArray(messages).length > 0 && projectName && (
+        {/* Project card */}
+        {!isAgentRunning && safeMessages.length > 0 && projectName && (
           <div className="msg-enter">
-            <div className="rounded-xl border border-[#1a1a1f] bg-[#111114] p-3 flex items-center gap-3">
+            <div className="rounded-xl border border-[#2A2A2A] bg-[#111114] p-3 flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#7c3aed]/20 to-[#3b82f6]/20 flex items-center justify-center shrink-0">
                 <Zap className="h-5 w-5 text-[#a78bfa]" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-medium text-[#e2e2e8] truncate">{projectName}</div>
+                <div className="text-[13px] font-medium text-[#EDEDED] truncate">{projectName}</div>
                 <div className="text-[11px] text-[#8888a0]">Proyecto Inicializado</div>
               </div>
               <button className="flex items-center gap-1 rounded-lg bg-[#7c3aed]/10 px-3 py-1.5 text-[11px] font-medium text-[#a78bfa] hover:bg-[#7c3aed]/20 transition-colors shrink-0">
@@ -357,20 +493,25 @@ export function ChatPanel() {
           </div>
         )}
 
-        {/* Typing indicator */}
+        {/* ─── Typing indicator: "Arya está pensando..." with 3 animated dots ─── */}
         {isAgentRunning && (
-          <div className="flex items-center gap-3 py-2 msg-enter">
+          <div className="flex items-start gap-3 py-2 msg-enter">
             <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-[#7c3aed] to-[#3b82f6] flex items-center justify-center shrink-0">
-              <Zap className="h-3.5 w-3.5 text-white" />
+              <Sparkles className="h-3.5 w-3.5 text-white" />
             </div>
-            <span className="inline-flex gap-1 items-center">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#a78bfa] animate-bounce [animation-delay:0ms]" />
-              <span className="h-1.5 w-1.5 rounded-full bg-[#a78bfa] animate-bounce [animation-delay:200ms]" />
-              <span className="h-1.5 w-1.5 rounded-full bg-[#a78bfa] animate-bounce [animation-delay:400ms]" />
-            </span>
-            {agentThinking && (
-              <span className="text-[11px] text-[#8888a0] truncate">{agentThinking}</span>
-            )}
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[12px] font-bold text-[#EDEDED]">Arya</span>
+                <span className="inline-flex gap-[3px] items-center ml-0.5">
+                  <span className="h-[5px] w-[5px] rounded-full bg-[#a78bfa] animate-dot-1" />
+                  <span className="h-[5px] w-[5px] rounded-full bg-[#a78bfa] animate-dot-2" />
+                  <span className="h-[5px] w-[5px] rounded-full bg-[#a78bfa] animate-dot-3" />
+                </span>
+              </div>
+              {agentThinking && (
+                <span className="text-[11px] text-[#8888a0] truncate max-w-[260px]">{agentThinking}</span>
+              )}
+            </div>
           </div>
         )}
 
@@ -378,44 +519,44 @@ export function ChatPanel() {
       </div>
 
       {/* Suggestion Chips */}
-      {!isAgentRunning && safeArray(messages).some((m) => m.role === "ASSISTANT") && (
+      {!isAgentRunning && safeMessages.some((m) => m.role === "ASSISTANT") && (
         <SuggestionChips lastAction={lastAction} onSelect={(chip) => handleSubmit(chip)} />
       )}
 
-      {/* Input Area */}
-      <div className="border-t border-[#1a1a1f] p-3">
-        <div className="relative flex items-end gap-2 rounded-xl border border-[#1a1a1f] bg-[#0a0a12] p-2.5 focus-within:border-[#7c3aed]/30 transition-colors">
+      {/* ─── Chat Input ─── */}
+      <div className="border-t border-[#2A2A2A] p-3">
+        <div className="relative flex items-end gap-2 rounded-2xl border border-[#2A2A2A] bg-[#0A0A0A] px-4 py-3 focus-within:border-[#7c3aed]/40 transition-colors">
           <textarea
             ref={textareaRef}
             data-chat-input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isAgentRunning ? "ForgeAI está trabajando..." : "Pídele a ForgeAI que construya algo..."}
+            placeholder={isAgentRunning ? "Arya está trabajando..." : PLACEHOLDERS[placeholderIdx]}
             disabled={isAgentRunning}
             rows={1}
-            className="flex-1 resize-none bg-transparent text-[13px] text-[#e2e2e8] placeholder:text-[#8888a0]/40 outline-none disabled:opacity-40 min-h-[36px] max-h-[200px] py-1.5 px-1 leading-relaxed"
+            className="flex-1 resize-none bg-transparent text-[13px] text-[#EDEDED] placeholder:text-[#8888a0]/50 outline-none disabled:opacity-40 min-h-[36px] max-h-[200px] py-0.5 leading-relaxed"
           />
           <button
             data-chat-send
             onClick={() => handleSubmit()}
             disabled={!input.trim() || isAgentRunning || isSending}
             className={cn(
-              "flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-150 shrink-0",
+              "flex items-center justify-center rounded-full transition-all duration-200 shrink-0",
               input.trim() && !isAgentRunning && !isSending
-                ? "btn-gradient text-white hover:scale-[1.05]"
-                : "bg-[#161619] text-[#8888a0]/40 cursor-not-allowed"
+                ? "h-9 w-9 bg-gradient-to-br from-[#7c3aed] to-[#6d28d9] text-white shadow-lg shadow-[#7c3aed]/20 hover:shadow-[#7c3aed]/40 hover:scale-105"
+                : "h-9 w-9 bg-transparent text-[#8888a0]/30 cursor-default"
             )}
           >
             {isSending || isAgentRunning ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <ArrowUp className="h-4 w-4" />
+              <ArrowUp className={cn("h-4 w-4 transition-opacity", input.trim() ? "opacity-100" : "opacity-0")} />
             )}
           </button>
         </div>
         <div className="mt-1.5 px-1">
-          <span className="text-[10px] text-[#8888a0]/40">Enter para enviar, Shift+Enter nueva línea</span>
+          <span className="text-[10px] text-[#8888a0]/40">Enter para enviar · Shift+Enter nueva línea · Cmd+K enfocar chat</span>
         </div>
       </div>
     </div>

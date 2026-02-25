@@ -202,6 +202,39 @@ body {
 }
 .animate-wireframe-pulse { animation: wireframePulse 3s ease-in-out infinite; }
 
+/* Hero sparkle pulse */
+@keyframes sparklePulse {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+.animate-sparkle-pulse { animation: sparklePulse 3s ease-in-out infinite; }
+
+/* Suggestion card hover lift */
+@keyframes cardEnter {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-card-enter { animation: cardEnter 0.4s ease-out forwards; opacity: 0; }
+.animate-card-enter-d1 { animation: cardEnter 0.4s 0.05s ease-out forwards; opacity: 0; }
+.animate-card-enter-d2 { animation: cardEnter 0.4s 0.10s ease-out forwards; opacity: 0; }
+.animate-card-enter-d3 { animation: cardEnter 0.4s 0.15s ease-out forwards; opacity: 0; }
+
+/* Sequential bounce dots for typing indicator */
+@keyframes dotPulse {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1.2); }
+}
+.animate-dot-1 { animation: dotPulse 1.4s ease-in-out infinite; }
+.animate-dot-2 { animation: dotPulse 1.4s 0.2s ease-in-out infinite; }
+.animate-dot-3 { animation: dotPulse 1.4s 0.4s ease-in-out infinite; }
+
+/* Drag overlay fade */
+@keyframes overlayFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-overlay-fade { animation: overlayFade 0.2s ease-out forwards; }
+
 /* Tab content fade */
 .tab-fade {
   animation: tabFade 0.2s ease-out forwards;
