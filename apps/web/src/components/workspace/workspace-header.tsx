@@ -186,7 +186,7 @@ export function WorkspaceHeader() {
 
   const handleRemoveMember = async (memberId: string) => {
     if (!currentProjectId) return;
-    try { await api.removeProjectMember(currentProjectId, memberId); setMembers((prev) => prev.filter((m) => m.id !== memberId)); } catch (err) { console.error("Remove member failed:", err); }
+    try { await api.removeProjectMember(currentProjectId, memberId); setMembers((prev) => safeArray(prev).filter((m) => m.id !== memberId)); } catch (err) { console.error("Remove member failed:", err); }
   };
 
   const IconBtn = ({ onClick, title, children, className: extra }: { onClick: () => void; title: string; children: React.ReactNode; className?: string }) => (
@@ -344,7 +344,7 @@ export function WorkspaceHeader() {
                   <button onClick={handleShare} disabled={!shareEmail.trim() || isSharing} className="w-full flex items-center justify-center gap-2 rounded-xl btn-gradient px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50">{isSharing ? <Loader2 className="h-4 w-4 animate-spin" /> : shareSuccess ? <Check className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />} {shareSuccess ? "Invited!" : "Send Invite"}</button>
                   {safeArray(members).length > 0 && (
                     <div>
-                      <label className="block text-xs font-medium text-[#8888a0] mb-2">Members ({members.length})</label>
+                      <label className="block text-xs font-medium text-[#8888a0] mb-2">Members ({safeArray(members).length})</label>
                       <div className="space-y-2 max-h-48 overflow-y-auto">
                         {safeArray(members).map((m: MemberInfo) => (
                           <div key={m.id} className="flex items-center justify-between rounded-xl bg-[#1a1a24]/50 px-3 py-2">

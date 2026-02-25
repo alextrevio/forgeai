@@ -14,7 +14,7 @@ import type {
 function ensureArray<T>(data: any): T[] {
   if (Array.isArray(data)) return data;
   if (data && typeof data === "object") {
-    for (const key of ["data", "messages", "items", "projects", "files", "snapshots", "plans", "templates", "operations", "steps"]) {
+    for (const key of ["data", "messages", "items", "projects", "files", "snapshots", "plans", "templates", "operations", "steps", "entries", "results", "notifications", "members", "commands"]) {
       if (Array.isArray((data as Record<string, unknown>)[key])) return (data as Record<string, unknown>)[key] as T[];
     }
   }
