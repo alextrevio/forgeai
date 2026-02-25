@@ -50,9 +50,9 @@ COPY --from=builder /app/packages/agents/package.json ./node_modules/@forgeai/ag
 COPY --from=builder /app/packages/sandbox-manager/dist ./node_modules/@forgeai/sandbox-manager/dist
 COPY --from=builder /app/packages/sandbox-manager/package.json ./node_modules/@forgeai/sandbox-manager/
 
-# Copy Prisma client from builder
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+# Copy Prisma client from deployed
+COPY --from=builder /app/deployed/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/deployed/node_modules/@prisma ./node_modules/@prisma
 
 # Copy Prisma schema
 COPY --from=builder /app/packages/db/prisma ./prisma
