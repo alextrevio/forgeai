@@ -227,7 +227,7 @@ export function ChatPanel() {
             <Zap className="h-4 w-4 text-white" />
           </div>
           <div>
-            <h1 className="text-[14px] font-semibold text-[#EDEDED] leading-tight">ForgeAI</h1>
+            <h1 className="text-[14px] font-semibold text-[#EDEDED] leading-tight">Arya AI</h1>
             <span className="text-[11px] text-[#888888]">{projectName || "Nuevo proyecto"}</span>
           </div>
         </div>
@@ -320,7 +320,7 @@ export function ChatPanel() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[12px] font-bold text-[#EDEDED]">forgeai</span>
+                    <span className="text-[12px] font-bold text-[#EDEDED]">arya</span>
                     {msg.createdAt && <span className="text-[10px] text-[#888888]/40">{formatTime(msg.createdAt)}</span>}
                   </div>
                   <RichMessage message={msg} />
@@ -391,7 +391,7 @@ export function ChatPanel() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isAgentRunning ? "ForgeAI está trabajando..." : "Pídele a ForgeAI que construya algo..."}
+            placeholder={isAgentRunning ? "Arya está trabajando..." : "Pídele a ForgeAI que construya algo..."}
             disabled={isAgentRunning}
             rows={1}
             className="flex-1 resize-none bg-transparent text-[13px] text-[#EDEDED] placeholder:text-[#888888]/40 outline-none disabled:opacity-40 min-h-[36px] max-h-[200px] py-1.5 px-1 leading-relaxed"

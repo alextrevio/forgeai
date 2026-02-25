@@ -261,7 +261,7 @@ export default function UsagePage() {
         {/* Logo */}
         <div className="flex h-16 items-center gap-2.5 border-b border-[#2A2A2A] px-4">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#6d5cff]/10">
-            <Zap className="h-5 w-5 text-[#6d5cff]" />
+            <Sparkles className="h-5 w-5 text-[#6d5cff]" />
           </div>
           {!sidebarCollapsed && (
             <span className="text-lg font-bold text-white tracking-tight">

@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Zap,
+  Sparkles,
   Plus,
   FolderOpen,
   Trash2,

@@ -3,7 +3,7 @@ import { Providers } from "@/components/providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ForgeAI - AI App Builder",
+  title: "Arya AI",
   description: "Build full-stack applications with AI.",
 };
 

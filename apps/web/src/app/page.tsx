@@ -262,7 +262,7 @@ export default function Home() {
   if (isChecking) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <Zap className="h-8 w-8 text-primary animate-pulse" />
+        <Sparkles className="h-8 w-8 text-primary animate-pulse" />
       </div>
     );
   }
@@ -281,8 +281,8 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
-              <Zap className="h-6 w-6 text-primary" />
-              <span className="text-lg font-bold">ForgeAI</span>
+              <Sparkles className="h-6 w-6 text-primary" />
+              <span className="text-lg font-bold">Arya AI</span>
             </div>
 
             {/* Desktop nav */}
@@ -384,7 +384,7 @@ export default function Home() {
           </h1>
 
           <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-fade-in-up animation-delay-400">
-            ForgeAI turns your ideas into production-ready web apps in minutes,
+            Arya AI turns your ideas into production-ready web apps in minutes,
             not weeks. No coding experience required.
           </p>
 
@@ -414,7 +414,7 @@ export default function Home() {
               See it in action
             </h2>
             <p className="text-muted-foreground text-lg">
-              Watch ForgeAI turn a simple prompt into a full application
+              Watch Arya AI turn a simple prompt into a full application
             </p>
           </div>
 
@@ -425,7 +425,7 @@ export default function Home() {
               <div className="w-3 h-3 rounded-full bg-yellow-500/70" />
               <div className="w-3 h-3 rounded-full bg-green-500/70" />
               <span className="text-xs text-muted-foreground ml-2">
-                ForgeAI Terminal
+                Arya AI Terminal
               </span>
             </div>
 
@@ -502,7 +502,7 @@ export default function Home() {
               Everything you need to build
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              From idea to production in minutes. ForgeAI handles the heavy
+              From idea to production in minutes. Arya AI handles the heavy
               lifting so you can focus on what matters.
             </p>
           </div>
@@ -711,8 +711,8 @@ export default function Home() {
             {/* Logo & tagline */}
             <div className="col-span-2 md:col-span-1">
               <div className="flex items-center gap-2 mb-3">
-                <Zap className="h-5 w-5 text-primary" />
-                <span className="text-lg font-bold">ForgeAI</span>
+                <Sparkles className="h-5 w-5 text-primary" />
+                <span className="text-lg font-bold">Arya AI</span>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Turn your ideas into production-ready web apps with the power of

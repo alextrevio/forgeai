@@ -14,6 +14,7 @@ import {
   Eye,
   EyeOff,
   Zap,
+  Sparkles,
   Save,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/auth-store";
@@ -109,7 +110,7 @@ export default function SettingsPage() {
             <ArrowLeft className="h-4 w-4" />
           </button>
           <div className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-[#6d5cff]" />
+            <Sparkles className="h-5 w-5 text-[#6d5cff]" />
             <span className="text-lg font-bold text-white">Settings</span>
           </div>
         </div>

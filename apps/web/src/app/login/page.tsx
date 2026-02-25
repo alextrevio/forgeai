@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Zap,
+  Sparkles,
   Loader2,
   Eye,
   EyeOff,
@@ -65,7 +66,7 @@ export default function LoginPage() {
           <div className="mb-8 text-center animate-fade-in-up">
             <Link href="/" className="inline-flex items-center gap-2 mb-3">
               <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
-                <Zap className="h-5 w-5 text-primary" />
+                <Sparkles className="h-5 w-5 text-primary" />
               </div>
               <span className="text-2xl font-bold text-foreground">
                 ForgeAI

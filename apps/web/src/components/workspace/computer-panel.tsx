@@ -162,25 +162,25 @@ export function ComputerPanel() {
     if (!isAgentRunning) return null;
     if (activeAgent === "coder" && activeFilePath) {
       const fileName = activeFilePath.split("/").pop();
-      return `ForgeAI está usando el Editor • Editando ${fileName}`;
+      return `Arya está usando el Editor • Editando ${fileName}`;
     }
-    if (activeAgent === "designer") return "ForgeAI está usando el Editor • Diseñando componentes";
-    if (activeAgent === "debugger") return "ForgeAI está usando la Terminal • Corrigiendo errores";
-    if (activeAgent === "deployer") return "ForgeAI está usando la Terminal • Desplegando";
-    if (activeAgent === "planner") return "ForgeAI está planificando la tarea";
-    if (currentStepText) return `ForgeAI está trabajando • ${currentStepText}`;
-    return "ForgeAI está pensando...";
+    if (activeAgent === "designer") return "Arya está usando el Editor • Diseñando componentes";
+    if (activeAgent === "debugger") return "Arya está usando la Terminal • Corrigiendo errores";
+    if (activeAgent === "deployer") return "Arya está usando la Terminal • Desplegando";
+    if (activeAgent === "planner") return "Arya está planificando la tarea";
+    if (currentStepText) return `Arya está trabajando • ${currentStepText}`;
+    return "Arya está pensando...";
   }, [isAgentRunning, activeAgent, activeFilePath, currentStepText]);
 
   return (
     <div className="flex h-full flex-col bg-[#0A0A0A]">
-      {/* Header — "Computadora de ForgeAI" */}
+      {/* Header — "Computadora de Arya" */}
       <div className="flex items-center justify-between border-b border-[#2A2A2A] bg-[#0A0A0A] px-4 py-2">
         <div className="flex items-center gap-2">
           <div className="h-5 w-5 rounded-md bg-gradient-to-br from-[#7c3aed] to-[#3b82f6] flex items-center justify-center">
             <Monitor className="h-3 w-3 text-white" />
           </div>
-          <span className="text-[13px] font-semibold text-[#EDEDED]">Computadora de ForgeAI</span>
+          <span className="text-[13px] font-semibold text-[#EDEDED]">Computadora de Arya</span>
         </div>
         {/* Header actions (header functionality merged here) */}
         <WorkspaceHeader />
@@ -318,7 +318,7 @@ export function ComputerPanel() {
                 </div>
 
                 <p className="text-[14px] text-[#EDEDED] font-medium mb-1 transition-all duration-300">
-                  ForgeAI está construyendo tu app
+                  Arya está construyendo tu app
                 </p>
                 <p className="text-[12px] text-[#888888] mb-5">
                   {currentStepText || BUILD_TEXTS[buildTextIdx]}
