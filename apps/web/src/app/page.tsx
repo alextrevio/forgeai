@@ -819,7 +819,7 @@ export default function Home() {
               Hecho con &#10084;&#65039; por Arya AI
             </p>
             <p className="text-sm text-muted-foreground">
-              &copy; 2026 ForgeAI. All rights reserved.
+              &copy; 2026 Arya AI. All rights reserved.
             </p>
           </div>
         </div>
