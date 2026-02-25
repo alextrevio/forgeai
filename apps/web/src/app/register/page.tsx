@@ -81,7 +81,7 @@ export default function RegisterPage() {
                 <Sparkles className="h-5 w-5 text-primary" />
               </div>
               <span className="text-2xl font-bold text-foreground">
-                ForgeAI
+                Arya AI
               </span>
             </Link>
             <p className="text-muted-foreground">

@@ -816,7 +816,7 @@ export default function Home() {
 
           <div className="mt-12 pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground">
-              Hecho con &#10084;&#65039; por ForgeAI
+              Hecho con &#10084;&#65039; por Arya AI
             </p>
             <p className="text-sm text-muted-foreground">
               &copy; 2026 ForgeAI. All rights reserved.

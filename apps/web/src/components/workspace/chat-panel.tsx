@@ -391,7 +391,7 @@ export function ChatPanel() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isAgentRunning ? "Arya está trabajando..." : "Pídele a ForgeAI que construya algo..."}
+            placeholder={isAgentRunning ? "Arya está trabajando..." : "Pídele a Arya que construya algo..."}
             disabled={isAgentRunning}
             rows={1}
             className="flex-1 resize-none bg-transparent text-[13px] text-[#EDEDED] placeholder:text-[#888888]/40 outline-none disabled:opacity-40 min-h-[36px] max-h-[200px] py-1.5 px-1 leading-relaxed"

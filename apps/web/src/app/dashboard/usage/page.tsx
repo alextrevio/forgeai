@@ -265,7 +265,7 @@ export default function UsagePage() {
           </div>
           {!sidebarCollapsed && (
             <span className="text-lg font-bold text-white tracking-tight">
-              ForgeAI
+              Arya AI
             </span>
           )}
         </div>
