@@ -69,4 +69,4 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD wget --spider -q http://localhost:8000/api/health || exit 1
 
-CMD ["node", "--experimental-specifier-resolution=node", "dist/index.js"]
+CMD ["node", "dist/index.js"]
