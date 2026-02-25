@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { ChatPanel } from "./chat-panel";
 import { ComputerPanel } from "./computer-panel";
@@ -9,7 +9,6 @@ import { cn } from "@/lib/utils";
 
 function safeArray<T>(data: T[]): T[];
 function safeArray<T>(data: T[] | null | undefined): T[];
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function safeArray(data: any): any[] {
   if (Array.isArray(data)) return data;
   return [];
@@ -21,7 +20,19 @@ export function WorkspaceLayout() {
     isAgentRunning,
     currentPlan,
     activeAgent,
+    sandboxStatus,
+    fileTree,
+    previewUrl,
+    codeChanges,
   } = useProjectStore();
+
+  // Show the computer panel only when there's actual content to display
+  const hasWorkspaceContent =
+    sandboxStatus === "running" ||
+    (fileTree && fileTree.length > 0) ||
+    !!previewUrl ||
+    (codeChanges && codeChanges.length > 0) ||
+    (isAgentRunning && activeAgent === "coder");
 
   useEffect(() => {
     const checkWidth = () => setIsVertical(window.innerWidth < 1024);
@@ -34,18 +45,15 @@ export function WorkspaceLayout() {
   useEffect(() => {
     const handleKeyboard = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
-      // Cmd+K → focus chat input
       if (mod && e.key === "k") {
         e.preventDefault();
         const el = document.querySelector<HTMLTextAreaElement>("[data-chat-input]");
         el?.focus();
       }
-      // Cmd+Enter → submit chat message (when input focused)
       if (mod && e.key === "Enter") {
         const el = document.querySelector<HTMLButtonElement>("[data-chat-send]");
         el?.click();
       }
-      // Esc → close any open modal
       if (e.key === "Escape") {
         const modals = document.querySelectorAll("[data-modal-close]");
         if (modals.length > 0) {
@@ -74,62 +82,63 @@ export function WorkspaceLayout() {
 
   return (
     <div className="flex h-screen flex-col bg-[#09090b]">
-      {/* Main 2-column layout */}
+      {/* Main layout */}
       <div className="flex-1 overflow-hidden">
-        <PanelGroup
-          direction={isVertical ? "vertical" : "horizontal"}
-          className="h-full"
-        >
-          {/* Left Column — Chat + Steps */}
-          <Panel
-            defaultSize={isVertical ? 40 : 40}
-            minSize={isVertical ? 25 : 25}
-            maxSize={isVertical ? 60 : 55}
+        {hasWorkspaceContent ? (
+          /* Two-panel layout when workspace has content */
+          <PanelGroup
+            direction={isVertical ? "vertical" : "horizontal"}
+            className="h-full"
           >
-            <ChatPanel />
-          </Panel>
+            <Panel
+              defaultSize={isVertical ? 40 : 40}
+              minSize={isVertical ? 25 : 25}
+              maxSize={isVertical ? 60 : 55}
+            >
+              <ChatPanel />
+            </Panel>
 
-          {/* Drag Handle */}
-          <PanelResizeHandle
-            className={cn(
-              "group relative transition-colors",
-              isVertical ? "h-[5px]" : "w-[5px]"
-            )}
-          >
-            <div
+            <PanelResizeHandle
               className={cn(
-                "absolute bg-[#1a1a1f] group-hover:bg-[#7c3aed]/60 transition-colors duration-200",
-                isVertical
-                  ? "inset-x-0 h-[1px] top-1/2 -translate-y-1/2"
-                  : "inset-y-0 w-[1px] left-1/2 -translate-x-1/2"
-              )}
-            />
-            {/* Drag indicator dots */}
-            <div
-              className={cn(
-                "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200",
-                isVertical ? "flex gap-1" : "flex flex-col gap-1"
+                "group relative transition-colors",
+                isVertical ? "h-[5px]" : "w-[5px]"
               )}
             >
-              <div className="h-1 w-1 rounded-full bg-[#7c3aed]/60" />
-              <div className="h-1 w-1 rounded-full bg-[#7c3aed]/60" />
-              <div className="h-1 w-1 rounded-full bg-[#7c3aed]/60" />
-            </div>
-          </PanelResizeHandle>
+              <div
+                className={cn(
+                  "absolute bg-[#1a1a1f] group-hover:bg-[#7c3aed]/60 transition-colors duration-200",
+                  isVertical
+                    ? "inset-x-0 h-[1px] top-1/2 -translate-y-1/2"
+                    : "inset-y-0 w-[1px] left-1/2 -translate-x-1/2"
+                )}
+              />
+              <div
+                className={cn(
+                  "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200",
+                  isVertical ? "flex gap-1" : "flex flex-col gap-1"
+                )}
+              >
+                <div className="h-1 w-1 rounded-full bg-[#7c3aed]/60" />
+                <div className="h-1 w-1 rounded-full bg-[#7c3aed]/60" />
+                <div className="h-1 w-1 rounded-full bg-[#7c3aed]/60" />
+              </div>
+            </PanelResizeHandle>
 
-          {/* Right Column — Computadora de ForgeAI */}
-          <Panel
-            defaultSize={isVertical ? 60 : 60}
-            minSize={isVertical ? 35 : 35}
-          >
-            <ComputerPanel />
-          </Panel>
-        </PanelGroup>
+            <Panel
+              defaultSize={isVertical ? 60 : 60}
+              minSize={isVertical ? 35 : 35}
+            >
+              <ComputerPanel />
+            </Panel>
+          </PanelGroup>
+        ) : (
+          /* Full-width chat when no workspace content — Manus-style */
+          <ChatPanel />
+        )}
       </div>
 
-      {/* Bottom Bar — Manus-style progress */}
+      {/* Bottom Bar — progress */}
       <div className="flex items-center gap-3 border-t border-[#1a1a1f] bg-[#0a0a12] px-4 py-2">
-        {/* Live indicator */}
         <div className="flex items-center gap-2 shrink-0">
           {isAgentRunning ? (
             <div className="flex items-center gap-1.5">
@@ -144,7 +153,6 @@ export function WorkspaceLayout() {
           )}
         </div>
 
-        {/* Progress bar */}
         <div className="flex-1 h-1.5 rounded-full bg-[#1a1a1f] overflow-hidden">
           {isAgentRunning && stepsTotal > 0 ? (
             <div
@@ -161,7 +169,6 @@ export function WorkspaceLayout() {
           )}
         </div>
 
-        {/* Step info */}
         <div className="flex items-center gap-2 shrink-0 min-w-0 max-w-[300px]">
           {stepsTotal > 0 && (
             <>
