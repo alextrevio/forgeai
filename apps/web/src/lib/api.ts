@@ -26,10 +26,25 @@ class ApiClient {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${this.baseUrl}${path}`, {
-      ...options,
-      headers,
-    });
+    // 30-second timeout for all API requests
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
+
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}${path}`, {
+        ...options,
+        headers,
+        signal: options.signal || controller.signal,
+      });
+    } catch (err: any) {
+      clearTimeout(timeout);
+      if (err.name === "AbortError") {
+        throw new ApiError(408, "Request timed out");
+      }
+      throw err;
+    }
+    clearTimeout(timeout);
 
     if (response.status === 401) {
       // Try refresh
