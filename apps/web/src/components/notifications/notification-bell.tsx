@@ -58,7 +58,7 @@ export function NotificationBell() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative flex items-center justify-center rounded-lg p-2 text-gray-400 hover:bg-[#161619] hover:text-white transition-colors"
+        className="relative flex items-center justify-center rounded-lg p-2 text-gray-400 hover:bg-[#1A1A1A] hover:text-white transition-colors"
         title="Notifications"
       >
         <Bell className="h-5 w-5" />
@@ -70,9 +70,9 @@ export function NotificationBell() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-80 rounded-xl border border-[#1a1a1f] bg-[#111114] shadow-2xl z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-80 rounded-xl border border-[#2A2A2A] bg-[#111111] shadow-2xl z-50 overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1f]">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[#2A2A2A]">
             <span className="text-sm font-semibold text-white">Notifications</span>
             {unreadCount > 0 && (
               <button
@@ -98,7 +98,7 @@ export function NotificationBell() {
                   key={n.id}
                   onClick={() => handleNotificationClick(n)}
                   className={cn(
-                    "flex items-start gap-3 w-full px-4 py-3 text-left hover:bg-[#161619]/50 transition-colors border-b border-[#1a1a1f]/50 last:border-b-0",
+                    "flex items-start gap-3 w-full px-4 py-3 text-left hover:bg-[#1A1A1A]/50 transition-colors border-b border-[#2A2A2A]/50 last:border-b-0",
                     !n.read && "bg-[#6d5cff]/5"
                   )}
                 >

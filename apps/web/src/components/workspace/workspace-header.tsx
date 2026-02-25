@@ -191,11 +191,11 @@ export function WorkspaceHeader() {
 
   const IconBtn = ({ onClick, title, children, className: extra }: { onClick: () => void; title: string; children: React.ReactNode; className?: string }) => (
     <div className="group relative">
-      <button onClick={onClick} className={cn("flex h-7 w-7 items-center justify-center rounded-lg text-[#8888a0] hover:bg-[#161619] hover:text-[#e2e2e8] transition-all duration-150", extra)}>
+      <button onClick={onClick} className={cn("flex h-7 w-7 items-center justify-center rounded-lg text-[#888888] hover:bg-[#1A1A1A] hover:text-[#EDEDED] transition-all duration-150", extra)}>
         {children}
       </button>
       <div className="pointer-events-none absolute top-full left-1/2 -translate-x-1/2 mt-1.5 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50">
-        <div className="tooltip-glass rounded-md px-2 py-1 text-[10px] text-[#e2e2e8] shadow-lg">{title}</div>
+        <div className="tooltip-glass rounded-md px-2 py-1 text-[10px] text-[#EDEDED] shadow-lg">{title}</div>
       </div>
     </div>
   );
@@ -217,7 +217,7 @@ export function WorkspaceHeader() {
           {isDeploying ? <Loader2 className="h-3 w-3 animate-spin" /> : <Rocket className="h-3 w-3" />}
           {isDeploying ? "..." : "Deploy"}
         </button>
-        <div className="mx-0.5 h-4 w-px bg-[#1a1a1f]" />
+        <div className="mx-0.5 h-4 w-px bg-[#2A2A2A]" />
         <IconBtn onClick={handleDownloadZip} title="Download ZIP">{isDownloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}</IconBtn>
         <IconBtn onClick={openShare} title="Share"><Share2 className="h-3.5 w-3.5" /></IconBtn>
         <IconBtn onClick={openGitHub} title="GitHub"><Github className="h-3.5 w-3.5" /></IconBtn>
@@ -227,21 +227,21 @@ export function WorkspaceHeader() {
 
       {/* Timeline panel */}
       {showTimeline && (
-        <div className="fixed top-12 right-4 z-40 w-[400px] rounded-xl border border-[#1a1a1f] bg-[#111114] p-4 shadow-2xl animate-fade-in">
+        <div className="fixed top-12 right-4 z-40 w-[400px] rounded-xl border border-[#2A2A2A] bg-[#111111] p-4 shadow-2xl animate-fade-in">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-[12px] font-medium text-[#8888a0]">Version Timeline</span>
-            <button onClick={() => setShowTimeline(false)} className="text-[#8888a0] hover:text-[#e2e2e8] transition-colors"><X className="h-3.5 w-3.5" /></button>
+            <span className="text-[12px] font-medium text-[#888888]">Version Timeline</span>
+            <button onClick={() => setShowTimeline(false)} className="text-[#888888] hover:text-[#EDEDED] transition-colors"><X className="h-3.5 w-3.5" /></button>
           </div>
           {safeArray(snapshots).length === 0 ? (
-            <p className="text-[11px] text-[#8888a0]/60">No snapshots yet. Snapshots are created automatically before each change.</p>
+            <p className="text-[11px] text-[#888888]/60">No snapshots yet. Snapshots are created automatically before each change.</p>
           ) : (
             <div className="flex flex-col gap-1.5 max-h-[300px] overflow-y-auto">
               {safeArray(snapshots).map((snap) => (
-                <button key={snap.id} onClick={() => handleRestoreSnapshot(snap.id)} className="group flex items-center gap-3 rounded-lg border border-[#1a1a1f] px-3 py-2 hover:border-[#7c3aed]/30 hover:bg-[#7c3aed]/5 transition-all duration-150 text-left">
+                <button key={snap.id} onClick={() => handleRestoreSnapshot(snap.id)} className="group flex items-center gap-3 rounded-lg border border-[#2A2A2A] px-3 py-2 hover:border-[#7c3aed]/30 hover:bg-[#7c3aed]/5 transition-all duration-150 text-left">
                   <div className="h-2 w-2 rounded-full bg-[#7c3aed]/60 group-hover:bg-[#7c3aed] shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <span className="text-[11px] text-[#e2e2e8] font-medium truncate block">{snap.label}</span>
-                    <span className="text-[10px] text-[#8888a0]">{new Date(snap.createdAt).toLocaleTimeString()}</span>
+                    <span className="text-[11px] text-[#EDEDED] font-medium truncate block">{snap.label}</span>
+                    <span className="text-[10px] text-[#888888]">{new Date(snap.createdAt).toLocaleTimeString()}</span>
                   </div>
                   <span className="text-[9px] text-[#7c3aed] opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity shrink-0"><RotateCcw className="h-2.5 w-2.5" /> Restore</span>
                 </button>
@@ -254,17 +254,17 @@ export function WorkspaceHeader() {
       {/* Modals */}
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl border border-[#1a1a1f] bg-[#111114] p-6 shadow-2xl animate-fade-in">
+          <div className="w-full max-w-md rounded-xl border border-[#2A2A2A] bg-[#111111] p-6 shadow-2xl animate-fade-in">
             {modal === "github" && (
               <>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2"><Github className="h-5 w-5 text-[#e2e2e8]" /><h2 className="text-lg font-semibold text-[#e2e2e8]">GitHub</h2></div>
-                  <button data-modal-close onClick={() => setModal(null)} className="text-[#8888a0] hover:text-[#e2e2e8] transition-colors"><X className="h-4 w-4" /></button>
+                  <div className="flex items-center gap-2"><Github className="h-5 w-5 text-[#EDEDED]" /><h2 className="text-lg font-semibold text-[#EDEDED]">GitHub</h2></div>
+                  <button data-modal-close onClick={() => setModal(null)} className="text-[#888888] hover:text-[#EDEDED] transition-colors"><X className="h-4 w-4" /></button>
                 </div>
                 {!githubStatus.connected ? (
                   <div className="space-y-3">
-                    <p className="text-sm text-[#8888a0]">Connect your GitHub account with a personal access token.</p>
-                    <input type="password" value={githubToken} onChange={(e) => setGithubToken(e.target.value)} className="w-full rounded-xl border border-[#1a1a1f] bg-[#0a0a12] px-4 py-2.5 text-sm text-[#e2e2e8] placeholder:text-[#8888a0]/50 outline-none focus:border-[#7c3aed]/50 transition-colors" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" />
+                    <p className="text-sm text-[#888888]">Connect your GitHub account with a personal access token.</p>
+                    <input type="password" value={githubToken} onChange={(e) => setGithubToken(e.target.value)} className="w-full rounded-xl border border-[#2A2A2A] bg-[#0A0A0A] px-4 py-2.5 text-sm text-[#EDEDED] placeholder:text-[#888888]/50 outline-none focus:border-[#7c3aed]/50 transition-colors" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" />
                     <button onClick={connectGitHub} disabled={!githubToken.trim() || isConnecting} className="w-full flex items-center justify-center gap-2 rounded-xl btn-gradient px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50">{isConnecting && <Loader2 className="h-4 w-4 animate-spin" />} Connect GitHub</button>
                   </div>
                 ) : (
@@ -277,10 +277,10 @@ export function WorkspaceHeader() {
                     {exportResult === "pulled" && <div className="rounded-xl bg-[#22c55e]/10 p-3 text-sm text-[#22c55e]">Files pulled!</div>}
                     <button onClick={handleExportGitHub} disabled={isExporting} className="w-full flex items-center justify-center gap-2 rounded-xl btn-gradient px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50">{isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <GitBranch className="h-4 w-4" />} Export to New Repo</button>
                     <div className="flex gap-2">
-                      <button onClick={handlePushGitHub} disabled={isPushing} className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#161619] px-3 py-2 text-sm font-medium text-[#e2e2e8] hover:bg-[#1a1a1f] disabled:opacity-50 transition-colors">{isPushing ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowUp className="h-3 w-3" />} Push</button>
-                      <button onClick={handlePullGitHub} disabled={isPulling} className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#161619] px-3 py-2 text-sm font-medium text-[#e2e2e8] hover:bg-[#1a1a1f] disabled:opacity-50 transition-colors">{isPulling ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowDown className="h-3 w-3" />} Pull</button>
+                      <button onClick={handlePushGitHub} disabled={isPushing} className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#1A1A1A] px-3 py-2 text-sm font-medium text-[#EDEDED] hover:bg-[#2A2A2A] disabled:opacity-50 transition-colors">{isPushing ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowUp className="h-3 w-3" />} Push</button>
+                      <button onClick={handlePullGitHub} disabled={isPulling} className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#1A1A1A] px-3 py-2 text-sm font-medium text-[#EDEDED] hover:bg-[#2A2A2A] disabled:opacity-50 transition-colors">{isPulling ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowDown className="h-3 w-3" />} Pull</button>
                     </div>
-                    <button onClick={async () => { await api.disconnectGitHub(); setGithubStatus({ connected: false, username: null }); }} className="w-full text-xs text-[#8888a0] hover:text-[#ef4444] transition-colors">Disconnect GitHub</button>
+                    <button onClick={async () => { await api.disconnectGitHub(); setGithubStatus({ connected: false, username: null }); }} className="w-full text-xs text-[#888888] hover:text-[#ef4444] transition-colors">Disconnect GitHub</button>
                   </div>
                 )}
               </>
@@ -289,22 +289,22 @@ export function WorkspaceHeader() {
             {modal === "supabase" && (
               <>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2"><Database className="h-5 w-5 text-[#e2e2e8]" /><h2 className="text-lg font-semibold text-[#e2e2e8]">Supabase</h2></div>
-                  <button data-modal-close onClick={() => setModal(null)} className="text-[#8888a0] hover:text-[#e2e2e8] transition-colors"><X className="h-4 w-4" /></button>
+                  <div className="flex items-center gap-2"><Database className="h-5 w-5 text-[#EDEDED]" /><h2 className="text-lg font-semibold text-[#EDEDED]">Supabase</h2></div>
+                  <button data-modal-close onClick={() => setModal(null)} className="text-[#888888] hover:text-[#EDEDED] transition-colors"><X className="h-4 w-4" /></button>
                 </div>
                 {!supabaseStatus.connected ? (
                   <div className="space-y-3">
-                    <p className="text-sm text-[#8888a0]">Connect your Supabase project to add database and auth.</p>
-                    <input type="text" value={supabaseUrl} onChange={(e) => setSupabaseUrl(e.target.value)} className="w-full rounded-xl border border-[#1a1a1f] bg-[#0a0a12] px-4 py-2.5 text-sm text-[#e2e2e8] placeholder:text-[#8888a0]/50 outline-none focus:border-[#7c3aed]/50 transition-colors" placeholder="https://your-project.supabase.co" />
-                    <input type="password" value={supabaseKey} onChange={(e) => setSupabaseKey(e.target.value)} className="w-full rounded-xl border border-[#1a1a1f] bg-[#0a0a12] px-4 py-2.5 text-sm text-[#e2e2e8] placeholder:text-[#8888a0]/50 outline-none focus:border-[#7c3aed]/50 transition-colors" placeholder="anon key" />
+                    <p className="text-sm text-[#888888]">Connect your Supabase project to add database and auth.</p>
+                    <input type="text" value={supabaseUrl} onChange={(e) => setSupabaseUrl(e.target.value)} className="w-full rounded-xl border border-[#2A2A2A] bg-[#0A0A0A] px-4 py-2.5 text-sm text-[#EDEDED] placeholder:text-[#888888]/50 outline-none focus:border-[#7c3aed]/50 transition-colors" placeholder="https://your-project.supabase.co" />
+                    <input type="password" value={supabaseKey} onChange={(e) => setSupabaseKey(e.target.value)} className="w-full rounded-xl border border-[#2A2A2A] bg-[#0A0A0A] px-4 py-2.5 text-sm text-[#EDEDED] placeholder:text-[#888888]/50 outline-none focus:border-[#7c3aed]/50 transition-colors" placeholder="anon key" />
                     <button onClick={connectSupabase} disabled={!supabaseUrl.trim() || !supabaseKey.trim() || isConnecting} className="w-full flex items-center justify-center gap-2 rounded-xl btn-gradient px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50">{isConnecting && <Loader2 className="h-4 w-4 animate-spin" />} Connect Supabase</button>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 rounded-xl bg-[#22c55e]/10 p-3"><Check className="h-4 w-4 text-[#22c55e]" /><span className="text-sm text-[#22c55e] truncate">Connected to {supabaseStatus.url}</span></div>
                     <button onClick={handleGenerateClient} disabled={isConnecting} className="w-full flex items-center justify-center gap-2 rounded-xl btn-gradient px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50">{isConnecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />} Generate Client + Auth Helpers</button>
-                    <button onClick={async () => { if (!currentProjectId) return; setIsConnecting(true); try { await api.generateSupabaseTypes(currentProjectId); const tree = await api.getFileTree(currentProjectId); setFileTree(safeArray(tree)); } catch (err) { console.error(err); } finally { setIsConnecting(false); } }} disabled={isConnecting} className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#161619] px-4 py-2.5 text-sm font-medium text-[#e2e2e8] hover:bg-[#1a1a1f] disabled:opacity-50 transition-colors">Generate Database Types</button>
-                    <button onClick={async () => { await api.disconnectSupabase(); setSupabaseStatus({ connected: false, url: null }); }} className="w-full text-xs text-[#8888a0] hover:text-[#ef4444] transition-colors">Disconnect Supabase</button>
+                    <button onClick={async () => { if (!currentProjectId) return; setIsConnecting(true); try { await api.generateSupabaseTypes(currentProjectId); const tree = await api.getFileTree(currentProjectId); setFileTree(safeArray(tree)); } catch (err) { console.error(err); } finally { setIsConnecting(false); } }} disabled={isConnecting} className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1A1A1A] px-4 py-2.5 text-sm font-medium text-[#EDEDED] hover:bg-[#2A2A2A] disabled:opacity-50 transition-colors">Generate Database Types</button>
+                    <button onClick={async () => { await api.disconnectSupabase(); setSupabaseStatus({ connected: false, url: null }); }} className="w-full text-xs text-[#888888] hover:text-[#ef4444] transition-colors">Disconnect Supabase</button>
                   </div>
                 )}
               </>
@@ -313,14 +313,14 @@ export function WorkspaceHeader() {
             {modal === "settings" && (
               <>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2"><Settings className="h-5 w-5 text-[#e2e2e8]" /><h2 className="text-lg font-semibold text-[#e2e2e8]">Project Settings</h2></div>
-                  <button data-modal-close onClick={() => setModal(null)} className="text-[#8888a0] hover:text-[#e2e2e8] transition-colors"><X className="h-4 w-4" /></button>
+                  <div className="flex items-center gap-2"><Settings className="h-5 w-5 text-[#EDEDED]" /><h2 className="text-lg font-semibold text-[#EDEDED]">Project Settings</h2></div>
+                  <button data-modal-close onClick={() => setModal(null)} className="text-[#888888] hover:text-[#EDEDED] transition-colors"><X className="h-4 w-4" /></button>
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-[#e2e2e8] mb-1.5">Custom Instructions</label>
-                    <p className="text-xs text-[#8888a0] mb-2">Injected into all agent prompts for this project.</p>
-                    <textarea value={customInstructions} onChange={(e) => setCustomInstructions(e.target.value)} rows={6} className="w-full rounded-xl border border-[#1a1a1f] bg-[#0a0a12] px-4 py-2.5 text-sm text-[#e2e2e8] placeholder:text-[#8888a0]/50 outline-none focus:border-[#7c3aed]/50 resize-none transition-colors" placeholder="e.g., Use dark theme, prefer shadcn/ui components..." />
+                    <label className="block text-sm font-medium text-[#EDEDED] mb-1.5">Custom Instructions</label>
+                    <p className="text-xs text-[#888888] mb-2">Injected into all agent prompts for this project.</p>
+                    <textarea value={customInstructions} onChange={(e) => setCustomInstructions(e.target.value)} rows={6} className="w-full rounded-xl border border-[#2A2A2A] bg-[#0A0A0A] px-4 py-2.5 text-sm text-[#EDEDED] placeholder:text-[#888888]/50 outline-none focus:border-[#7c3aed]/50 resize-none transition-colors" placeholder="e.g., Use dark theme, prefer shadcn/ui components..." />
                   </div>
                   <button onClick={saveSettings} className="w-full flex items-center justify-center gap-2 rounded-xl btn-gradient px-4 py-2.5 text-sm font-medium text-white">{settingsSaved ? (<><Check className="h-4 w-4" /> Saved!</>) : "Save Settings"}</button>
                 </div>
@@ -330,30 +330,30 @@ export function WorkspaceHeader() {
             {modal === "share" && (
               <>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2"><Users className="h-5 w-5 text-[#e2e2e8]" /><h2 className="text-lg font-semibold text-[#e2e2e8]">Share Project</h2></div>
-                  <button data-modal-close onClick={() => setModal(null)} className="text-[#8888a0] hover:text-[#e2e2e8] transition-colors"><X className="h-4 w-4" /></button>
+                  <div className="flex items-center gap-2"><Users className="h-5 w-5 text-[#EDEDED]" /><h2 className="text-lg font-semibold text-[#EDEDED]">Share Project</h2></div>
+                  <button data-modal-close onClick={() => setModal(null)} className="text-[#888888] hover:text-[#EDEDED] transition-colors"><X className="h-4 w-4" /></button>
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-[#e2e2e8] mb-1.5">Invite by email</label>
+                    <label className="block text-sm font-medium text-[#EDEDED] mb-1.5">Invite by email</label>
                     <div className="flex gap-2">
-                      <input type="email" value={shareEmail} onChange={(e) => setShareEmail(e.target.value)} className="flex-1 rounded-xl border border-[#1a1a1f] bg-[#0a0a12] px-3 py-2 text-sm text-[#e2e2e8] placeholder:text-[#8888a0]/50 outline-none focus:border-[#7c3aed]/50 transition-colors" placeholder="teammate@example.com" onKeyDown={(e) => { if (e.key === "Enter") handleShare(); }} />
-                      <select value={shareRole} onChange={(e) => setShareRole(e.target.value as "viewer" | "editor")} className="rounded-xl border border-[#1a1a1f] bg-[#0a0a12] px-2 py-2 text-sm text-[#e2e2e8] outline-none focus:border-[#7c3aed]/50 transition-colors"><option value="editor">Editor</option><option value="viewer">Viewer</option></select>
+                      <input type="email" value={shareEmail} onChange={(e) => setShareEmail(e.target.value)} className="flex-1 rounded-xl border border-[#2A2A2A] bg-[#0A0A0A] px-3 py-2 text-sm text-[#EDEDED] placeholder:text-[#888888]/50 outline-none focus:border-[#7c3aed]/50 transition-colors" placeholder="teammate@example.com" onKeyDown={(e) => { if (e.key === "Enter") handleShare(); }} />
+                      <select value={shareRole} onChange={(e) => setShareRole(e.target.value as "viewer" | "editor")} className="rounded-xl border border-[#2A2A2A] bg-[#0A0A0A] px-2 py-2 text-sm text-[#EDEDED] outline-none focus:border-[#7c3aed]/50 transition-colors"><option value="editor">Editor</option><option value="viewer">Viewer</option></select>
                     </div>
                   </div>
                   <button onClick={handleShare} disabled={!shareEmail.trim() || isSharing} className="w-full flex items-center justify-center gap-2 rounded-xl btn-gradient px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50">{isSharing ? <Loader2 className="h-4 w-4 animate-spin" /> : shareSuccess ? <Check className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />} {shareSuccess ? "Invited!" : "Send Invite"}</button>
                   {safeArray(members).length > 0 && (
                     <div>
-                      <label className="block text-xs font-medium text-[#8888a0] mb-2">Members ({safeArray(members).length})</label>
+                      <label className="block text-xs font-medium text-[#888888] mb-2">Members ({safeArray(members).length})</label>
                       <div className="space-y-2 max-h-48 overflow-y-auto">
                         {safeArray(members).map((m: MemberInfo) => (
-                          <div key={m.id} className="flex items-center justify-between rounded-xl bg-[#161619]/50 px-3 py-2">
+                          <div key={m.id} className="flex items-center justify-between rounded-xl bg-[#1A1A1A]/50 px-3 py-2">
                             <div className="flex items-center gap-2 min-w-0">
                               <div className="h-6 w-6 rounded-full bg-gradient-to-br from-[#7c3aed]/30 to-[#3b82f6]/30 flex items-center justify-center text-[10px] font-medium text-[#a78bfa] shrink-0">{(m.user.name || m.user.email).charAt(0).toUpperCase()}</div>
-                              <div className="min-w-0"><p className="text-xs font-medium text-[#e2e2e8] truncate">{m.user.name || m.user.email}</p><p className="text-[10px] text-[#8888a0] truncate">{m.user.email}</p></div>
+                              <div className="min-w-0"><p className="text-xs font-medium text-[#EDEDED] truncate">{m.user.name || m.user.email}</p><p className="text-[10px] text-[#888888] truncate">{m.user.email}</p></div>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
-                              {m.role === "owner" ? <span className="flex items-center gap-1 text-[10px] text-[#a78bfa]"><Crown className="h-3 w-3" /> Owner</span> : (<><span className="text-[10px] text-[#8888a0] capitalize">{m.role}</span><button onClick={() => handleRemoveMember(m.id)} className="text-[#8888a0] hover:text-[#ef4444] transition-colors" title="Remove member"><Trash2 className="h-3 w-3" /></button></>)}
+                              {m.role === "owner" ? <span className="flex items-center gap-1 text-[10px] text-[#a78bfa]"><Crown className="h-3 w-3" /> Owner</span> : (<><span className="text-[10px] text-[#888888] capitalize">{m.role}</span><button onClick={() => handleRemoveMember(m.id)} className="text-[#888888] hover:text-[#ef4444] transition-colors" title="Remove member"><Trash2 className="h-3 w-3" /></button></>)}
                             </div>
                           </div>
                         ))}

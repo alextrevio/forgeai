@@ -77,7 +77,7 @@ const templateIcons: Record<string, React.ReactNode> = {
 };
 
 const planColors: Record<string, string> = {
-  FREE: "bg-[#161619] text-gray-300",
+  FREE: "bg-[#1A1A1A] text-gray-300",
   PRO: "bg-[#7c3aed]/10 text-[#7c3aed]",
   BUSINESS: "bg-[#f59e0b]/10 text-[#f59e0b]",
   ENTERPRISE: "bg-[#22c55e]/10 text-[#22c55e]",
@@ -245,7 +245,7 @@ export default function DashboardPage() {
 
   if (authLoading || isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#09090b]">
+      <div className="flex min-h-screen items-center justify-center bg-[#0A0A0A]">
         <Loader2 className="h-8 w-8 animate-spin text-[#7c3aed]" />
       </div>
     );
@@ -269,16 +269,16 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#09090b]">
+    <div className="flex min-h-screen bg-[#0A0A0A]">
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-[#1a1a1f] bg-[#0a0a0f] transition-all duration-300",
+          "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-[#2A2A2A] bg-[#0A0A0A] transition-all duration-300",
           sidebarCollapsed ? "w-[68px]" : "w-64"
         )}
       >
         {/* Logo */}
-        <div className="flex h-16 items-center gap-2.5 border-b border-[#1a1a1f] px-4">
+        <div className="flex h-16 items-center gap-2.5 border-b border-[#2A2A2A] px-4">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#7c3aed]/10">
             <Zap className="h-5 w-5 text-[#7c3aed]" />
           </div>
@@ -302,7 +302,7 @@ export default function DashboardPage() {
                   "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                   isActive
                     ? "bg-[#7c3aed]/10 text-[#7c3aed]"
-                    : "text-gray-400 hover:bg-[#161619] hover:text-white"
+                    : "text-gray-400 hover:bg-[#1A1A1A] hover:text-white"
                 )}
                 title={sidebarCollapsed ? item.label : undefined}
               >
@@ -313,12 +313,12 @@ export default function DashboardPage() {
           })}
 
           {/* Separator */}
-          <div className="my-3 h-px bg-[#1a1a1f]" />
+          <div className="my-3 h-px bg-[#2A2A2A]" />
 
           {/* Logout */}
           <button
             onClick={logout}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-400 hover:bg-[#161619] hover:text-white transition-colors"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-400 hover:bg-[#1A1A1A] hover:text-white transition-colors"
             title={sidebarCollapsed ? "Cerrar sesión" : undefined}
           >
             <LogOut className="h-5 w-5 shrink-0" />
@@ -329,7 +329,7 @@ export default function DashboardPage() {
         {/* Collapse toggle */}
         <button
           onClick={() => setSidebarCollapsed((c) => !c)}
-          className="mx-3 mb-3 flex items-center justify-center rounded-lg border border-[#1a1a1f] py-2 text-gray-400 hover:bg-[#161619] hover:text-white transition-colors"
+          className="mx-3 mb-3 flex items-center justify-center rounded-lg border border-[#2A2A2A] py-2 text-gray-400 hover:bg-[#1A1A1A] hover:text-white transition-colors"
         >
           {sidebarCollapsed ? (
             <ChevronRight className="h-4 w-4" />
@@ -341,7 +341,7 @@ export default function DashboardPage() {
         {/* User section */}
         <div
           className={cn(
-            "border-t border-[#1a1a1f] p-4",
+            "border-t border-[#2A2A2A] p-4",
             sidebarCollapsed ? "flex justify-center" : ""
           )}
         >
@@ -399,7 +399,7 @@ export default function DashboardPage() {
           {/* Stats cards */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
             {/* Total projects */}
-            <div className="rounded-xl border border-[#1a1a1f] bg-[#111114] p-5">
+            <div className="rounded-xl border border-[#2A2A2A] bg-[#111111] p-5">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm text-gray-400">Proyectos Totales</span>
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#7c3aed]/10">
@@ -410,7 +410,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Active sandboxes */}
-            <div className="rounded-xl border border-[#1a1a1f] bg-[#111114] p-5">
+            <div className="rounded-xl border border-[#2A2A2A] bg-[#111111] p-5">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm text-gray-400">Sandboxes Activos</span>
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#22c55e]/10">
@@ -421,7 +421,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Credits used */}
-            <div className="rounded-xl border border-[#1a1a1f] bg-[#111114] p-5">
+            <div className="rounded-xl border border-[#2A2A2A] bg-[#111111] p-5">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm text-gray-400">Créditos Usados</span>
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#f59e0b]/10">
@@ -436,7 +436,7 @@ export default function DashboardPage() {
                   / {user?.creditsLimit ?? 50}
                 </span>
               </div>
-              <div className="mt-2 h-1.5 w-full rounded-full bg-[#161619] overflow-hidden">
+              <div className="mt-2 h-1.5 w-full rounded-full bg-[#1A1A1A] overflow-hidden">
                 <div
                   className={cn(
                     "h-full rounded-full transition-all",
@@ -452,7 +452,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Deployments */}
-            <div className="rounded-xl border border-[#1a1a1f] bg-[#111114] p-5">
+            <div className="rounded-xl border border-[#2A2A2A] bg-[#111111] p-5">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm text-gray-400">Despliegues</span>
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#7c3aed]/10">
@@ -475,12 +475,12 @@ export default function DashboardPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Buscar proyectos..."
-                  className="w-full rounded-lg border border-[#1a1a1f] bg-[#111114] py-2 pl-9 pr-4 text-sm text-white placeholder:text-gray-500 outline-none focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed] transition-colors"
+                  className="w-full rounded-lg border border-[#2A2A2A] bg-[#111111] py-2 pl-9 pr-4 text-sm text-white placeholder:text-gray-500 outline-none focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed] transition-colors"
                 />
               </div>
 
               {/* Status filter buttons */}
-              <div className="flex items-center rounded-lg border border-[#1a1a1f] bg-[#111114] p-1">
+              <div className="flex items-center rounded-lg border border-[#2A2A2A] bg-[#111111] p-1">
                 {(
                   [
                     { value: "all", label: "Todos" },
@@ -514,7 +514,7 @@ export default function DashboardPage() {
                     m === "recent" ? "alphabetical" : "recent"
                   )
                 }
-                className="flex items-center gap-2 rounded-lg border border-[#1a1a1f] bg-[#111114] px-3 py-2 text-xs font-medium text-gray-400 hover:text-white transition-colors"
+                className="flex items-center gap-2 rounded-lg border border-[#2A2A2A] bg-[#111111] px-3 py-2 text-xs font-medium text-gray-400 hover:text-white transition-colors"
                 title={
                   sortMode === "recent"
                     ? "Ordenado por reciente"
@@ -526,7 +526,7 @@ export default function DashboardPage() {
               </button>
 
               {/* View mode toggle */}
-              <div className="flex items-center rounded-lg border border-[#1a1a1f] bg-[#111114] p-1">
+              <div className="flex items-center rounded-lg border border-[#2A2A2A] bg-[#111111] p-1">
                 <button
                   onClick={() => setViewMode("grid")}
                   className={cn(
@@ -558,7 +558,7 @@ export default function DashboardPage() {
           {/* New Project Modal */}
           {showNewProject && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-              <div className="w-full max-w-2xl rounded-xl border border-[#1a1a1f] bg-[#111114] p-6 shadow-2xl max-h-[85vh] overflow-y-auto">
+              <div className="w-full max-w-2xl rounded-xl border border-[#2A2A2A] bg-[#111111] p-6 shadow-2xl max-h-[85vh] overflow-y-auto">
                 {step === "template" ? (
                   <>
                     <h2 className="text-lg font-semibold text-white mb-1">
@@ -577,7 +577,7 @@ export default function DashboardPage() {
                             "flex flex-col items-center gap-2 rounded-xl border p-4 text-center transition-all hover:border-[#7c3aed]/50 hover:bg-[#7c3aed]/5",
                             newProjectTemplate === key
                               ? "border-[#7c3aed] bg-[#7c3aed]/10"
-                              : "border-[#1a1a1f]"
+                              : "border-[#2A2A2A]"
                           )}
                         >
                           <div className="text-[#7c3aed]">
@@ -630,7 +630,7 @@ export default function DashboardPage() {
                           type="text"
                           value={newProjectName}
                           onChange={(e) => setNewProjectName(e.target.value)}
-                          className="w-full rounded-lg border border-[#1a1a1f] bg-[#09090b] px-4 py-2.5 text-sm text-white placeholder:text-gray-500 outline-none focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed]"
+                          className="w-full rounded-lg border border-[#2A2A2A] bg-[#0A0A0A] px-4 py-2.5 text-sm text-white placeholder:text-gray-500 outline-none focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed]"
                           placeholder="Mi App Increíble"
                           autoFocus
                           onKeyDown={(e) => {
@@ -652,7 +652,7 @@ export default function DashboardPage() {
                                 "flex items-center gap-3 rounded-lg border p-3 text-left transition-colors",
                                 newProjectFramework === key
                                   ? "border-[#7c3aed] bg-[#7c3aed]/10"
-                                  : "border-[#1a1a1f] hover:border-[#7c3aed]/50 hover:bg-[#161619]/30"
+                                  : "border-[#2A2A2A] hover:border-[#7c3aed]/50 hover:bg-[#1A1A1A]/30"
                               )}
                             >
                               <div className="text-[#7c3aed]">
@@ -700,7 +700,7 @@ export default function DashboardPage() {
 
           {/* Projects content */}
           {filteredProjects.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[#1a1a1f] py-16">
+            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[#2A2A2A] py-16">
               <FolderOpen className="h-12 w-12 text-gray-600 mb-4" />
               <h3 className="text-sm font-medium text-white mb-1">
                 {projects.length === 0
@@ -729,15 +729,15 @@ export default function DashboardPage() {
                 <div
                   key={project.id}
                   onClick={() => router.push(`/project/${project.id}`)}
-                  className="group relative cursor-pointer rounded-xl border border-[#1a1a1f] bg-[#111114] overflow-hidden hover:border-[#7c3aed]/50 hover:bg-[#111114]/80 transition-all"
+                  className="group relative cursor-pointer rounded-xl border border-[#2A2A2A] bg-[#111111] overflow-hidden hover:border-[#7c3aed]/50 hover:bg-[#111111]/80 transition-all"
                 >
                   {/* Thumbnail */}
                   {project.thumbnail ? (
-                    <div className="h-32 w-full bg-[#09090b] overflow-hidden">
+                    <div className="h-32 w-full bg-[#0A0A0A] overflow-hidden">
                       <img src={project.thumbnail} alt={project.name} className="h-full w-full object-cover" />
                     </div>
                   ) : (
-                    <div className="h-32 w-full bg-gradient-to-br from-[#161619] to-[#0d0d10] flex items-center justify-center">
+                    <div className="h-32 w-full bg-gradient-to-br from-[#1A1A1A] to-[#0E0E0E] flex items-center justify-center">
                       <div className="text-[#7c3aed]/30">
                         {frameworkIcons[project.framework] || <Code2 className="h-8 w-8" />}
                       </div>
@@ -827,7 +827,7 @@ export default function DashboardPage() {
                               ? "bg-[#22c55e]/10 text-[#22c55e]"
                               : project.status === "DEPLOYING"
                                 ? "bg-[#f59e0b]/10 text-[#f59e0b]"
-                                : "bg-[#161619] text-gray-400"
+                                : "bg-[#1A1A1A] text-gray-400"
                           )}
                         >
                           {project.status.toLowerCase()}
@@ -840,9 +840,9 @@ export default function DashboardPage() {
             </div>
           ) : (
             /* List view */
-            <div className="rounded-xl border border-[#1a1a1f] bg-[#111114] overflow-hidden">
+            <div className="rounded-xl border border-[#2A2A2A] bg-[#111111] overflow-hidden">
               {/* Table header */}
-              <div className="grid grid-cols-[1fr_140px_110px_140px_60px] items-center gap-4 border-b border-[#1a1a1f] px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <div className="grid grid-cols-[1fr_140px_110px_140px_60px] items-center gap-4 border-b border-[#2A2A2A] px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <span>Nombre</span>
                 <span>Framework</span>
                 <span>Estado</span>
@@ -855,7 +855,7 @@ export default function DashboardPage() {
                 <div
                   key={project.id}
                   onClick={() => router.push(`/project/${project.id}`)}
-                  className="group grid grid-cols-[1fr_140px_110px_140px_60px] items-center gap-4 border-b border-[#1a1a1f] last:border-b-0 px-5 py-3.5 cursor-pointer hover:bg-[#161619]/30 transition-colors"
+                  className="group grid grid-cols-[1fr_140px_110px_140px_60px] items-center gap-4 border-b border-[#2A2A2A] last:border-b-0 px-5 py-3.5 cursor-pointer hover:bg-[#1A1A1A]/30 transition-colors"
                 >
                   {/* Name */}
                   <div className="flex items-center gap-3 min-w-0">
@@ -891,7 +891,7 @@ export default function DashboardPage() {
                         ? "bg-[#22c55e]/10 text-[#22c55e]"
                         : project.status === "DEPLOYING"
                           ? "bg-[#f59e0b]/10 text-[#f59e0b]"
-                          : "bg-[#161619] text-gray-400"
+                          : "bg-[#1A1A1A] text-gray-400"
                     )}
                   >
                     {project.status.toLowerCase()}

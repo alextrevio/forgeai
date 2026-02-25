@@ -81,7 +81,7 @@ export function WorkspaceLayout() {
   })();
 
   return (
-    <div className="flex h-screen flex-col bg-[#09090b]">
+    <div className="flex h-screen flex-col bg-[#0A0A0A]">
       {/* Main layout */}
       <div className="flex-1 overflow-hidden">
         {hasWorkspaceContent ? (
@@ -106,7 +106,7 @@ export function WorkspaceLayout() {
             >
               <div
                 className={cn(
-                  "absolute bg-[#1a1a1f] group-hover:bg-[#7c3aed]/60 transition-colors duration-200",
+                  "absolute bg-[#2A2A2A] group-hover:bg-[#7c3aed]/60 transition-colors duration-200",
                   isVertical
                     ? "inset-x-0 h-[1px] top-1/2 -translate-y-1/2"
                     : "inset-y-0 w-[1px] left-1/2 -translate-x-1/2"
@@ -138,7 +138,7 @@ export function WorkspaceLayout() {
       </div>
 
       {/* Bottom Bar — progress */}
-      <div className="flex items-center gap-3 border-t border-[#1a1a1f] bg-[#0a0a12] px-4 py-2">
+      <div className="flex items-center gap-3 border-t border-[#2A2A2A] bg-[#0A0A0A] px-4 py-2">
         <div className="flex items-center gap-2 shrink-0">
           {isAgentRunning ? (
             <div className="flex items-center gap-1.5">
@@ -147,13 +147,13 @@ export function WorkspaceLayout() {
             </div>
           ) : (
             <div className="flex items-center gap-1.5">
-              <div className="h-2 w-2 rounded-full bg-[#4a4a5e]" />
-              <span className="text-[11px] text-[#8888a0]">inactivo</span>
+              <div className="h-2 w-2 rounded-full bg-[#555555]" />
+              <span className="text-[11px] text-[#888888]">inactivo</span>
             </div>
           )}
         </div>
 
-        <div className="flex-1 h-1.5 rounded-full bg-[#1a1a1f] overflow-hidden">
+        <div className="flex-1 h-1.5 rounded-full bg-[#2A2A2A] overflow-hidden">
           {isAgentRunning && stepsTotal > 0 ? (
             <div
               className="h-full rounded-full progress-bar-gradient transition-all duration-700 ease-out shimmer-bar"
@@ -172,7 +172,7 @@ export function WorkspaceLayout() {
         <div className="flex items-center gap-2 shrink-0 min-w-0 max-w-[300px]">
           {stepsTotal > 0 && (
             <>
-              <span className="text-[10px] text-[#8888a0] tabular-nums shrink-0">
+              <span className="text-[10px] text-[#888888] tabular-nums shrink-0">
                 {stepsCompleted} / {stepsTotal}
               </span>
               {currentStepText && (

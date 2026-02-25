@@ -53,18 +53,18 @@ export function RichMessage({ message, onOpenFile, onRegenerate }: RichMessagePr
     <div className="relative group" onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
       {/* Hover Actions */}
       {message.role === "ASSISTANT" && hovering && (
-        <div className="absolute -top-3 right-0 flex items-center gap-0.5 rounded-lg border border-border bg-[#111114] px-1 py-0.5 shadow-lg z-10 animate-fade-in">
-          <button onClick={() => setFeedback("up")} className={cn("rounded-md p-1 transition-all duration-150", feedback === "up" ? "text-[#4ade80] bg-[#4ade80]/10" : "text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#161619]")} title="Helpful">
+        <div className="absolute -top-3 right-0 flex items-center gap-0.5 rounded-lg border border-border bg-[#111111] px-1 py-0.5 shadow-lg z-10 animate-fade-in">
+          <button onClick={() => setFeedback("up")} className={cn("rounded-md p-1 transition-all duration-150", feedback === "up" ? "text-[#4ade80] bg-[#4ade80]/10" : "text-[#888888] hover:text-[#EDEDED] hover:bg-[#1A1A1A]")} title="Helpful">
             <ThumbsUp className="h-3 w-3" />
           </button>
-          <button onClick={() => setFeedback("down")} className={cn("rounded-md p-1 transition-all duration-150", feedback === "down" ? "text-[#f87171] bg-[#f87171]/10" : "text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#161619]")} title="Not helpful">
+          <button onClick={() => setFeedback("down")} className={cn("rounded-md p-1 transition-all duration-150", feedback === "down" ? "text-[#f87171] bg-[#f87171]/10" : "text-[#888888] hover:text-[#EDEDED] hover:bg-[#1A1A1A]")} title="Not helpful">
             <ThumbsDown className="h-3 w-3" />
           </button>
-          <button onClick={handleCopy} className="rounded-md p-1 text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#161619] transition-all duration-150" title="Copy">
+          <button onClick={handleCopy} className="rounded-md p-1 text-[#888888] hover:text-[#EDEDED] hover:bg-[#1A1A1A] transition-all duration-150" title="Copy">
             {copied ? <Check className="h-3 w-3 text-[#4ade80]" /> : <Copy className="h-3 w-3" />}
           </button>
           {onRegenerate && (
-            <button onClick={() => onRegenerate(message.id)} className="rounded-md p-1 text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#161619] transition-all duration-150" title="Regenerate">
+            <button onClick={() => onRegenerate(message.id)} className="rounded-md p-1 text-[#888888] hover:text-[#EDEDED] hover:bg-[#1A1A1A] transition-all duration-150" title="Regenerate">
               <RefreshCw className="h-3 w-3" />
             </button>
           )}
@@ -101,29 +101,29 @@ function PlanMessage({ plan }: { plan: AgentPlan }) {
       case "completed": return <CheckCircle2 className="h-3.5 w-3.5 text-[#4ade80]" />;
       case "in_progress": return <Loader2 className="h-3.5 w-3.5 text-[#a78bfa] animate-spin" />;
       case "failed": return <XCircle className="h-3.5 w-3.5 text-[#f87171]" />;
-      default: return <Circle className="h-3.5 w-3.5 text-[#8888a0]/30" />;
+      default: return <Circle className="h-3.5 w-3.5 text-[#888888]/30" />;
     }
   };
   const completed = safeArray(plan?.steps).filter((s) => s.status === "completed").length;
   const total = safeArray(plan?.steps).length;
 
   return (
-    <div className="rounded-xl border border-border bg-[#111114] overflow-hidden">
+    <div className="rounded-xl border border-border bg-[#111111] overflow-hidden">
       <div className="px-4 py-2.5 border-b border-border bg-[#0e0e14]">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[10px] font-semibold text-[#8888a0]/60 uppercase tracking-widest">Plan</span>
-          <span className="text-[10px] text-[#8888a0]">{completed}/{total}</span>
+          <span className="text-[10px] font-semibold text-[#888888]/60 uppercase tracking-widest">Plan</span>
+          <span className="text-[10px] text-[#888888]">{completed}/{total}</span>
         </div>
-        <div className="h-1 rounded-full bg-[#161619] overflow-hidden">
+        <div className="h-1 rounded-full bg-[#1A1A1A] overflow-hidden">
           <div className="h-full progress-animated transition-all duration-500" style={{ width: `${total > 0 ? (completed / total) * 100 : 0}%` }} />
         </div>
       </div>
-      <div className="px-4 py-2 text-xs text-[#e2e2e8]/70 leading-relaxed">{plan.understanding}</div>
+      <div className="px-4 py-2 text-xs text-[#EDEDED]/70 leading-relaxed">{plan.understanding}</div>
       <div className="px-4 pb-3 space-y-1">
         {safeArray(plan?.steps).map((step) => (
           <div key={step.id} className="flex items-start gap-2">
             {getStepIcon(step.status)}
-            <span className={cn("text-xs leading-5", step.status === "completed" ? "text-[#8888a0] line-through" : step.status === "in_progress" ? "text-[#e2e2e8] font-medium" : step.status === "failed" ? "text-[#f87171]" : "text-[#8888a0]/50")}>
+            <span className={cn("text-xs leading-5", step.status === "completed" ? "text-[#888888] line-through" : step.status === "in_progress" ? "text-[#EDEDED] font-medium" : step.status === "failed" ? "text-[#f87171]" : "text-[#888888]/50")}>
               {step.description}
             </span>
           </div>
@@ -144,7 +144,7 @@ function CodeMessage({ content }: { content: string }) {
     <div className="space-y-2 text-sm">
       {textParts.map((text, i) => (
         <div key={`t${i}`}>
-          {text.trim() && <div className="whitespace-pre-wrap text-[#e2e2e8] leading-relaxed">{text.trim()}</div>}
+          {text.trim() && <div className="whitespace-pre-wrap text-[#EDEDED] leading-relaxed">{text.trim()}</div>}
           {codeBlocks[i] && (() => {
             const raw = codeBlocks[i];
             const langMatch = raw.match(/```(\w+)?/);
@@ -152,13 +152,13 @@ function CodeMessage({ content }: { content: string }) {
             const code = raw.replace(/```\w*\n?/, "").replace(/\n?```$/, "");
             return (
               <div className="relative rounded-xl border border-border bg-[#08080d] overflow-hidden my-2">
-                <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/50 bg-[#0a0a0f]">
-                  <span className="text-[10px] text-[#8888a0]/40 uppercase tracking-wider">{lang || "code"}</span>
-                  <button onClick={() => handleCopy(code)} className="text-[#8888a0] hover:text-[#e2e2e8] transition-all duration-150">
+                <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/50 bg-[#0A0A0A]">
+                  <span className="text-[10px] text-[#888888]/40 uppercase tracking-wider">{lang || "code"}</span>
+                  <button onClick={() => handleCopy(code)} className="text-[#888888] hover:text-[#EDEDED] transition-all duration-150">
                     {copied ? <Check className="h-3 w-3 text-[#4ade80]" /> : <Copy className="h-3 w-3" />}
                   </button>
                 </div>
-                <pre className="p-3 overflow-x-auto"><code className="text-[11px] font-mono text-[#e2e2e8]/80 leading-relaxed">{code}</code></pre>
+                <pre className="p-3 overflow-x-auto"><code className="text-[11px] font-mono text-[#EDEDED]/80 leading-relaxed">{code}</code></pre>
               </div>
             );
           })()}
@@ -177,15 +177,15 @@ function FileChangeMessage({ changes, onOpenFile }: { changes: CodeChange[]; onO
   const actionLabels = { create: "Created", edit: "Modified", delete: "Deleted" };
 
   return (
-    <div className="rounded-xl border border-border bg-[#111114] overflow-hidden">
+    <div className="rounded-xl border border-border bg-[#111111] overflow-hidden">
       <div className="px-3 py-2 border-b border-border bg-[#0e0e14]">
-        <span className="text-[10px] font-semibold text-[#8888a0]/60 uppercase tracking-widest">{safeArray(changes).length} file{safeArray(changes).length !== 1 ? "s" : ""} changed</span>
+        <span className="text-[10px] font-semibold text-[#888888]/60 uppercase tracking-widest">{safeArray(changes).length} file{safeArray(changes).length !== 1 ? "s" : ""} changed</span>
       </div>
       <div className="divide-y divide-border/30">
         {safeArray(changes).map((change, i) => (
-          <button key={i} onClick={() => onOpenFile?.(change.file)} className="flex items-center gap-2 px-3 py-2 w-full text-left hover:bg-[#161619]/50 transition-all duration-100">
+          <button key={i} onClick={() => onOpenFile?.(change.file)} className="flex items-center gap-2 px-3 py-2 w-full text-left hover:bg-[#1A1A1A]/50 transition-all duration-100">
             {actionIcons[change.action] || <FileText className="h-3.5 w-3.5" />}
-            <span className="text-[11px] font-mono text-[#e2e2e8]/80 flex-1 truncate">{change.file}</span>
+            <span className="text-[11px] font-mono text-[#EDEDED]/80 flex-1 truncate">{change.file}</span>
             <span className={cn("text-[9px] px-1.5 py-0.5 rounded-full font-medium", change.action === "create" ? "bg-[#4ade80]/10 text-[#4ade80]" : change.action === "edit" ? "bg-[#fbbf24]/10 text-[#fbbf24]" : "bg-[#f87171]/10 text-[#f87171]")}>
               {actionLabels[change.action]}
             </span>
@@ -226,16 +226,16 @@ function ReviewMessage({ content }: { content: string }) {
   const score = scoreMatch ? parseInt(scoreMatch[1]) : null;
 
   return (
-    <div className="rounded-xl border border-border bg-[#111114] overflow-hidden">
+    <div className="rounded-xl border border-border bg-[#111111] overflow-hidden">
       <div className="px-3 py-2 border-b border-border bg-[#0e0e14] flex items-center justify-between">
-        <span className="text-[10px] font-semibold text-[#8888a0]/60 uppercase tracking-widest">Code Review</span>
+        <span className="text-[10px] font-semibold text-[#888888]/60 uppercase tracking-widest">Code Review</span>
         {score !== null && (
           <div className={cn("flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold", score >= 90 ? "bg-[#4ade80]/10 text-[#4ade80]" : score >= 70 ? "bg-[#fbbf24]/10 text-[#fbbf24]" : "bg-[#f87171]/10 text-[#f87171]")}>
             <Star className="h-2.5 w-2.5" /> {score}/100
           </div>
         )}
       </div>
-      <div className="px-3 py-2 text-xs text-[#e2e2e8]/70 whitespace-pre-wrap leading-relaxed">{content}</div>
+      <div className="px-3 py-2 text-xs text-[#EDEDED]/70 whitespace-pre-wrap leading-relaxed">{content}</div>
     </div>
   );
 }
@@ -262,9 +262,9 @@ function DeployMessage({ content }: { content: string }) {
 }
 
 function SystemMessage({ content }: { content: string }) {
-  return <div className="px-3 py-1.5 rounded-lg bg-[#161619]/50 text-[11px] text-[#8888a0]/60 italic">{content}</div>;
+  return <div className="px-3 py-1.5 rounded-lg bg-[#1A1A1A]/50 text-[11px] text-[#888888]/60 italic">{content}</div>;
 }
 
 function TextMessage({ content }: { content: string }) {
-  return <div className="text-sm text-[#e2e2e8] whitespace-pre-wrap break-words leading-relaxed">{content}</div>;
+  return <div className="text-sm text-[#EDEDED] whitespace-pre-wrap break-words leading-relaxed">{content}</div>;
 }
