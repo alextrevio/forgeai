@@ -232,7 +232,8 @@ export async function runDeploy(
       }
     }
 
-    const deployUrl = `http://localhost:${process.env.PORT || 8000}/preview/${projectId}/`;
+    const baseUrl = process.env.API_URL || process.env.APP_URL || `http://localhost:${process.env.PORT || 8000}`;
+    const deployUrl = `${baseUrl}/preview/${projectId}/`;
     const subdomain = project.name
       .toLowerCase()
       .replace(/[^a-z0-9]/g, "-")

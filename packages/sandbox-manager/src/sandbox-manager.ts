@@ -7,11 +7,16 @@ import {
   readdirSync,
   statSync,
   unlinkSync,
+  rmSync,
 } from "fs";
 import { join, relative, dirname } from "path";
 import { SandboxConfig, SandboxInfo, CommandResult, FileNode } from "./types";
 
-let nextPort = 5200;
+// Port pool with recycling
+const PORT_MIN = 5200;
+const PORT_MAX = 6200;
+let nextPort = PORT_MIN;
+const freePorts: number[] = [];
 
 export class SandboxManager {
   private config: SandboxConfig;
@@ -32,7 +37,7 @@ export class SandboxManager {
     _framework: string
   ): Promise<SandboxInfo> {
     const workspaceDir = join(this.config.workspacesDir, projectId);
-    const previewPort = nextPort++;
+    const previewPort = freePorts.length > 0 ? freePorts.pop()! : nextPort < PORT_MAX ? nextPort++ : nextPort++;
 
     if (!existsSync(workspaceDir)) {
       mkdirSync(workspaceDir, { recursive: true });
@@ -252,11 +257,28 @@ export class SandboxManager {
   // ─── Lifecycle ───────────────────────────────────────────
 
   async destroySandbox(projectId: string): Promise<void> {
+    const info = this.sandboxes.get(projectId);
+
     const child = this.devProcesses.get(projectId);
     if (child && !child.killed) {
       child.kill("SIGTERM");
       this.devProcesses.delete(projectId);
     }
+
+    // Recycle the port
+    if (info?.previewPort) {
+      freePorts.push(info.previewPort);
+    }
+
+    // Clean up workspace directory
+    if (info?.workspaceDir && existsSync(info.workspaceDir)) {
+      try {
+        rmSync(info.workspaceDir, { recursive: true, force: true });
+      } catch { /* best-effort cleanup */ }
+    }
+
+    // Clean up callback
+    this.devOutputCallbacks.delete(projectId);
 
     this.sandboxes.delete(projectId);
     const timer = this.ttlTimers.get(projectId);

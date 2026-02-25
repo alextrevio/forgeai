@@ -24,6 +24,15 @@ import { rateLimit } from "./middleware/rate-limit";
 import { setupSocketHandlers } from "./socket";
 import { logger } from "./lib/logger";
 
+// ── Validate required env vars at startup ───────────────
+const REQUIRED_ENV = ["JWT_SECRET", "JWT_REFRESH_SECRET", "DATABASE_URL"];
+for (const key of REQUIRED_ENV) {
+  if (!process.env[key]) {
+    logger.error(`Missing required environment variable: ${key}`);
+    process.exit(1);
+  }
+}
+
 const startTime = Date.now();
 const app = express();
 const httpServer = createServer(app);
@@ -167,5 +176,22 @@ const PORT = parseInt(process.env.PORT || "8000", 10);
 httpServer.listen(PORT, () => {
   logger.info({ port: PORT, env: process.env.NODE_ENV || "development" }, "ForgeAI API running");
 });
+
+// ── Graceful shutdown ────────────────────────────────────
+function gracefulShutdown(signal: string) {
+  logger.info({ signal }, "Received shutdown signal, closing...");
+  httpServer.close(() => {
+    logger.info("HTTP server closed");
+    prisma.$disconnect().then(() => {
+      logger.info("Database disconnected");
+      process.exit(0);
+    });
+  });
+  // Force exit after 10 seconds
+  setTimeout(() => process.exit(1), 10_000).unref();
+}
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
 export { io };
