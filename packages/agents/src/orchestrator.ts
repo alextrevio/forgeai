@@ -79,6 +79,10 @@ export class Orchestrator {
           await Promise.all(group.map((step) =>
             this.executeStep(step, plan, projectContext, sandbox, callbacks, signal)
               .then(async (newCtx) => { if (newCtx) projectContext = newCtx; })
+              .catch((err) => {
+                const msg = err instanceof Error ? err.message : String(err);
+                callbacks.onError(`Step "${step.description}" failed: ${msg}`);
+              })
           ));
         } else {
           const step = group[0];

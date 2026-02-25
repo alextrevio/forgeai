@@ -16,7 +16,7 @@ async function githubFetch(token: string, path: string, options: RequestInit = {
       Authorization: `Bearer ${token}`,
       Accept: "application/vnd.github.v3+json",
       "Content-Type": "application/json",
-      ...(options.headers as Record<string, string> || {}),
+      ...(options.headers ? (options.headers as Record<string, string>) : {}),
     },
   });
   const data = await res.json();

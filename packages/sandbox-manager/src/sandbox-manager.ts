@@ -37,7 +37,7 @@ export class SandboxManager {
     _framework: string
   ): Promise<SandboxInfo> {
     const workspaceDir = join(this.config.workspacesDir, projectId);
-    const previewPort = freePorts.length > 0 ? freePorts.pop()! : nextPort < PORT_MAX ? nextPort++ : nextPort++;
+    const previewPort = freePorts.length > 0 ? freePorts.pop()! : nextPort < PORT_MAX ? nextPort++ : (() => { nextPort = PORT_MIN; return nextPort++; })();
 
     if (!existsSync(workspaceDir)) {
       mkdirSync(workspaceDir, { recursive: true });
@@ -115,11 +115,9 @@ export class SandboxManager {
 
     this.devProcesses.set(projectId, child);
 
-    info: {
-      const s = this.sandboxes.get(projectId);
-      if (s) {
-        s.devServerPid = child.pid ?? null;
-      }
+    const s = this.sandboxes.get(projectId);
+    if (s) {
+      s.devServerPid = child.pid ?? null;
     }
   }
 
@@ -251,7 +249,15 @@ export class SandboxManager {
 
     // Server not responding yet — wait a bit more and retry once
     await new Promise<void>((resolve) => setTimeout(resolve, 3000));
-    return true; // Return true anyway; the server may still be booting
+    try {
+      const retry = await this.executeCommand(
+        projectId,
+        `timeout 3 curl -s -o /dev/null -w "%{http_code}" http://localhost:${info.previewPort} 2>/dev/null || echo "000"`
+      );
+      return retry.stdout.trim() !== "000";
+    } catch {
+      return false;
+    }
   }
 
   // ─── Lifecycle ───────────────────────────────────────────
@@ -315,7 +321,7 @@ export class SandboxManager {
           const stat = statSync(fullPath);
           if (stat.isDirectory()) {
             deleteRecursive(fullPath);
-            try { require("fs").rmdirSync(fullPath); } catch { /* skip */ }
+            try { rmSync(fullPath, { recursive: true, force: true }); } catch { /* skip */ }
           } else {
             unlinkSync(fullPath);
           }
@@ -362,6 +368,11 @@ export class SandboxManager {
           dependencies: {
             react: "^18.3.1",
             "react-dom": "^18.3.1",
+            "react-router-dom": "^7.1.0",
+            "zustand": "^5.0.0",
+            "lucide-react": "^0.469.0",
+            "clsx": "^2.1.1",
+            "tailwind-merge": "^2.6.0",
           },
           devDependencies: {
             "@types/react": "^18.3.12",

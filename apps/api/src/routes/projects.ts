@@ -129,7 +129,7 @@ projectRouter.patch("/:id/settings", async (req: AuthRequest, res: Response) => 
     }
 
     const updated = await prisma.project.update({
-      where: { id },
+      where: { id, userId: req.userId! },
       data: updateData,
     });
 
