@@ -15,16 +15,12 @@ export function getSocket(): Socket {
       reconnectionAttempts: 10,
     });
 
-    socket.on("connect", () => {
-      console.log("Socket connected");
-    });
-
-    socket.on("disconnect", (reason) => {
-      console.log("Socket disconnected:", reason);
-    });
-
-    socket.on("connect_error", (err) => {
-      console.error("Socket connection error:", err.message);
+    // Re-send fresh token on each reconnect attempt
+    socket.on("reconnect_attempt", () => {
+      const freshToken = localStorage.getItem("accessToken");
+      if (socket) {
+        socket.auth = { token: freshToken };
+      }
     });
   }
 
@@ -33,6 +29,7 @@ export function getSocket(): Socket {
 
 export function disconnectSocket() {
   if (socket) {
+    socket.removeAllListeners();
     socket.disconnect();
     socket = null;
   }

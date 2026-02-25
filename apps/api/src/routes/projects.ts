@@ -113,12 +113,19 @@ projectRouter.patch("/:id/settings", async (req: AuthRequest, res: Response) => 
 
     const { customInstructions, settings } = req.body;
 
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (typeof customInstructions === "string") {
+      if (customInstructions.length > 5000) {
+        return res.status(400).json({ error: "Custom instructions too long (max 5000 chars)" });
+      }
       updateData.customInstructions = customInstructions;
     }
-    if (settings && typeof settings === "object") {
-      updateData.settings = JSON.stringify(settings);
+    if (settings && typeof settings === "object" && !Array.isArray(settings)) {
+      const raw = JSON.stringify(settings);
+      if (raw.length > 10000) {
+        return res.status(400).json({ error: "Settings payload too large" });
+      }
+      updateData.settings = raw;
     }
 
     const updated = await prisma.project.update({

@@ -1,10 +1,16 @@
 import { Router } from "express";
 import { prisma } from "@forgeai/db";
 import { createWriteStream, existsSync, mkdirSync, readFileSync, unlinkSync } from "fs";
-import { join } from "path";
-import { execSync } from "child_process";
+import { join, resolve, basename } from "path";
+import { execFileSync } from "child_process";
 
 const router = Router();
+
+// Max ZIP size: 50MB in base64
+const MAX_ZIP_BASE64_SIZE = 50 * 1024 * 1024;
+
+// Strict GitHub URL regex — only allows github.com HTTPS URLs
+const GITHUB_URL_RE = /^https:\/\/github\.com\/[\w.-]+\/[\w.-]+(\.git)?$/;
 
 // POST /api/projects/:id/export/zip — Export project as ZIP
 router.post("/:id/export/zip", async (req, res, next) => {
@@ -82,11 +88,11 @@ This project was generated using [ForgeAI](https://forgeai.dev), an AI-powered a
     // Remove old zip if exists
     if (existsSync(zipPath)) unlinkSync(zipPath);
 
-    // Create zip excluding node_modules
-    execSync(
-      `cd "${workspaceDir}" && zip -r "${zipPath}" . -x "node_modules/*" "node_modules/**" ".git/*" ".git/**"`,
-      { timeout: 30000 }
-    );
+    // Create zip excluding node_modules (execFileSync — no shell injection)
+    execFileSync("zip", ["-r", zipPath, ".", "-x", "node_modules/*", "node_modules/**", ".git/*", ".git/**"], {
+      cwd: workspaceDir,
+      timeout: 30000,
+    });
 
     // Clean up temp files we created
     if (!hasReadme) unlinkSync(readmePath);
@@ -114,6 +120,10 @@ router.post("/import", async (req, res, next) => {
       return res.status(400).json({ error: { code: "INVALID_INPUT", message: "name and zipBase64 required" } });
     }
 
+    if (typeof zipBase64 !== "string" || zipBase64.length > MAX_ZIP_BASE64_SIZE) {
+      return res.status(400).json({ error: { code: "PAYLOAD_TOO_LARGE", message: "ZIP file too large (max 50MB)" } });
+    }
+
     // Create project
     const project = await prisma.project.create({
       data: {
@@ -139,7 +149,7 @@ router.post("/import", async (req, res, next) => {
 
     const workspaceDir = sandboxManager.getWorkspaceDir(sandbox.containerId) || sandbox.workspaceDir;
     if (workspaceDir) {
-      execSync(`unzip -o "${zipPath}" -d "${workspaceDir}"`, { timeout: 30000 });
+      execFileSync("unzip", ["-o", zipPath, "-d", workspaceDir], { timeout: 30000 });
     }
     unlinkSync(zipPath);
 
@@ -176,8 +186,12 @@ router.post("/import/github", async (req, res, next) => {
     const userId = (req as any).userId;
     const { repoUrl, name } = req.body;
 
-    if (!repoUrl) {
+    if (!repoUrl || typeof repoUrl !== "string") {
       return res.status(400).json({ error: { code: "INVALID_INPUT", message: "repoUrl required" } });
+    }
+
+    if (!GITHUB_URL_RE.test(repoUrl)) {
+      return res.status(400).json({ error: { code: "INVALID_URL", message: "Only HTTPS GitHub repository URLs are allowed" } });
     }
 
     // Extract repo name from URL
@@ -204,9 +218,10 @@ router.post("/import/github", async (req, res, next) => {
     // Clone repo
     if (workspaceDir) {
       try {
-        execSync(`git clone --depth 1 "${repoUrl}" "${workspaceDir}_tmp" && cp -r "${workspaceDir}_tmp"/. "${workspaceDir}" && rm -rf "${workspaceDir}_tmp"`, {
-          timeout: 60000,
-        });
+        const tmpCloneDir = `${workspaceDir}_tmp`;
+        execFileSync("git", ["clone", "--depth", "1", repoUrl, tmpCloneDir], { timeout: 60000 });
+        execFileSync("cp", ["-r", `${tmpCloneDir}/.`, workspaceDir], { timeout: 15000 });
+        execFileSync("rm", ["-rf", tmpCloneDir], { timeout: 10000 });
       } catch (err) {
         return res.status(400).json({ error: { code: "CLONE_FAILED", message: "Failed to clone repository" } });
       }

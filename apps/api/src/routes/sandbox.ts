@@ -5,6 +5,18 @@ import { prisma } from "@forgeai/db";
 import { AuthRequest } from "../middleware/auth";
 import { sandboxManager } from "../sandbox/manager";
 
+// Max file content size: 5MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+/** Reject paths containing traversal sequences or absolute references */
+function isSafePath(filePath: string): boolean {
+  if (!filePath) return false;
+  // Reject absolute paths, null bytes, and parent directory traversal
+  if (filePath.startsWith("/") || filePath.includes("\0")) return false;
+  const segments = filePath.split(/[\\/]/);
+  return !segments.some((s) => s === ".." || s === ".");
+}
+
 export const sandboxRouter: RouterType = Router();
 
 // Get file tree
@@ -38,6 +50,9 @@ sandboxRouter.get("/:id/files/*", async (req: AuthRequest, res: Response) => {
     }
 
     const filePath = (req.params[0] as string) || "";
+    if (!isSafePath(filePath)) {
+      return res.status(400).json({ error: "Invalid file path" });
+    }
     const content = await sandboxManager.readFile(project.sandboxId, filePath);
     return res.json({ path: filePath, content });
   } catch (err) {
@@ -58,9 +73,15 @@ sandboxRouter.put("/:id/files/*", async (req: AuthRequest, res: Response) => {
     }
 
     const filePath = (req.params[0] as string) || "";
+    if (!isSafePath(filePath)) {
+      return res.status(400).json({ error: "Invalid file path" });
+    }
     const { content } = req.body;
     if (typeof content !== "string") {
       return res.status(400).json({ error: "Content must be a string" });
+    }
+    if (content.length > MAX_FILE_SIZE) {
+      return res.status(400).json({ error: `File too large (max ${MAX_FILE_SIZE / 1024 / 1024}MB)` });
     }
 
     await sandboxManager.writeFile(project.sandboxId, filePath, content);

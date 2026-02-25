@@ -20,7 +20,7 @@ export const loginSchema = z.object({
 // ── Project schemas ──────────────────────────────────────
 export const createProjectSchema = z.object({
   name: z.string().min(1).max(100, "Project name must be under 100 characters"),
-  framework: z.enum(["react-vite", "nextjs", "vue"]).optional(),
+  framework: z.enum(["react-vite", "nextjs", "vue", "landing", "dashboard", "saas", "api-only"]).optional(),
   description: z.string().max(500).optional(),
   template: z.string().max(50).optional(),
 });

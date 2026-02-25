@@ -80,6 +80,9 @@ app.use("/api/projects", previewProxyRouter);
 // General rate limit for all API routes
 const generalLimiter = rateLimit({ windowMs: 60_000, max: 100, keyPrefix: "general" });
 
+// Stricter rate limit for auth routes (login/register brute-force protection)
+const authLimiter = rateLimit({ windowMs: 60_000, max: 10, keyPrefix: "auth" });
+
 // Stricter rate limit for agent/message routes
 const agentLimiter = rateLimit({ windowMs: 60_000, max: 10, keyPrefix: "agent" });
 
@@ -134,8 +137,8 @@ app.get("/api/metrics", authenticate, async (_req, res) => {
   }
 });
 
-// Public routes
-app.use("/api/auth", generalLimiter, authRouter);
+// Public routes (stricter auth rate limit: 10 req/min per IP)
+app.use("/api/auth", authLimiter, authRouter);
 
 // Protected routes
 app.use("/api/projects", authenticate, generalLimiter, projectRouter);
