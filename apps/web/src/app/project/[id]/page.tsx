@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, Component, type ReactNode } from "react";
+import { useEffect, useRef, Component, type ReactNode } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useProjectStore } from "@/stores/project-store";
 import { useAuthStore } from "@/stores/auth-store";
@@ -72,6 +72,26 @@ export default function ProjectPage() {
   const projectId = params.id as string;
   const store = useProjectStore();
   const { loadUser, isAuthenticated, isLoading } = useAuthStore();
+
+  // Debounce terminal output — batch rapid lines into a single state update
+  const termBufRef = useRef<string[]>([]);
+  const termTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flushTerminal = () => {
+    if (termBufRef.current.length === 0) return;
+    const lines = termBufRef.current;
+    termBufRef.current = [];
+    const s = useProjectStore.getState();
+    for (const line of lines) s.addTerminalOutput(line);
+  };
+  const queueTerminal = (line: string) => {
+    termBufRef.current.push(line);
+    if (!termTimerRef.current) {
+      termTimerRef.current = setTimeout(() => {
+        termTimerRef.current = null;
+        flushTerminal();
+      }, 100);
+    }
+  };
 
   useEffect(() => {
     loadUser();
@@ -162,7 +182,7 @@ export default function ProjectPage() {
 
         case "agent:terminal_output":
         case "sandbox:terminal_output":
-          s.addTerminalOutput(event.data.output);
+          queueTerminal(event.data.output);
           break;
 
         case "agent:designer_start":
@@ -306,6 +326,8 @@ export default function ProjectPage() {
     return () => {
       socket.emit("leave:project", projectId);
       socket.off("event");
+      if (termTimerRef.current) clearTimeout(termTimerRef.current);
+      flushTerminal();
     };
   }, [projectId, isLoading, isAuthenticated]);
 

@@ -259,7 +259,7 @@ export function WorkspaceHeader() {
               <>
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2"><Github className="h-5 w-5 text-[#e2e2e8]" /><h2 className="text-lg font-semibold text-[#e2e2e8]">GitHub</h2></div>
-                  <button onClick={() => setModal(null)} className="text-[#8888a0] hover:text-[#e2e2e8] transition-colors"><X className="h-4 w-4" /></button>
+                  <button data-modal-close onClick={() => setModal(null)} className="text-[#8888a0] hover:text-[#e2e2e8] transition-colors"><X className="h-4 w-4" /></button>
                 </div>
                 {!githubStatus.connected ? (
                   <div className="space-y-3">
@@ -290,7 +290,7 @@ export function WorkspaceHeader() {
               <>
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2"><Database className="h-5 w-5 text-[#e2e2e8]" /><h2 className="text-lg font-semibold text-[#e2e2e8]">Supabase</h2></div>
-                  <button onClick={() => setModal(null)} className="text-[#8888a0] hover:text-[#e2e2e8] transition-colors"><X className="h-4 w-4" /></button>
+                  <button data-modal-close onClick={() => setModal(null)} className="text-[#8888a0] hover:text-[#e2e2e8] transition-colors"><X className="h-4 w-4" /></button>
                 </div>
                 {!supabaseStatus.connected ? (
                   <div className="space-y-3">
@@ -314,7 +314,7 @@ export function WorkspaceHeader() {
               <>
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2"><Settings className="h-5 w-5 text-[#e2e2e8]" /><h2 className="text-lg font-semibold text-[#e2e2e8]">Project Settings</h2></div>
-                  <button onClick={() => setModal(null)} className="text-[#8888a0] hover:text-[#e2e2e8] transition-colors"><X className="h-4 w-4" /></button>
+                  <button data-modal-close onClick={() => setModal(null)} className="text-[#8888a0] hover:text-[#e2e2e8] transition-colors"><X className="h-4 w-4" /></button>
                 </div>
                 <div className="space-y-4">
                   <div>
@@ -331,7 +331,7 @@ export function WorkspaceHeader() {
               <>
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2"><Users className="h-5 w-5 text-[#e2e2e8]" /><h2 className="text-lg font-semibold text-[#e2e2e8]">Share Project</h2></div>
-                  <button onClick={() => setModal(null)} className="text-[#8888a0] hover:text-[#e2e2e8] transition-colors"><X className="h-4 w-4" /></button>
+                  <button data-modal-close onClick={() => setModal(null)} className="text-[#8888a0] hover:text-[#e2e2e8] transition-colors"><X className="h-4 w-4" /></button>
                 </div>
                 <div className="space-y-4">
                   <div>

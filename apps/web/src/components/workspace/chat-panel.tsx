@@ -387,6 +387,7 @@ export function ChatPanel() {
         <div className="relative flex items-end gap-2 rounded-xl border border-[#1a1a1f] bg-[#0a0a12] p-2.5 focus-within:border-[#7c3aed]/30 transition-colors">
           <textarea
             ref={textareaRef}
+            data-chat-input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -396,6 +397,7 @@ export function ChatPanel() {
             className="flex-1 resize-none bg-transparent text-[13px] text-[#e2e2e8] placeholder:text-[#8888a0]/40 outline-none disabled:opacity-40 min-h-[36px] max-h-[200px] py-1.5 px-1 leading-relaxed"
           />
           <button
+            data-chat-send
             onClick={() => handleSubmit()}
             disabled={!input.trim() || isAgentRunning || isSending}
             className={cn(
