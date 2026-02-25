@@ -30,10 +30,10 @@ function safeArray(data: any): any[] {
 }
 
 const INITIAL_CHIPS = [
-  "Build a todo app",
-  "Create a landing page",
-  "Dashboard with charts",
-  "E-commerce store",
+  "Crea una app de tareas",
+  "Crea una landing page",
+  "Dashboard con gráficos",
+  "Tienda e-commerce",
 ];
 
 function formatTime(dateStr: string): string {
@@ -219,7 +219,7 @@ export function ChatPanel() {
   const hasInProgressStep = planSteps.some((s) => s.status === "in_progress");
 
   return (
-    <div className="flex h-full flex-col bg-[#0f0f17]">
+    <div className="flex h-full flex-col bg-background">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[#1e1e2e] px-4 py-3">
         <div className="flex items-center gap-2.5">

@@ -78,7 +78,7 @@ const templateIcons: Record<string, React.ReactNode> = {
 
 const planColors: Record<string, string> = {
   FREE: "bg-[#1e1e3a] text-gray-300",
-  PRO: "bg-[#6d5cff]/10 text-[#6d5cff]",
+  PRO: "bg-[#7c3aed]/10 text-[#7c3aed]",
   BUSINESS: "bg-[#f59e0b]/10 text-[#f59e0b]",
   ENTERPRISE: "bg-[#22c55e]/10 text-[#22c55e]",
 };
@@ -88,9 +88,9 @@ type SortMode = "recent" | "alphabetical";
 type ViewMode = "grid" | "list";
 
 const NAV_ITEMS = [
-  { id: "projects", label: "Projects", icon: Home, href: "/dashboard" },
-  { id: "usage", label: "Usage", icon: BarChart3, href: "/dashboard/usage" },
-  { id: "settings", label: "Settings", icon: Settings, href: "/settings" },
+  { id: "projects", label: "Proyectos", icon: Home, href: "/dashboard" },
+  { id: "usage", label: "Uso", icon: BarChart3, href: "/dashboard/usage" },
+  { id: "settings", label: "Ajustes", icon: Settings, href: "/settings" },
 ];
 
 export default function DashboardPage() {
@@ -161,7 +161,7 @@ export default function DashboardPage() {
 
   const handleDeleteProject = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm("Are you sure you want to delete this project?")) return;
+    if (!confirm("¿Estás seguro de que quieres eliminar este proyecto?")) return;
 
     try {
       await api.deleteProject(id);
@@ -245,8 +245,8 @@ export default function DashboardPage() {
 
   if (authLoading || isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0a0a0f]">
-        <Loader2 className="h-8 w-8 animate-spin text-[#6d5cff]" />
+      <div className="flex min-h-screen items-center justify-center bg-[#09090b]">
+        <Loader2 className="h-8 w-8 animate-spin text-[#7c3aed]" />
       </div>
     );
   }
@@ -269,18 +269,18 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#0a0a0f]">
+    <div className="flex min-h-screen bg-[#09090b]">
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-[#27274a] bg-[#131320] transition-all duration-300",
+          "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-[#27274a] bg-card transition-all duration-300",
           sidebarCollapsed ? "w-[68px]" : "w-64"
         )}
       >
         {/* Logo */}
         <div className="flex h-16 items-center gap-2.5 border-b border-[#27274a] px-4">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#6d5cff]/10">
-            <Zap className="h-5 w-5 text-[#6d5cff]" />
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#7c3aed]/10">
+            <Zap className="h-5 w-5 text-[#7c3aed]" />
           </div>
           {!sidebarCollapsed && (
             <span className="text-lg font-bold text-white tracking-tight">
@@ -301,7 +301,7 @@ export default function DashboardPage() {
                 className={cn(
                   "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-[#6d5cff]/10 text-[#6d5cff]"
+                    ? "bg-[#7c3aed]/10 text-[#7c3aed]"
                     : "text-gray-400 hover:bg-[#1e1e3a] hover:text-white"
                 )}
                 title={sidebarCollapsed ? item.label : undefined}
@@ -319,10 +319,10 @@ export default function DashboardPage() {
           <button
             onClick={logout}
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-400 hover:bg-[#1e1e3a] hover:text-white transition-colors"
-            title={sidebarCollapsed ? "Logout" : undefined}
+            title={sidebarCollapsed ? "Cerrar sesión" : undefined}
           >
             <LogOut className="h-5 w-5 shrink-0" />
-            {!sidebarCollapsed && <span>Logout</span>}
+            {!sidebarCollapsed && <span>Cerrar sesión</span>}
           </button>
         </nav>
 
@@ -346,7 +346,7 @@ export default function DashboardPage() {
           )}
         >
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#6d5cff]/20 text-sm font-semibold text-[#6d5cff]">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#7c3aed]/20 text-sm font-semibold text-[#7c3aed]">
               {(user?.name || user?.email || "U").charAt(0).toUpperCase()}
             </div>
             {!sidebarCollapsed && (
@@ -379,19 +379,19 @@ export default function DashboardPage() {
           {/* Page header */}
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-2xl font-bold text-white">Projects</h1>
+              <h1 className="text-2xl font-bold text-white">Proyectos</h1>
               <p className="text-sm text-gray-400 mt-1">
-                Build and manage your AI-generated applications
+                Construye y gestiona tus aplicaciones generadas por IA
               </p>
             </div>
             <div className="flex items-center gap-3">
               <NotificationBell />
               <button
                 onClick={openNewProjectModal}
-                className="flex items-center gap-2 rounded-lg bg-[#6d5cff] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#6d5cff]/90 transition-colors shadow-lg shadow-[#6d5cff]/20"
+                className="flex items-center gap-2 rounded-lg bg-[#7c3aed] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#7c3aed]/90 transition-colors shadow-lg shadow-[#7c3aed]/20"
               >
                 <Plus className="h-4 w-4" />
-                New Project
+                Nuevo Proyecto
               </button>
             </div>
           </div>
@@ -399,20 +399,20 @@ export default function DashboardPage() {
           {/* Stats cards */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
             {/* Total projects */}
-            <div className="rounded-xl border border-[#27274a] bg-[#131320] p-5">
+            <div className="rounded-xl border border-[#27274a] bg-card p-5">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-sm text-gray-400">Total Projects</span>
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#6d5cff]/10">
-                  <Layers className="h-4 w-4 text-[#6d5cff]" />
+                <span className="text-sm text-gray-400">Proyectos Totales</span>
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#7c3aed]/10">
+                  <Layers className="h-4 w-4 text-[#7c3aed]" />
                 </div>
               </div>
               <p className="text-2xl font-bold text-white">{stats.total}</p>
             </div>
 
             {/* Active sandboxes */}
-            <div className="rounded-xl border border-[#27274a] bg-[#131320] p-5">
+            <div className="rounded-xl border border-[#27274a] bg-card p-5">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-sm text-gray-400">Active Sandboxes</span>
+                <span className="text-sm text-gray-400">Sandboxes Activos</span>
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#22c55e]/10">
                   <Activity className="h-4 w-4 text-[#22c55e]" />
                 </div>
@@ -421,9 +421,9 @@ export default function DashboardPage() {
             </div>
 
             {/* Credits used */}
-            <div className="rounded-xl border border-[#27274a] bg-[#131320] p-5">
+            <div className="rounded-xl border border-[#27274a] bg-card p-5">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-sm text-gray-400">Credits Used</span>
+                <span className="text-sm text-gray-400">Créditos Usados</span>
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#f59e0b]/10">
                   <CreditCard className="h-4 w-4 text-[#f59e0b]" />
                 </div>
@@ -444,7 +444,7 @@ export default function DashboardPage() {
                       ? "bg-[#ef4444]"
                       : creditPercent > 50
                         ? "bg-[#f59e0b]"
-                        : "bg-[#6d5cff]"
+                        : "bg-[#7c3aed]"
                   )}
                   style={{ width: `${creditPercent}%` }}
                 />
@@ -452,11 +452,11 @@ export default function DashboardPage() {
             </div>
 
             {/* Deployments */}
-            <div className="rounded-xl border border-[#27274a] bg-[#131320] p-5">
+            <div className="rounded-xl border border-[#27274a] bg-card p-5">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-sm text-gray-400">Deployments</span>
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#6d5cff]/10">
-                  <Cloud className="h-4 w-4 text-[#6d5cff]" />
+                <span className="text-sm text-gray-400">Despliegues</span>
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#7c3aed]/10">
+                  <Cloud className="h-4 w-4 text-[#7c3aed]" />
                 </div>
               </div>
               <p className="text-2xl font-bold text-white">{stats.deployed}</p>
@@ -474,19 +474,19 @@ export default function DashboardPage() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search projects..."
-                  className="w-full rounded-lg border border-[#27274a] bg-[#131320] py-2 pl-9 pr-4 text-sm text-white placeholder:text-gray-500 outline-none focus:border-[#6d5cff] focus:ring-1 focus:ring-[#6d5cff] transition-colors"
+                  placeholder="Buscar proyectos..."
+                  className="w-full rounded-lg border border-[#27274a] bg-card py-2 pl-9 pr-4 text-sm text-white placeholder:text-gray-500 outline-none focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed] transition-colors"
                 />
               </div>
 
               {/* Status filter buttons */}
-              <div className="flex items-center rounded-lg border border-[#27274a] bg-[#131320] p-1">
+              <div className="flex items-center rounded-lg border border-[#27274a] bg-card p-1">
                 {(
                   [
-                    { value: "all", label: "All" },
-                    { value: "active", label: "Active" },
-                    { value: "deployed", label: "Deployed" },
-                    { value: "draft", label: "Draft" },
+                    { value: "all", label: "Todos" },
+                    { value: "active", label: "Activos" },
+                    { value: "deployed", label: "Desplegados" },
+                    { value: "draft", label: "Borrador" },
                   ] as const
                 ).map((filter) => (
                   <button
@@ -495,7 +495,7 @@ export default function DashboardPage() {
                     className={cn(
                       "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
                       statusFilter === filter.value
-                        ? "bg-[#6d5cff]/10 text-[#6d5cff]"
+                        ? "bg-[#7c3aed]/10 text-[#7c3aed]"
                         : "text-gray-400 hover:text-white"
                     )}
                   >
@@ -514,28 +514,28 @@ export default function DashboardPage() {
                     m === "recent" ? "alphabetical" : "recent"
                   )
                 }
-                className="flex items-center gap-2 rounded-lg border border-[#27274a] bg-[#131320] px-3 py-2 text-xs font-medium text-gray-400 hover:text-white transition-colors"
+                className="flex items-center gap-2 rounded-lg border border-[#27274a] bg-card px-3 py-2 text-xs font-medium text-gray-400 hover:text-white transition-colors"
                 title={
                   sortMode === "recent"
-                    ? "Sorted by recent"
-                    : "Sorted alphabetically"
+                    ? "Ordenado por reciente"
+                    : "Ordenado alfabéticamente"
                 }
               >
                 <ArrowUpDown className="h-3.5 w-3.5" />
-                {sortMode === "recent" ? "Recent" : "A-Z"}
+                {sortMode === "recent" ? "Reciente" : "A-Z"}
               </button>
 
               {/* View mode toggle */}
-              <div className="flex items-center rounded-lg border border-[#27274a] bg-[#131320] p-1">
+              <div className="flex items-center rounded-lg border border-[#27274a] bg-card p-1">
                 <button
                   onClick={() => setViewMode("grid")}
                   className={cn(
                     "rounded-md p-1.5 transition-colors",
                     viewMode === "grid"
-                      ? "bg-[#6d5cff]/10 text-[#6d5cff]"
+                      ? "bg-[#7c3aed]/10 text-[#7c3aed]"
                       : "text-gray-400 hover:text-white"
                   )}
-                  title="Grid view"
+                  title="Vista cuadrícula"
                 >
                   <LayoutGrid className="h-4 w-4" />
                 </button>
@@ -544,10 +544,10 @@ export default function DashboardPage() {
                   className={cn(
                     "rounded-md p-1.5 transition-colors",
                     viewMode === "list"
-                      ? "bg-[#6d5cff]/10 text-[#6d5cff]"
+                      ? "bg-[#7c3aed]/10 text-[#7c3aed]"
                       : "text-gray-400 hover:text-white"
                   )}
-                  title="List view"
+                  title="Vista lista"
                 >
                   <List className="h-4 w-4" />
                 </button>
@@ -558,14 +558,14 @@ export default function DashboardPage() {
           {/* New Project Modal */}
           {showNewProject && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-              <div className="w-full max-w-2xl rounded-xl border border-[#27274a] bg-[#131320] p-6 shadow-2xl max-h-[85vh] overflow-y-auto">
+              <div className="w-full max-w-2xl rounded-xl border border-[#27274a] bg-card p-6 shadow-2xl max-h-[85vh] overflow-y-auto">
                 {step === "template" ? (
                   <>
                     <h2 className="text-lg font-semibold text-white mb-1">
-                      Choose a Template
+                      Elige una Plantilla
                     </h2>
                     <p className="text-sm text-gray-400 mb-4">
-                      Start with a pre-built template or a blank project
+                      Comienza con una plantilla prediseñada o un proyecto en blanco
                     </p>
 
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -574,13 +574,13 @@ export default function DashboardPage() {
                           key={key}
                           onClick={() => handleSelectTemplate(key)}
                           className={cn(
-                            "flex flex-col items-center gap-2 rounded-xl border p-4 text-center transition-all hover:border-[#6d5cff]/50 hover:bg-[#6d5cff]/5",
+                            "flex flex-col items-center gap-2 rounded-xl border p-4 text-center transition-all hover:border-[#7c3aed]/50 hover:bg-[#7c3aed]/5",
                             newProjectTemplate === key
-                              ? "border-[#6d5cff] bg-[#6d5cff]/10"
+                              ? "border-[#7c3aed] bg-[#7c3aed]/10"
                               : "border-[#27274a]"
                           )}
                         >
-                          <div className="text-[#6d5cff]">
+                          <div className="text-[#7c3aed]">
                             {templateIcons[key] || (
                               <FileText className="h-5 w-5" />
                             )}
@@ -600,7 +600,7 @@ export default function DashboardPage() {
                         onClick={() => setShowNewProject(false)}
                         className="rounded-lg px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
                       >
-                        Cancel
+                        Cancelar
                       </button>
                     </div>
                   </>
@@ -611,27 +611,27 @@ export default function DashboardPage() {
                         onClick={() => setStep("template")}
                         className="text-sm text-gray-400 hover:text-white transition-colors"
                       >
-                        Templates
+                        Plantillas
                       </button>
                       <span className="text-gray-500">/</span>
                       <span className="text-sm font-medium text-white">
                         {TEMPLATES[
                           newProjectTemplate as keyof typeof TEMPLATES
-                        ]?.name || "New Project"}
+                        ]?.name || "Nuevo Proyecto"}
                       </span>
                     </div>
 
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-white mb-1.5">
-                          Project Name
+                          Nombre del Proyecto
                         </label>
                         <input
                           type="text"
                           value={newProjectName}
                           onChange={(e) => setNewProjectName(e.target.value)}
-                          className="w-full rounded-lg border border-[#27274a] bg-[#0a0a0f] px-4 py-2.5 text-sm text-white placeholder:text-gray-500 outline-none focus:border-[#6d5cff] focus:ring-1 focus:ring-[#6d5cff]"
-                          placeholder="My Awesome App"
+                          className="w-full rounded-lg border border-[#27274a] bg-[#09090b] px-4 py-2.5 text-sm text-white placeholder:text-gray-500 outline-none focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed]"
+                          placeholder="Mi App Increíble"
                           autoFocus
                           onKeyDown={(e) => {
                             if (e.key === "Enter") handleCreateProject();
@@ -641,7 +641,7 @@ export default function DashboardPage() {
 
                       <div>
                         <label className="block text-sm font-medium text-white mb-2">
-                          Framework
+                          Framework / Plantilla
                         </label>
                         <div className="grid grid-cols-2 gap-2">
                           {Object.entries(FRAMEWORKS).map(([key, fw]) => (
@@ -651,11 +651,11 @@ export default function DashboardPage() {
                               className={cn(
                                 "flex items-center gap-3 rounded-lg border p-3 text-left transition-colors",
                                 newProjectFramework === key
-                                  ? "border-[#6d5cff] bg-[#6d5cff]/10"
-                                  : "border-[#27274a] hover:border-[#6d5cff]/50 hover:bg-[#1e1e3a]/30"
+                                  ? "border-[#7c3aed] bg-[#7c3aed]/10"
+                                  : "border-[#27274a] hover:border-[#7c3aed]/50 hover:bg-[#1e1e3a]/30"
                               )}
                             >
-                              <div className="text-[#6d5cff]">
+                              <div className="text-[#7c3aed]">
                                 {frameworkIcons[key] || (
                                   <Code2 className="h-4 w-4" />
                                 )}
@@ -679,17 +679,17 @@ export default function DashboardPage() {
                         onClick={() => setShowNewProject(false)}
                         className="rounded-lg px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
                       >
-                        Cancel
+                        Cancelar
                       </button>
                       <button
                         onClick={handleCreateProject}
                         disabled={!newProjectName.trim() || isCreating}
-                        className="flex items-center gap-2 rounded-lg bg-[#6d5cff] px-4 py-2 text-sm font-medium text-white hover:bg-[#6d5cff]/90 transition-colors disabled:opacity-50"
+                        className="flex items-center gap-2 rounded-lg bg-[#7c3aed] px-4 py-2 text-sm font-medium text-white hover:bg-[#7c3aed]/90 transition-colors disabled:opacity-50"
                       >
                         {isCreating && (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         )}
-                        Create Project
+                        Crear Proyecto
                       </button>
                     </div>
                   </>
@@ -704,21 +704,21 @@ export default function DashboardPage() {
               <FolderOpen className="h-12 w-12 text-gray-600 mb-4" />
               <h3 className="text-sm font-medium text-white mb-1">
                 {projects.length === 0
-                  ? "No projects yet"
-                  : "No matching projects"}
+                  ? "Aún no hay proyectos"
+                  : "No se encontraron proyectos"}
               </h3>
               <p className="text-xs text-gray-400 mb-4">
                 {projects.length === 0
-                  ? "Create your first project to get started"
-                  : "Try adjusting your search or filters"}
+                  ? "Crea tu primer proyecto para comenzar"
+                  : "Intenta ajustar tu búsqueda o filtros"}
               </p>
               {projects.length === 0 && (
                 <button
                   onClick={openNewProjectModal}
-                  className="flex items-center gap-2 rounded-lg bg-[#6d5cff] px-4 py-2 text-sm font-medium text-white hover:bg-[#6d5cff]/90 transition-colors"
+                  className="flex items-center gap-2 rounded-lg bg-[#7c3aed] px-4 py-2 text-sm font-medium text-white hover:bg-[#7c3aed]/90 transition-colors"
                 >
                   <Plus className="h-4 w-4" />
-                  New Project
+                  Nuevo Proyecto
                 </button>
               )}
             </div>
@@ -729,16 +729,16 @@ export default function DashboardPage() {
                 <div
                   key={project.id}
                   onClick={() => router.push(`/project/${project.id}`)}
-                  className="group relative cursor-pointer rounded-xl border border-[#27274a] bg-[#131320] overflow-hidden hover:border-[#6d5cff]/50 hover:bg-[#131320]/80 transition-all"
+                  className="group relative cursor-pointer rounded-xl border border-[#27274a] bg-card overflow-hidden hover:border-[#7c3aed]/50 hover:bg-card/80 transition-all"
                 >
                   {/* Thumbnail */}
                   {project.thumbnail ? (
-                    <div className="h-32 w-full bg-[#0a0a0f] overflow-hidden">
+                    <div className="h-32 w-full bg-[#09090b] overflow-hidden">
                       <img src={project.thumbnail} alt={project.name} className="h-full w-full object-cover" />
                     </div>
                   ) : (
                     <div className="h-32 w-full bg-gradient-to-br from-[#1e1e3a] to-[#0a0a0f] flex items-center justify-center">
-                      <div className="text-[#6d5cff]/30">
+                      <div className="text-[#7c3aed]/30">
                         {frameworkIcons[project.framework] || <Code2 className="h-8 w-8" />}
                       </div>
                     </div>
@@ -747,7 +747,7 @@ export default function DashboardPage() {
                   <div className="p-4">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2 min-w-0">
-                        <div className="rounded-lg bg-[#6d5cff]/10 p-1.5 text-[#6d5cff] shrink-0">
+                        <div className="rounded-lg bg-[#7c3aed]/10 p-1.5 text-[#7c3aed] shrink-0">
                           {frameworkIcons[project.framework] || (
                             <Code2 className="h-3.5 w-3.5" />
                           )}
@@ -766,15 +766,15 @@ export default function DashboardPage() {
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
                         <button
                           onClick={(e) => handleForkProject(project.id, e)}
-                          className="rounded p-1 text-gray-400 hover:text-[#6d5cff] hover:bg-[#6d5cff]/10 transition-all"
-                          title="Fork project"
+                          className="rounded p-1 text-gray-400 hover:text-[#7c3aed] hover:bg-[#7c3aed]/10 transition-all"
+                          title="Bifurcar proyecto"
                         >
                           <GitFork className="h-3.5 w-3.5" />
                         </button>
                         <button
                           onClick={(e) => handleDeleteProject(project.id, e)}
                           className="rounded p-1 text-gray-400 hover:text-[#ef4444] hover:bg-[#ef4444]/10 transition-all"
-                          title="Delete project"
+                          title="Eliminar proyecto"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -794,7 +794,7 @@ export default function DashboardPage() {
                         </span>
                         {/* Shared badge */}
                         {project.members && project.members.length > 0 && (
-                          <span className="flex items-center gap-1 rounded-full bg-[#6d5cff]/10 px-1.5 py-0.5 text-[10px] text-[#6d5cff]">
+                          <span className="flex items-center gap-1 rounded-full bg-[#7c3aed]/10 px-1.5 py-0.5 text-[10px] text-[#7c3aed]">
                             <Users className="h-2.5 w-2.5" />
                             Shared
                           </span>
@@ -814,7 +814,7 @@ export default function DashboardPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="flex items-center gap-1 text-xs text-[#6d5cff] hover:underline"
+                            className="flex items-center gap-1 text-xs text-[#7c3aed] hover:underline"
                           >
                             <ExternalLink className="h-3 w-3" />
                             Live
@@ -840,14 +840,14 @@ export default function DashboardPage() {
             </div>
           ) : (
             /* List view */
-            <div className="rounded-xl border border-[#27274a] bg-[#131320] overflow-hidden">
+            <div className="rounded-xl border border-[#27274a] bg-card overflow-hidden">
               {/* Table header */}
               <div className="grid grid-cols-[1fr_140px_110px_140px_60px] items-center gap-4 border-b border-[#27274a] px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                <span>Name</span>
+                <span>Nombre</span>
                 <span>Framework</span>
-                <span>Status</span>
-                <span>Last Updated</span>
-                <span className="text-right">Actions</span>
+                <span>Estado</span>
+                <span>Actualizado</span>
+                <span className="text-right">Acciones</span>
               </div>
 
               {/* Table rows */}
@@ -859,7 +859,7 @@ export default function DashboardPage() {
                 >
                   {/* Name */}
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="rounded-lg bg-[#6d5cff]/10 p-1.5 text-[#6d5cff] shrink-0">
+                    <div className="rounded-lg bg-[#7c3aed]/10 p-1.5 text-[#7c3aed] shrink-0">
                       {frameworkIcons[project.framework] || (
                         <Code2 className="h-3.5 w-3.5" />
                       )}
@@ -910,8 +910,8 @@ export default function DashboardPage() {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="rounded p-1 text-gray-400 hover:text-[#6d5cff] transition-colors"
-                        title="View deployment"
+                        className="rounded p-1 text-gray-400 hover:text-[#7c3aed] transition-colors"
+                        title="Ver despliegue"
                       >
                         <ExternalLink className="h-3.5 w-3.5" />
                       </a>

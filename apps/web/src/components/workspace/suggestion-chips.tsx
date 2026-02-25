@@ -8,13 +8,13 @@ interface SuggestionChipsProps {
 }
 
 const SUGGESTION_MAP: Record<string, { chips: string[]; icon: React.ReactNode }> = {
-  ui: { chips: ["Add dark mode toggle", "Make it responsive", "Add animations", "Improve the design"], icon: <Paintbrush className="h-2.5 w-2.5" /> },
-  crud: { chips: ["Add search functionality", "Add pagination", "Add filters", "Add sorting"], icon: <Search className="h-2.5 w-2.5" /> },
-  landing: { chips: ["Add contact form", "Add testimonials", "Add pricing section", "Add FAQ"], icon: <FileText className="h-2.5 w-2.5" /> },
-  dashboard: { chips: ["Add charts", "Add analytics", "Export to CSV", "Add date filters"], icon: <BarChart3 className="h-2.5 w-2.5" /> },
-  auth: { chips: ["Add forgot password", "Add social login", "Add user profile", "Add role-based access"], icon: <Shield className="h-2.5 w-2.5" /> },
-  form: { chips: ["Add form validation", "Add file upload", "Add auto-save", "Add multi-step form"], icon: <FileText className="h-2.5 w-2.5" /> },
-  default: { chips: ["Add loading states", "Improve error handling", "Add empty states", "Polish the UI"], icon: <Wand2 className="h-2.5 w-2.5" /> },
+  ui: { chips: ["Agregar modo oscuro", "Hacerlo responsive", "Agregar animaciones", "Mejorar el diseño"], icon: <Paintbrush className="h-2.5 w-2.5" /> },
+  crud: { chips: ["Agregar búsqueda", "Agregar paginación", "Agregar filtros", "Agregar ordenamiento"], icon: <Search className="h-2.5 w-2.5" /> },
+  landing: { chips: ["Agregar formulario de contacto", "Agregar testimonios", "Agregar sección de precios", "Agregar FAQ"], icon: <FileText className="h-2.5 w-2.5" /> },
+  dashboard: { chips: ["Agregar gráficos", "Agregar analytics", "Exportar a CSV", "Agregar filtros de fecha"], icon: <BarChart3 className="h-2.5 w-2.5" /> },
+  auth: { chips: ["Agregar recuperar contraseña", "Agregar login social", "Agregar perfil de usuario", "Agregar roles de acceso"], icon: <Shield className="h-2.5 w-2.5" /> },
+  form: { chips: ["Agregar validación", "Agregar subida de archivos", "Agregar auto-guardado", "Agregar formulario multi-paso"], icon: <FileText className="h-2.5 w-2.5" /> },
+  default: { chips: ["Agregar estados de carga", "Mejorar manejo de errores", "Agregar estados vacíos", "Pulir la interfaz"], icon: <Wand2 className="h-2.5 w-2.5" /> },
 };
 
 export function SuggestionChips({ lastAction, onSelect }: SuggestionChipsProps) {
