@@ -85,7 +85,7 @@ export function RichMessage({ message, onOpenFile, onRegenerate }: RichMessagePr
 
 function inferMessageType(message: Message): string | null {
   if (message.plan) return "plan";
-  if (message.codeChanges && message.codeChanges.length > 0) return "file_change";
+  if (message.codeChanges && (Array.isArray(message?.codeChanges) ? message.codeChanges : []).length > 0) return "file_change";
   if (message.role === "SYSTEM") return "system";
   const content = message.content.toLowerCase();
   if (content.includes("error") && content.includes("fix")) return "error";

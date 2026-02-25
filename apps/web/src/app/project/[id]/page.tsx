@@ -202,7 +202,7 @@ export default function ProjectPage() {
             id: generateId(),
             projectId,
             role: "SYSTEM",
-            content: `Code Review (Score: ${event.data.report.score}/100): ${event.data.report.summary}${event.data.report.issues.length > 0 ? `\n\nIssues found: ${event.data.report.issues.length}` : ""}`,
+            content: `Code Review (Score: ${event.data.report.score}/100): ${event.data.report.summary}${(Array.isArray(event?.data?.report?.issues) ? event.data.report.issues : []).length > 0 ? `\n\nIssues found: ${(Array.isArray(event?.data?.report?.issues) ? event.data.report.issues : []).length}` : ""}`,
             messageType: null, plan: null, codeChanges: null, tokensUsed: null, creditsConsumed: 0, model: null,
             createdAt: new Date().toISOString(),
           });

@@ -231,7 +231,7 @@ export function ComputerPanel() {
             <Terminal className="h-3.5 w-3.5" /> {">_"} Terminal
             {safeArray(terminalOutput).length > 0 && activeTab !== "terminal" && (
               <span className="ml-1 rounded-full bg-[#7c3aed]/15 px-1.5 py-0.5 text-[9px] text-[#a78bfa]">
-                {terminalOutput.length}
+                {(Array.isArray(terminalOutput) ? terminalOutput : []).length}
               </span>
             )}
           </button>

@@ -159,9 +159,9 @@ export function PreviewPanel() {
               activeTab === "console" ? "bg-[#7c3aed]/10 text-[#a78bfa]" : "text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#1a1a24]"
             )}>
             <Terminal className="h-3 w-3" /> Console
-            {consoleEntries.length > 0 && (
+            {(Array.isArray(consoleEntries) ? consoleEntries : []).length > 0 && (
               <span className="absolute -top-1 -right-1 h-3.5 min-w-[14px] rounded-full bg-[#7c3aed] text-[8px] text-white flex items-center justify-center px-0.5">
-                {consoleEntries.length > 99 ? "99+" : consoleEntries.length}
+                {(Array.isArray(consoleEntries) ? consoleEntries : []).length > 99 ? "99+" : (Array.isArray(consoleEntries) ? consoleEntries : []).length}
               </span>
             )}
           </button>
