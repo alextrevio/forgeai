@@ -36,6 +36,7 @@ export interface SandboxInterface {
   readFile: (path: string) => Promise<string>;
   deleteFile: (path: string) => Promise<void>;
   getFileTree: () => Promise<any[]>;
+  getPreviewUrl?: () => Promise<string>;
 }
 
 export class Orchestrator {
@@ -78,12 +79,16 @@ export class Orchestrator {
           callbacks.onThinking(`Executing ${group.length} steps in parallel...`);
           await Promise.all(group.map((step) =>
             this.executeStep(step, plan, projectContext, sandbox, callbacks, signal)
-              .then(async (newCtx) => { if (newCtx) projectContext = newCtx; })
               .catch((err) => {
                 const msg = err instanceof Error ? err.message : String(err);
                 callbacks.onError(`Step "${step.description}" failed: ${msg}`);
               })
           ));
+          // Rebuild context once from the sandbox after all parallel steps complete
+          // to avoid race where the last step's context overwrites others
+          if (!signal?.aborted) {
+            projectContext = await this.buildProjectContext(sandbox, projectContext);
+          }
         } else {
           const step = group[0];
           const newCtx = await this.executeStep(step, plan, projectContext, sandbox, callbacks, signal);
@@ -435,9 +440,17 @@ export class Orchestrator {
     const tscOutput = checkResult.stdout + "\n" + checkResult.stderr;
     const tscErrors = this.debugger_.parseCompilationErrors(tscOutput);
 
-    // Also check Vite dev server for runtime errors
-    const viteCheck = await sandbox.executeCommand("timeout 3 curl -s http://localhost:5173 2>&1 || true");
-    const viteErrors = this.debugger_.parseViteErrors(viteCheck.stderr || "");
+    // Also check Vite dev server for runtime errors (use actual sandbox port)
+    let viteErrors: string[] = [];
+    let viteStderr = "";
+    if (sandbox.getPreviewUrl) {
+      try {
+        const previewUrl = await sandbox.getPreviewUrl();
+        const viteCheck = await sandbox.executeCommand(`timeout 3 curl -s ${previewUrl} 2>&1 || true`);
+        viteStderr = viteCheck.stderr || "";
+        viteErrors = this.debugger_.parseViteErrors(viteStderr);
+      } catch { /* preview URL unavailable, skip Vite check */ }
+    }
 
     const allErrors = [...tscErrors, ...viteErrors];
 
@@ -454,7 +467,7 @@ export class Orchestrator {
       if (signal?.aborted) return;
 
       // Extract affected files from error output
-      const affectedPaths = this.debugger_.extractAffectedFiles(tscOutput + "\n" + (viteCheck.stderr || ""));
+      const affectedPaths = this.debugger_.extractAffectedFiles(tscOutput + "\n" + viteStderr);
       const relevantFiles: Record<string, string> = {};
 
       for (const filePath of affectedPaths) {
@@ -463,7 +476,7 @@ export class Orchestrator {
 
       // If no files found from errors, check commonly referenced files
       if (Object.keys(relevantFiles).length === 0) {
-        const fileMatches = (tscOutput + "\n" + (viteCheck.stderr || "")).match(/src\/[\w/.-]+\.\w+/g) || [];
+        const fileMatches = (tscOutput + "\n" + viteStderr).match(/src\/[\w/.-]+\.\w+/g) || [];
         for (const filePath of [...new Set(fileMatches)]) {
           try { relevantFiles[filePath] = await sandbox.readFile(filePath); } catch { /* skip */ }
         }
