@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Panel, PanelGroup, PanelResizeHandle, type ImperativePanelGroupHandle } from "react-resizable-panels";
 import { ChatPanel } from "./chat-panel";
 import { ComputerPanel } from "./computer-panel";
 import { useProjectStore } from "@/stores/project-store";
@@ -72,15 +72,22 @@ export function WorkspaceLayout() {
     };
   })();
 
+  const panelGroupRef = useRef<ImperativePanelGroupHandle>(null);
+
+  const handleDoubleClickHandle = useCallback(() => {
+    panelGroupRef.current?.setLayout([50, 50]);
+  }, []);
+
   return (
-    <div className="flex h-screen flex-col bg-[#09090b]">
+    <div className="flex h-screen flex-col bg-[#0A0A0A]">
       {/* Main 2-column layout */}
       <div className="flex-1 overflow-hidden">
         <PanelGroup
+          ref={panelGroupRef}
           direction={isVertical ? "vertical" : "horizontal"}
           className="h-full"
         >
-          {/* Left Column — Chat + Steps */}
+          {/* Left Column — Chat */}
           <Panel
             defaultSize={isVertical ? 40 : 40}
             minSize={isVertical ? 25 : 25}
@@ -89,35 +96,25 @@ export function WorkspaceLayout() {
             <ChatPanel />
           </Panel>
 
-          {/* Drag Handle */}
+          {/* Resize Handle — 2px, subtle, hover visible */}
           <PanelResizeHandle
             className={cn(
               "group relative transition-colors",
-              isVertical ? "h-[5px]" : "w-[5px]"
+              isVertical ? "h-[4px]" : "w-[4px]"
             )}
+            onDoubleClick={handleDoubleClickHandle}
           >
             <div
               className={cn(
-                "absolute bg-[#1a1a1f] group-hover:bg-[#7c3aed]/60 transition-colors duration-200",
+                "absolute bg-[#2A2A2A] group-hover:bg-[#555555] group-active:bg-[#7c3aed] transition-colors duration-200",
                 isVertical
-                  ? "inset-x-0 h-[1px] top-1/2 -translate-y-1/2"
-                  : "inset-y-0 w-[1px] left-1/2 -translate-x-1/2"
+                  ? "inset-x-0 h-[2px] top-1/2 -translate-y-1/2"
+                  : "inset-y-0 w-[2px] left-1/2 -translate-x-1/2"
               )}
             />
-            {/* Drag indicator dots */}
-            <div
-              className={cn(
-                "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200",
-                isVertical ? "flex gap-1" : "flex flex-col gap-1"
-              )}
-            >
-              <div className="h-1 w-1 rounded-full bg-[#7c3aed]/60" />
-              <div className="h-1 w-1 rounded-full bg-[#7c3aed]/60" />
-              <div className="h-1 w-1 rounded-full bg-[#7c3aed]/60" />
-            </div>
           </PanelResizeHandle>
 
-          {/* Right Column — Computadora de ForgeAI */}
+          {/* Right Column — Computer */}
           <Panel
             defaultSize={isVertical ? 60 : 60}
             minSize={isVertical ? 35 : 35}
@@ -127,8 +124,8 @@ export function WorkspaceLayout() {
         </PanelGroup>
       </div>
 
-      {/* Bottom Bar — Manus-style progress */}
-      <div className="flex items-center gap-3 border-t border-[#1a1a1f] bg-[#0a0a12] px-4 py-2">
+      {/* Bottom Bar — progress */}
+      <div className="flex items-center gap-3 border-t border-[#2A2A2A] bg-[#0A0A0A] px-4 py-2">
         {/* Live indicator */}
         <div className="flex items-center gap-2 shrink-0">
           {isAgentRunning ? (
@@ -145,7 +142,7 @@ export function WorkspaceLayout() {
         </div>
 
         {/* Progress bar */}
-        <div className="flex-1 h-1.5 rounded-full bg-[#1a1a1f] overflow-hidden">
+        <div className="flex-1 h-1.5 rounded-full bg-[#2A2A2A] overflow-hidden">
           {isAgentRunning && stepsTotal > 0 ? (
             <div
               className="h-full rounded-full progress-bar-gradient transition-all duration-700 ease-out shimmer-bar"
