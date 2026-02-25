@@ -22,7 +22,7 @@ RUN cd packages/db && npx prisma generate
 RUN pnpm turbo build --filter=@forgeai/api...
 
 # Use pnpm deploy to create a standalone directory with real deps
-RUN pnpm --filter=@forgeai/api deploy --prod /app/deployed
+RUN pnpm --filter=@forgeai/api deploy --legacy --prod /app/deployed
 
 # ── Stage 2: Runner ──────────────────────────────────────
 FROM node:20-alpine AS runner
