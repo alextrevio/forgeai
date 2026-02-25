@@ -336,16 +336,27 @@ When the plan requires shared UI components, generate them with these patterns:
 - User section at bottom
 - Logo at top
 
-## DEFAULT TECH STACK
+## DEFAULT TECH STACK (PRE-INSTALLED IN SANDBOX)
 
-- React 18+ with TypeScript
-- Vite as bundler
-- Tailwind CSS
-- React Router v6 for navigation (\`react-router-dom\`)
-- Zustand for state management
+These packages are ALREADY installed in the sandbox — do NOT add them to npm install commands:
+- React 18 with TypeScript
+- Vite + @vitejs/plugin-react
+- Tailwind CSS v4 (via @tailwindcss/vite — uses \`@import "tailwindcss"\` in index.css, NOT @tailwind directives)
+- \`react-router-dom\` v7 for navigation
+- \`zustand\` v5 for state management
 - \`lucide-react\` for icons (NEVER emoji icons in UI)
-- \`recharts\` for charts (if needed)
-- \`date-fns\` for date formatting (if needed)
+- \`clsx\` + \`tailwind-merge\` for class merging
+
+Only install ADDITIONAL packages like \`recharts\`, \`date-fns\`, \`@dnd-kit/core\`, etc. if the project specifically needs them.
+
+## UTILITY FILE (ALWAYS CREATE FIRST)
+
+Always create \`src/lib/utils.ts\` with this exact content:
+\`\`\`ts
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+export function cn(...inputs: ClassValue[]) { return twMerge(clsx(inputs)); }
+\`\`\`
 
 ## CODE GENERATION RULES
 
@@ -368,11 +379,12 @@ When the plan requires shared UI components, generate them with these patterns:
 
 ## CRITICAL TAILWIND RULES
 
+- This project uses Tailwind CSS v4. Use \`@import "tailwindcss"\` in index.css. Do NOT use @tailwind base/components/utilities.
+- Do NOT create tailwind.config.ts — Tailwind v4 uses CSS-based config via \`@theme\` directive in index.css.
 - NEVER use custom color names like 'primary-500', 'primary-600', 'secondary-400'. These do NOT exist in Tailwind by default and will produce invisible/broken CSS.
 - ONLY use standard Tailwind colors: slate, gray, zinc, neutral, stone, red, orange, amber, yellow, lime, green, emerald, teal, cyan, sky, blue, indigo, violet, purple, fuchsia, pink, rose.
 - For brand/primary colors, use violet (e.g. bg-violet-600, text-violet-500, ring-violet-500/50) or blue (e.g. bg-blue-600, text-blue-500) instead of 'primary'.
 - For neutral backgrounds use slate or zinc (e.g. bg-slate-900, bg-zinc-800).
-- NEVER define custom colors in tailwind.config.ts extend.colors. Use only the built-in Tailwind color palette.
 - NEVER use classes like: bg-primary, text-primary-500, border-secondary-300, ring-primary/50. These will silently fail and render nothing.
 - Use standard Tailwind utility classes only.
 
@@ -414,36 +426,24 @@ CRITICAL: Your response MUST be ONLY valid JSON. No explanation, no markdown cod
 
 ## DESIGN SYSTEM TEMPLATE
 
-Generate this for the tailwind.config.ts:
+This project uses Tailwind CSS v4 which does NOT use tailwind.config.ts. Instead, custom theme values
+are defined in src/index.css using the \`@theme\` directive:
 
-\`\`\`ts
-import type { Config } from "tailwindcss";
+\`\`\`css
+@import "tailwindcss";
 
-export default {
-  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
-  darkMode: "class",
-  theme: {
-    extend: {
-      fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
-      },
-      animation: {
-        "fade-in": "fadeIn 0.3s ease-out",
-        "slide-up": "slideUp 0.3s ease-out",
-        "slide-down": "slideDown 0.3s ease-out",
-      },
-      keyframes: {
-        fadeIn: { from: { opacity: "0" }, to: { opacity: "1" } },
-        slideUp: { from: { opacity: "0", transform: "translateY(10px)" }, to: { opacity: "1", transform: "translateY(0)" } },
-        slideDown: { from: { opacity: "0", transform: "translateY(-10px)" }, to: { opacity: "1", transform: "translateY(0)" } },
-      },
-    },
-  },
-  plugins: [],
-} satisfies Config;
+@theme {
+  --font-sans: "Inter", system-ui, sans-serif;
+  --animate-fade-in: fadeIn 0.3s ease-out;
+  --animate-slide-up: slideUp 0.3s ease-out;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 \`\`\`
 
-IMPORTANT: Do NOT add custom colors to extend.colors. Use only standard Tailwind colors (violet, blue, indigo, slate, zinc, etc.).
+IMPORTANT: Do NOT create tailwind.config.ts. Do NOT use @tailwind directives. Use \`@import "tailwindcss"\` only.
+IMPORTANT: Do NOT add custom colors. Use only standard Tailwind colors (violet, blue, indigo, slate, zinc, etc.).
 
 ## COLOR SCHEMES BY APP TYPE
 
