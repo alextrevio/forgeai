@@ -53,18 +53,18 @@ export function RichMessage({ message, onOpenFile, onRegenerate }: RichMessagePr
     <div className="relative group" onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
       {/* Hover Actions */}
       {message.role === "ASSISTANT" && hovering && (
-        <div className="absolute -top-3 right-0 flex items-center gap-0.5 rounded-lg border border-border bg-[#13131a] px-1 py-0.5 shadow-lg z-10 animate-fade-in">
-          <button onClick={() => setFeedback("up")} className={cn("rounded-md p-1 transition-all duration-150", feedback === "up" ? "text-[#4ade80] bg-[#4ade80]/10" : "text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#1a1a24]")} title="Helpful">
+        <div className="absolute -top-3 right-0 flex items-center gap-0.5 rounded-lg border border-border bg-[#111114] px-1 py-0.5 shadow-lg z-10 animate-fade-in">
+          <button onClick={() => setFeedback("up")} className={cn("rounded-md p-1 transition-all duration-150", feedback === "up" ? "text-[#4ade80] bg-[#4ade80]/10" : "text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#161619]")} title="Helpful">
             <ThumbsUp className="h-3 w-3" />
           </button>
-          <button onClick={() => setFeedback("down")} className={cn("rounded-md p-1 transition-all duration-150", feedback === "down" ? "text-[#f87171] bg-[#f87171]/10" : "text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#1a1a24]")} title="Not helpful">
+          <button onClick={() => setFeedback("down")} className={cn("rounded-md p-1 transition-all duration-150", feedback === "down" ? "text-[#f87171] bg-[#f87171]/10" : "text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#161619]")} title="Not helpful">
             <ThumbsDown className="h-3 w-3" />
           </button>
-          <button onClick={handleCopy} className="rounded-md p-1 text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#1a1a24] transition-all duration-150" title="Copy">
+          <button onClick={handleCopy} className="rounded-md p-1 text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#161619] transition-all duration-150" title="Copy">
             {copied ? <Check className="h-3 w-3 text-[#4ade80]" /> : <Copy className="h-3 w-3" />}
           </button>
           {onRegenerate && (
-            <button onClick={() => onRegenerate(message.id)} className="rounded-md p-1 text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#1a1a24] transition-all duration-150" title="Regenerate">
+            <button onClick={() => onRegenerate(message.id)} className="rounded-md p-1 text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#161619] transition-all duration-150" title="Regenerate">
               <RefreshCw className="h-3 w-3" />
             </button>
           )}
@@ -85,7 +85,7 @@ export function RichMessage({ message, onOpenFile, onRegenerate }: RichMessagePr
 
 function inferMessageType(message: Message): string | null {
   if (message.plan) return "plan";
-  if (message.codeChanges && (Array.isArray(message?.codeChanges) ? message.codeChanges : []).length > 0) return "file_change";
+  if (message.codeChanges && safeArray(message.codeChanges).length > 0) return "file_change";
   if (message.role === "SYSTEM") return "system";
   const content = message.content.toLowerCase();
   if (content.includes("error") && content.includes("fix")) return "error";
@@ -108,13 +108,13 @@ function PlanMessage({ plan }: { plan: AgentPlan }) {
   const total = safeArray(plan?.steps).length;
 
   return (
-    <div className="rounded-xl border border-border bg-[#13131a] overflow-hidden">
+    <div className="rounded-xl border border-border bg-[#111114] overflow-hidden">
       <div className="px-4 py-2.5 border-b border-border bg-[#0e0e14]">
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-[10px] font-semibold text-[#8888a0]/60 uppercase tracking-widest">Plan</span>
           <span className="text-[10px] text-[#8888a0]">{completed}/{total}</span>
         </div>
-        <div className="h-1 rounded-full bg-[#1a1a24] overflow-hidden">
+        <div className="h-1 rounded-full bg-[#161619] overflow-hidden">
           <div className="h-full progress-animated transition-all duration-500" style={{ width: `${total > 0 ? (completed / total) * 100 : 0}%` }} />
         </div>
       </div>
@@ -177,13 +177,13 @@ function FileChangeMessage({ changes, onOpenFile }: { changes: CodeChange[]; onO
   const actionLabels = { create: "Created", edit: "Modified", delete: "Deleted" };
 
   return (
-    <div className="rounded-xl border border-border bg-[#13131a] overflow-hidden">
+    <div className="rounded-xl border border-border bg-[#111114] overflow-hidden">
       <div className="px-3 py-2 border-b border-border bg-[#0e0e14]">
         <span className="text-[10px] font-semibold text-[#8888a0]/60 uppercase tracking-widest">{safeArray(changes).length} file{safeArray(changes).length !== 1 ? "s" : ""} changed</span>
       </div>
       <div className="divide-y divide-border/30">
         {safeArray(changes).map((change, i) => (
-          <button key={i} onClick={() => onOpenFile?.(change.file)} className="flex items-center gap-2 px-3 py-2 w-full text-left hover:bg-[#1a1a24]/50 transition-all duration-100">
+          <button key={i} onClick={() => onOpenFile?.(change.file)} className="flex items-center gap-2 px-3 py-2 w-full text-left hover:bg-[#161619]/50 transition-all duration-100">
             {actionIcons[change.action] || <FileText className="h-3.5 w-3.5" />}
             <span className="text-[11px] font-mono text-[#e2e2e8]/80 flex-1 truncate">{change.file}</span>
             <span className={cn("text-[9px] px-1.5 py-0.5 rounded-full font-medium", change.action === "create" ? "bg-[#4ade80]/10 text-[#4ade80]" : change.action === "edit" ? "bg-[#fbbf24]/10 text-[#fbbf24]" : "bg-[#f87171]/10 text-[#f87171]")}>
@@ -226,7 +226,7 @@ function ReviewMessage({ content }: { content: string }) {
   const score = scoreMatch ? parseInt(scoreMatch[1]) : null;
 
   return (
-    <div className="rounded-xl border border-border bg-[#13131a] overflow-hidden">
+    <div className="rounded-xl border border-border bg-[#111114] overflow-hidden">
       <div className="px-3 py-2 border-b border-border bg-[#0e0e14] flex items-center justify-between">
         <span className="text-[10px] font-semibold text-[#8888a0]/60 uppercase tracking-widest">Code Review</span>
         {score !== null && (
@@ -262,7 +262,7 @@ function DeployMessage({ content }: { content: string }) {
 }
 
 function SystemMessage({ content }: { content: string }) {
-  return <div className="px-3 py-1.5 rounded-lg bg-[#1a1a24]/50 text-[11px] text-[#8888a0]/60 italic">{content}</div>;
+  return <div className="px-3 py-1.5 rounded-lg bg-[#161619]/50 text-[11px] text-[#8888a0]/60 italic">{content}</div>;
 }
 
 function TextMessage({ content }: { content: string }) {

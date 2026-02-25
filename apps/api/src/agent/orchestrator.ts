@@ -64,6 +64,7 @@ export function getSandboxInterface(sandboxId: string): SandboxInterface {
     readFile: (path: string) => sandboxManager.readFile(sandboxId, path),
     deleteFile: (path: string) => sandboxManager.deleteFile(sandboxId, path),
     getFileTree: () => sandboxManager.getFileTree(sandboxId),
+    getPreviewUrl: () => sandboxManager.getPreviewUrl(sandboxId),
   };
 }
 

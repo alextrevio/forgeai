@@ -27,7 +27,7 @@ export function SuggestionChips({ lastAction, onSelect }: SuggestionChipsProps) 
         <button
           key={chip}
           onClick={() => onSelect(chip)}
-          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-[#13131a] px-2.5 py-1 text-[11px] text-[#8888a0] hover:text-[#e2e2e8] hover:border-[#7c3aed]/30 hover:bg-[#7c3aed]/5 transition-all duration-150 hover:scale-[1.02] cursor-pointer"
+          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-[#111114] px-2.5 py-1 text-[11px] text-[#8888a0] hover:text-[#e2e2e8] hover:border-[#7c3aed]/30 hover:bg-[#7c3aed]/5 transition-all duration-150 hover:scale-[1.02] cursor-pointer"
         >
           <span className="text-[#7c3aed]/50">{icon}</span>
           {chip}

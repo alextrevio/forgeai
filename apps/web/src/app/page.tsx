@@ -816,10 +816,10 @@ export default function Home() {
 
           <div className="mt-12 pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground">
-              Built with AI by ForgeAI
+              Hecho con &#10084;&#65039; por ForgeAI
             </p>
             <p className="text-sm text-muted-foreground">
-              &copy; 2024 ForgeAI. All rights reserved.
+              &copy; 2026 ForgeAI. All rights reserved.
             </p>
           </div>
         </div>

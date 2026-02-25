@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, Component, type ReactNode } from "react";
+import { useEffect, useRef, Component, type ReactNode } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useProjectStore } from "@/stores/project-store";
 import { useAuthStore } from "@/stores/auth-store";
@@ -14,42 +14,52 @@ function safeArray<T>(data: unknown): T[] {
   if (Array.isArray(data)) return data as T[];
   if (data && typeof data === "object" && !Array.isArray(data)) {
     const obj = data as Record<string, unknown>;
-    for (const key of ["data", "messages", "items", "projects", "files", "snapshots", "plans", "templates", "operations"]) {
+    for (const key of ["data", "messages", "items", "projects", "files", "snapshots", "plans", "templates", "operations", "steps", "entries", "results", "notifications", "members", "commands"]) {
       if (Array.isArray(obj[key])) return obj[key] as T[];
     }
   }
   return [];
 }
 
-/** Error boundary — shows a "Volver al Dashboard" button instead of crashing */
-class ProjectErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+/** Error boundary — shows retry + dashboard buttons instead of crashing */
+class ProjectErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: string }> {
   constructor(props: { children: ReactNode }) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, error: "" };
   }
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error: error.message };
   }
-  componentDidCatch(error: Error) {
-    console.error("[ProjectErrorBoundary]", error);
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error("[ProjectErrorBoundary]", error, info.componentStack);
   }
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex h-screen flex-col items-center justify-center bg-[#0f0f17] gap-4">
-          <div className="h-16 w-16 rounded-2xl bg-[#ef4444]/10 flex items-center justify-center">
-            <span className="text-3xl">!</span>
+        <div className="min-h-screen bg-[#09090b] flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-[#ef4444]/10 flex items-center justify-center">
+              <span className="text-3xl text-[#ef4444]">!</span>
+            </div>
+            <h2 className="text-xl font-semibold text-white">Algo salió mal</h2>
+            <p className="text-[#8888a0] text-sm max-w-md">
+              Ocurrió un error inesperado. Intenta reintentar o volver al dashboard.
+            </p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => this.setState({ hasError: false, error: "" })}
+                className="px-4 py-2 rounded-lg bg-[#111114] border border-[#1a1a1f] text-white text-sm hover:bg-[#161619] transition-colors"
+              >
+                Reintentar
+              </button>
+              <a
+                href="/dashboard"
+                className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] text-white text-sm hover:opacity-90 transition-opacity"
+              >
+                Volver al Dashboard
+              </a>
+            </div>
           </div>
-          <h2 className="text-lg font-semibold text-[#e2e2e8]">Algo salió mal</h2>
-          <p className="text-sm text-[#8888a0] max-w-xs text-center">
-            Ocurrió un error inesperado. Intenta volver al dashboard.
-          </p>
-          <a
-            href="/dashboard"
-            className="mt-2 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#7c3aed] to-[#3b82f6] px-5 py-2.5 text-sm font-medium text-white hover:opacity-90 transition-opacity"
-          >
-            Volver al Dashboard
-          </a>
         </div>
       );
     }
@@ -62,6 +72,26 @@ export default function ProjectPage() {
   const projectId = params.id as string;
   const store = useProjectStore();
   const { loadUser, isAuthenticated, isLoading } = useAuthStore();
+
+  // Debounce terminal output — batch rapid lines into a single state update
+  const termBufRef = useRef<string[]>([]);
+  const termTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flushTerminal = () => {
+    if (termBufRef.current.length === 0) return;
+    const lines = termBufRef.current;
+    termBufRef.current = [];
+    const s = useProjectStore.getState();
+    for (const line of lines) s.addTerminalOutput(line);
+  };
+  const queueTerminal = (line: string) => {
+    termBufRef.current.push(line);
+    if (!termTimerRef.current) {
+      termTimerRef.current = setTimeout(() => {
+        termTimerRef.current = null;
+        flushTerminal();
+      }, 100);
+    }
+  };
 
   useEffect(() => {
     loadUser();
@@ -101,7 +131,10 @@ export default function ProjectPage() {
     const socket = getSocket();
     socket.emit("join:project", projectId);
 
-    socket.on("event", (event: { type: string; data: any }) => {
+    socket.on("event", (raw: unknown) => {
+      try {
+      const event = raw as { type: string; data: any };
+      if (!event?.type) return;
       const s = useProjectStore.getState();
 
       switch (event.type) {
@@ -149,7 +182,7 @@ export default function ProjectPage() {
 
         case "agent:terminal_output":
         case "sandbox:terminal_output":
-          s.addTerminalOutput(event.data.output);
+          queueTerminal(event.data.output);
           break;
 
         case "agent:designer_start":
@@ -202,7 +235,7 @@ export default function ProjectPage() {
             id: generateId(),
             projectId,
             role: "SYSTEM",
-            content: `Code Review (Score: ${event.data.report.score}/100): ${event.data.report.summary}${(Array.isArray(event?.data?.report?.issues) ? event.data.report.issues : []).length > 0 ? `\n\nIssues found: ${(Array.isArray(event?.data?.report?.issues) ? event.data.report.issues : []).length}` : ""}`,
+            content: `Code Review (Score: ${event.data.report.score}/100): ${event.data.report.summary}${(Array.isArray(event.data.report.issues) ? event.data.report.issues : []).length > 0 ? `\n\nIssues found: ${(Array.isArray(event.data.report.issues) ? event.data.report.issues : []).length}` : ""}`,
             messageType: null, plan: null, codeChanges: null, tokensUsed: null, creditsConsumed: 0, model: null,
             createdAt: new Date().toISOString(),
           });
@@ -285,11 +318,16 @@ export default function ProjectPage() {
           s.addSnapshot(event.data.snapshot);
           break;
       }
+      } catch (err) {
+        console.error("[Socket] event handler error:", err);
+      }
     });
 
     return () => {
       socket.emit("leave:project", projectId);
       socket.off("event");
+      if (termTimerRef.current) clearTimeout(termTimerRef.current);
+      flushTerminal();
     };
   }, [projectId, isLoading, isAuthenticated]);
 
