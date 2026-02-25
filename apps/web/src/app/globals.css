@@ -1,11 +1,32 @@
 @import "tailwindcss";
 
+/* ─── ForgeAI Design System ─── */
+:root {
+  --bg-primary: #09090b;
+  --bg-secondary: #0d0d10;
+  --bg-card: #111114;
+  --bg-hover: #161619;
+  --bg-input: #111114;
+  --bg-terminal: #0a0a12;
+  --border: #1a1a1f;
+  --border-subtle: #141418;
+  --accent: #7c3aed;
+  --accent-hover: #6d28d9;
+  --accent-blue: #3b82f6;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --text-primary: #e2e2e8;
+  --text-secondary: #8888a0;
+  --text-muted: #4a4a5e;
+}
+
 @theme {
   --color-background: #09090b;
   --color-foreground: #e2e2e8;
-  --color-card: #111113;
+  --color-card: #111114;
   --color-card-foreground: #e2e2e8;
-  --color-popover: #111113;
+  --color-popover: #111114;
   --color-popover-foreground: #e2e2e8;
   --color-primary: #7c3aed;
   --color-primary-foreground: #ffffff;
@@ -17,8 +38,8 @@
   --color-accent-foreground: #ffffff;
   --color-destructive: #ef4444;
   --color-destructive-foreground: #ffffff;
-  --color-border: #1e1e2e;
-  --color-input: #1e1e2e;
+  --color-border: #1a1a1f;
+  --color-input: #1a1a1f;
   --color-ring: #7c3aed;
   --color-success: #22c55e;
   --color-warning: #f59e0b;
@@ -38,18 +59,18 @@ body {
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e1e2e;
+  background: #1a1a1f;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #2a2a3e;
+  background: #2a2a2f;
 }
 
 /* Monaco editor container */
@@ -131,18 +152,26 @@ body {
 .animation-delay-600 { animation-delay: 600ms; }
 
 /* Message enter animation */
-.msg-enter {
-  animation: fadeIn 0.3s ease-out forwards;
+@keyframes msgEnter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.msg-enter, .animate-msg-enter {
+  animation: msgEnter 0.3s ease-out forwards;
 }
 
 /* Step group enter */
-.step-group-enter {
-  animation: slideInDown 0.35s ease-out forwards;
+@keyframes stepEnter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.step-group-enter, .animate-step-enter {
+  animation: stepEnter 0.2s ease-out forwards;
 }
 
 /* Step item enter */
 .step-item-enter {
-  animation: fadeIn 0.25s ease-out forwards;
+  animation: stepEnter 0.25s ease-out forwards;
 }
 
 /* File slide-in animation */
@@ -151,9 +180,27 @@ body {
 }
 
 /* Live pulse — green dot */
-.live-pulse {
-  animation: livePulse 2s ease-in-out infinite;
+@keyframes liveP {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
 }
+.live-pulse, .animate-live-pulse {
+  animation: liveP 2s ease-in-out infinite;
+}
+
+/* Bounce dots — typing indicator */
+@keyframes bounceDot {
+  0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
+  40% { transform: scale(1); opacity: 1; }
+}
+.animate-bounce-dot { animation: bounceDot 1.4s ease-in-out infinite; }
+
+/* Wireframe pulse — building skeleton */
+@keyframes wireframePulse {
+  0%, 100% { opacity: 0.1; }
+  50% { opacity: 0.2; }
+}
+.animate-wireframe-pulse { animation: wireframePulse 3s ease-in-out infinite; }
 
 /* Tab content fade */
 .tab-fade {

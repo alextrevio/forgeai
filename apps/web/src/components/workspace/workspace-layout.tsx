@@ -46,7 +46,7 @@ export function WorkspaceLayout() {
   })();
 
   return (
-    <div className="flex h-screen flex-col bg-[#0f0f17]">
+    <div className="flex h-screen flex-col bg-[#09090b]">
       {/* Main 2-column layout */}
       <div className="flex-1 overflow-hidden">
         <PanelGroup
@@ -71,7 +71,7 @@ export function WorkspaceLayout() {
           >
             <div
               className={cn(
-                "absolute bg-[#1e1e2e] group-hover:bg-[#7c3aed]/60 transition-colors duration-200",
+                "absolute bg-[#1a1a1f] group-hover:bg-[#7c3aed]/60 transition-colors duration-200",
                 isVertical
                   ? "inset-x-0 h-[1px] top-1/2 -translate-y-1/2"
                   : "inset-y-0 w-[1px] left-1/2 -translate-x-1/2"
@@ -101,7 +101,7 @@ export function WorkspaceLayout() {
       </div>
 
       {/* Bottom Bar — Manus-style progress */}
-      <div className="flex items-center gap-3 border-t border-[#1e1e2e] bg-[#0a0a12] px-4 py-2">
+      <div className="flex items-center gap-3 border-t border-[#1a1a1f] bg-[#0a0a12] px-4 py-2">
         {/* Live indicator */}
         <div className="flex items-center gap-2 shrink-0">
           {isAgentRunning ? (
@@ -118,7 +118,7 @@ export function WorkspaceLayout() {
         </div>
 
         {/* Progress bar */}
-        <div className="flex-1 h-1.5 rounded-full bg-[#1e1e2e] overflow-hidden">
+        <div className="flex-1 h-1.5 rounded-full bg-[#1a1a1f] overflow-hidden">
           {isAgentRunning && stepsTotal > 0 ? (
             <div
               className="h-full rounded-full progress-bar-gradient transition-all duration-700 ease-out shimmer-bar"

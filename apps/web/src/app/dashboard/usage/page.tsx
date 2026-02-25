@@ -38,7 +38,7 @@ interface UsageData {
 }
 
 const planColors: Record<string, string> = {
-  FREE: "bg-[#1e1e3a] text-gray-300",
+  FREE: "bg-[#161619] text-gray-300",
   PRO: "bg-[#6d5cff]/10 text-[#6d5cff]",
   BUSINESS: "bg-[#f59e0b]/10 text-[#f59e0b]",
   ENTERPRISE: "bg-[#22c55e]/10 text-[#22c55e]",
@@ -254,12 +254,12 @@ export default function UsagePage() {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-[#27274a] bg-[#131320] transition-all duration-300",
+          "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-[#1a1a1f] bg-[#111114] transition-all duration-300",
           sidebarCollapsed ? "w-[68px]" : "w-64"
         )}
       >
         {/* Logo */}
-        <div className="flex h-16 items-center gap-2.5 border-b border-[#27274a] px-4">
+        <div className="flex h-16 items-center gap-2.5 border-b border-[#1a1a1f] px-4">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#6d5cff]/10">
             <Zap className="h-5 w-5 text-[#6d5cff]" />
           </div>
@@ -283,7 +283,7 @@ export default function UsagePage() {
                   "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                   isActive
                     ? "bg-[#6d5cff]/10 text-[#6d5cff]"
-                    : "text-gray-400 hover:bg-[#1e1e3a] hover:text-white"
+                    : "text-gray-400 hover:bg-[#161619] hover:text-white"
                 )}
                 title={sidebarCollapsed ? item.label : undefined}
               >
@@ -294,12 +294,12 @@ export default function UsagePage() {
           })}
 
           {/* Separator */}
-          <div className="my-3 h-px bg-[#27274a]" />
+          <div className="my-3 h-px bg-[#1a1a1f]" />
 
           {/* Logout */}
           <button
             onClick={logout}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-400 hover:bg-[#1e1e3a] hover:text-white transition-colors"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-400 hover:bg-[#161619] hover:text-white transition-colors"
             title={sidebarCollapsed ? "Logout" : undefined}
           >
             <LogOut className="h-5 w-5 shrink-0" />
@@ -310,7 +310,7 @@ export default function UsagePage() {
         {/* Collapse toggle */}
         <button
           onClick={() => setSidebarCollapsed((c) => !c)}
-          className="mx-3 mb-3 flex items-center justify-center rounded-lg border border-[#27274a] py-2 text-gray-400 hover:bg-[#1e1e3a] hover:text-white transition-colors"
+          className="mx-3 mb-3 flex items-center justify-center rounded-lg border border-[#1a1a1f] py-2 text-gray-400 hover:bg-[#161619] hover:text-white transition-colors"
         >
           {sidebarCollapsed ? (
             <ChevronRight className="h-4 w-4" />
@@ -322,7 +322,7 @@ export default function UsagePage() {
         {/* User section */}
         <div
           className={cn(
-            "border-t border-[#27274a] p-4",
+            "border-t border-[#1a1a1f] p-4",
             sidebarCollapsed ? "flex justify-center" : ""
           )}
         >
@@ -368,7 +368,7 @@ export default function UsagePage() {
           {/* Usage Overview Cards */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mb-8">
             {/* Current plan */}
-            <div className="rounded-xl border border-[#27274a] bg-[#131320] p-6">
+            <div className="rounded-xl border border-[#1a1a1f] bg-[#111114] p-6">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm text-gray-400">Current Plan</span>
                 <Crown className="h-4 w-4 text-[#6d5cff]" />
@@ -393,7 +393,7 @@ export default function UsagePage() {
             </div>
 
             {/* Credits usage */}
-            <div className="rounded-xl border border-[#27274a] bg-[#131320] p-6">
+            <div className="rounded-xl border border-[#1a1a1f] bg-[#111114] p-6">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm text-gray-400">Credits Used</span>
                 <CreditCard className="h-4 w-4 text-[#f59e0b]" />
@@ -406,7 +406,7 @@ export default function UsagePage() {
                   / {creditsLimit}
                 </span>
               </div>
-              <div className="h-2 w-full rounded-full bg-[#1e1e3a] overflow-hidden">
+              <div className="h-2 w-full rounded-full bg-[#161619] overflow-hidden">
                 <div
                   className={cn(
                     "h-full rounded-full transition-all duration-500",
@@ -425,7 +425,7 @@ export default function UsagePage() {
             </div>
 
             {/* Billing period */}
-            <div className="rounded-xl border border-[#27274a] bg-[#131320] p-6">
+            <div className="rounded-xl border border-[#1a1a1f] bg-[#111114] p-6">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm text-gray-400">Billing Period</span>
                 <Calendar className="h-4 w-4 text-[#22c55e]" />
@@ -444,7 +444,7 @@ export default function UsagePage() {
           </div>
 
           {/* Daily Usage Chart */}
-          <div className="rounded-xl border border-[#27274a] bg-[#131320] p-6 mb-8">
+          <div className="rounded-xl border border-[#1a1a1f] bg-[#111114] p-6 mb-8">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-lg font-semibold text-white">
@@ -454,7 +454,7 @@ export default function UsagePage() {
                   Credits consumed over the last 7 days
                 </p>
               </div>
-              <div className="flex items-center gap-2 rounded-lg bg-[#1e1e3a] px-3 py-1.5">
+              <div className="flex items-center gap-2 rounded-lg bg-[#161619] px-3 py-1.5">
                 <Sparkles className="h-3.5 w-3.5 text-[#6d5cff]" />
                 <span className="text-sm font-medium text-white">
                   {totalWeeklyCredits}
@@ -482,7 +482,7 @@ export default function UsagePage() {
 
                     {/* Bar */}
                     <div className="relative w-full flex justify-center flex-1">
-                      <div className="w-full max-w-[48px] rounded-t-lg bg-[#1e1e3a] relative overflow-hidden self-end"
+                      <div className="w-full max-w-[48px] rounded-t-lg bg-[#161619] relative overflow-hidden self-end"
                         style={{ height: "100%" }}
                       >
                         <div
@@ -515,7 +515,7 @@ export default function UsagePage() {
           </div>
 
           {/* Plan Comparison */}
-          <div className="rounded-xl border border-[#27274a] bg-[#131320] p-6 mb-8">
+          <div className="rounded-xl border border-[#1a1a1f] bg-[#111114] p-6 mb-8">
             <div className="mb-6">
               <h2 className="text-lg font-semibold text-white">
                 Compare Plans
@@ -539,7 +539,7 @@ export default function UsagePage() {
                             "rounded-xl border p-4 transition-all",
                             plan.highlight
                               ? "border-[#6d5cff] bg-[#6d5cff]/5"
-                              : "border-[#27274a]"
+                              : "border-[#1a1a1f]"
                           )}
                         >
                           {plan.highlight && (
@@ -567,7 +567,7 @@ export default function UsagePage() {
                   {FEATURE_ROWS.map((feature) => (
                     <tr
                       key={feature.key}
-                      className="border-t border-[#27274a]/50"
+                      className="border-t border-[#1a1a1f]/50"
                     >
                       <td className="py-3.5 px-4 text-sm text-gray-300">
                         {feature.label}
@@ -597,7 +597,7 @@ export default function UsagePage() {
                   ))}
 
                   {/* Price row */}
-                  <tr className="border-t border-[#27274a]/50">
+                  <tr className="border-t border-[#1a1a1f]/50">
                     <td className="py-3.5 px-4 text-sm font-medium text-gray-300">
                       Price
                     </td>
@@ -617,7 +617,7 @@ export default function UsagePage() {
                   </tr>
 
                   {/* Upgrade buttons */}
-                  <tr className="border-t border-[#27274a]/50">
+                  <tr className="border-t border-[#1a1a1f]/50">
                     <td className="py-4 px-4" />
                     {PLANS.map((plan) => {
                       const planKey = plan.name.toUpperCase();
@@ -635,10 +635,10 @@ export default function UsagePage() {
                             className={cn(
                               "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors",
                               isCurrent
-                                ? "bg-[#1e1e3a] text-gray-400 cursor-default"
+                                ? "bg-[#161619] text-gray-400 cursor-default"
                                 : plan.highlight
                                   ? "bg-[#6d5cff] text-white hover:bg-[#6d5cff]/90 shadow-lg shadow-[#6d5cff]/20"
-                                  : "border border-[#27274a] text-white hover:bg-[#1e1e3a] hover:border-[#6d5cff]/50",
+                                  : "border border-[#1a1a1f] text-white hover:bg-[#161619] hover:border-[#6d5cff]/50",
                               isUpgrading && "opacity-50"
                             )}
                           >

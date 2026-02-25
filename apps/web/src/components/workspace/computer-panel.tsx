@@ -173,9 +173,9 @@ export function ComputerPanel() {
   }, [isAgentRunning, activeAgent, activeFilePath, currentStepText]);
 
   return (
-    <div className="flex h-full flex-col bg-[#0f0f17]">
+    <div className="flex h-full flex-col bg-[#09090b]">
       {/* Header — "Computadora de ForgeAI" */}
-      <div className="flex items-center justify-between border-b border-[#1e1e2e] bg-[#0a0a12] px-4 py-2">
+      <div className="flex items-center justify-between border-b border-[#1a1a1f] bg-[#0a0a12] px-4 py-2">
         <div className="flex items-center gap-2">
           <div className="h-5 w-5 rounded-md bg-gradient-to-br from-[#7c3aed] to-[#3b82f6] flex items-center justify-center">
             <Monitor className="h-3 w-3 text-white" />
@@ -188,14 +188,14 @@ export function ComputerPanel() {
 
       {/* Sub-header — agent activity */}
       {isAgentRunning && subHeaderText && (
-        <div className="flex items-center gap-2 border-b border-[#1e1e2e] bg-[#0a0a12]/80 px-4 py-1.5">
+        <div className="flex items-center gap-2 border-b border-[#1a1a1f] bg-[#0a0a12]/80 px-4 py-1.5">
           <Loader2 className="h-3 w-3 text-[#7c3aed] animate-spin shrink-0" />
           <span className="text-[11px] text-[#8888a0] truncate">{subHeaderText}</span>
         </div>
       )}
 
       {/* Tabs — Vista previa, Código, Terminal */}
-      <div className="flex items-center justify-between border-b border-[#1e1e2e] bg-[#0a0a12] px-2">
+      <div className="flex items-center justify-between border-b border-[#1a1a1f] bg-[#0a0a12] px-2">
         <div className="flex items-center">
           <button
             onClick={() => setActiveTab("preview")}
@@ -240,7 +240,7 @@ export function ComputerPanel() {
         {/* Preview toolbar — only shown on preview tab */}
         {activeTab === "preview" && (
           <div className="flex items-center gap-1">
-            <div className="flex items-center rounded-lg bg-[#13131a] p-0.5">
+            <div className="flex items-center rounded-lg bg-[#111114] p-0.5">
               {(["desktop", "tablet", "mobile"] as DeviceMode[]).map((mode) => {
                 const Icon = mode === "desktop" ? Monitor : mode === "tablet" ? Tablet : Smartphone;
                 return (
@@ -252,10 +252,10 @@ export function ComputerPanel() {
                 );
               })}
             </div>
-            <button onClick={handleRefresh} className="rounded-lg p-1.5 text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#1a1a24] transition-all duration-150" title="Refresh">
+            <button onClick={handleRefresh} className="rounded-lg p-1.5 text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#161619] transition-all duration-150" title="Refresh">
               <RefreshCw className={cn("h-3 w-3", isRefreshing && "animate-spin")} />
             </button>
-            <button onClick={handleOpenExternal} disabled={!previewUrl} className="rounded-lg p-1.5 text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#1a1a24] transition-all duration-150 disabled:opacity-30" title="Open in new tab">
+            <button onClick={handleOpenExternal} disabled={!previewUrl} className="rounded-lg p-1.5 text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#161619] transition-all duration-150 disabled:opacity-30" title="Open in new tab">
               <ExternalLink className="h-3 w-3" />
             </button>
           </div>
@@ -264,7 +264,7 @@ export function ComputerPanel() {
 
       {/* Preview URL bar */}
       {activeTab === "preview" && (
-        <div className="flex items-center gap-2 border-b border-[#1e1e2e] bg-[#0a0a12] px-3 py-1.5">
+        <div className="flex items-center gap-2 border-b border-[#1a1a1f] bg-[#0a0a12] px-3 py-1.5">
           <button className="rounded p-1 text-[#8888a0]/40 hover:text-[#8888a0] transition-colors">
             <ArrowLeft className="h-3 w-3" />
           </button>
@@ -274,7 +274,7 @@ export function ComputerPanel() {
           <button onClick={handleRefresh} className="rounded p-1 text-[#8888a0]/40 hover:text-[#8888a0] transition-colors">
             <RefreshCw className={cn("h-3 w-3", isRefreshing && "animate-spin")} />
           </button>
-          <div className="flex-1 flex items-center gap-1.5 rounded-lg bg-[#13131a] border border-[#1e1e2e] px-2.5 py-1">
+          <div className="flex-1 flex items-center gap-1.5 rounded-lg bg-[#111114] border border-[#1a1a1f] px-2.5 py-1">
             <Globe className="h-3 w-3 text-[#8888a0]/40 shrink-0" />
             <input
               type="text"
@@ -300,7 +300,7 @@ export function ComputerPanel() {
       <div className="flex-1 overflow-hidden">
         {/* === Preview Tab === */}
         {activeTab === "preview" && (
-          <div className="h-full flex items-start justify-center overflow-auto bg-[#0f0f17] p-4">
+          <div className="h-full flex items-start justify-center overflow-auto bg-[#09090b] p-4">
             {showBuildAnimation ? (
               <div className="flex flex-col items-center justify-center h-full w-full relative overflow-hidden">
                 {/* Wireframe background */}
@@ -324,7 +324,7 @@ export function ComputerPanel() {
                   {currentStepText || BUILD_TEXTS[buildTextIdx]}
                 </p>
 
-                <div className="w-64 h-1.5 rounded-full bg-[#1e1e2e] overflow-hidden mb-6">
+                <div className="w-64 h-1.5 rounded-full bg-[#1a1a1f] overflow-hidden mb-6">
                   {stepsTotal > 0 ? (
                     <div className="h-full rounded-full progress-bar-gradient shimmer-bar transition-all duration-700 ease-out" style={{ width: `${progressPercent}%` }} />
                   ) : (
@@ -335,7 +335,7 @@ export function ComputerPanel() {
                 {recentFiles.length > 0 && (
                   <div className="flex flex-col items-center gap-1.5 max-w-[300px]">
                     {recentFiles.map((file) => (
-                      <div key={file} className="flex items-center gap-2 rounded-lg bg-[#13131a] border border-[#1e1e2e] px-3 py-1.5 file-slide-in">
+                      <div key={file} className="flex items-center gap-2 rounded-lg bg-[#111114] border border-[#1a1a1f] px-3 py-1.5 file-slide-in">
                         <FileCode2 className="h-3 w-3 text-[#3b82f6] shrink-0" />
                         <span className="text-[11px] text-[#8888a0] font-mono truncate">{file}</span>
                       </div>
@@ -358,15 +358,15 @@ export function ComputerPanel() {
                   <>
                     <div className="mb-5">
                       <svg width="120" height="80" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="10" y="5" width="100" height="65" rx="8" stroke="#1e1e2e" strokeWidth="2" />
-                        <rect x="10" y="5" width="100" height="14" rx="8" fill="#13131a" />
-                        <rect x="10" y="17" width="100" height="2" fill="#1e1e2e" />
+                        <rect x="10" y="5" width="100" height="65" rx="8" stroke="#1a1a1f" strokeWidth="2" />
+                        <rect x="10" y="5" width="100" height="14" rx="8" fill="#111114" />
+                        <rect x="10" y="17" width="100" height="2" fill="#1a1a1f" />
                         <circle cx="20" cy="12" r="2.5" fill="#ef4444" opacity="0.4" />
                         <circle cx="28" cy="12" r="2.5" fill="#f59e0b" opacity="0.4" />
                         <circle cx="36" cy="12" r="2.5" fill="#22c55e" opacity="0.4" />
-                        <rect x="44" y="9.5" width="40" height="5" rx="2.5" fill="#1e1e2e" />
-                        <rect x="30" y="30" width="60" height="4" rx="2" fill="#1e1e2e" />
-                        <rect x="38" y="38" width="44" height="3" rx="1.5" fill="#1e1e2e" opacity="0.5" />
+                        <rect x="44" y="9.5" width="40" height="5" rx="2.5" fill="#1a1a1f" />
+                        <rect x="30" y="30" width="60" height="4" rx="2" fill="#1a1a1f" />
+                        <rect x="38" y="38" width="44" height="3" rx="1.5" fill="#1a1a1f" opacity="0.5" />
                         <rect x="45" y="48" width="30" height="8" rx="4" fill="#7c3aed" opacity="0.15" />
                         <text x="60" y="54" textAnchor="middle" fill="#7c3aed" fontSize="5" opacity="0.4">Preview</text>
                       </svg>
@@ -381,22 +381,22 @@ export function ComputerPanel() {
 
             ) : (
               <div className={cn("h-full bg-white rounded-xl overflow-hidden transition-all duration-300 relative",
-                deviceMode !== "desktop" && "border border-[#1e1e2e] shadow-2xl")}
+                deviceMode !== "desktop" && "border border-[#1a1a1f] shadow-2xl")}
                 style={{ width: deviceConfig.width, maxWidth: "100%" }}>
                 {iframeLoading && !iframeError && (
-                  <div className="absolute inset-0 z-10 bg-[#0f0f17] p-6 space-y-4">
+                  <div className="absolute inset-0 z-10 bg-[#09090b] p-6 space-y-4">
                     <div className="flex items-center gap-3 mb-6">
-                      <div className="h-8 w-8 rounded-lg bg-[#1a1a24] skeleton-shimmer" />
-                      <div className="h-4 w-32 rounded-md bg-[#1a1a24] skeleton-shimmer" />
+                      <div className="h-8 w-8 rounded-lg bg-[#161619] skeleton-shimmer" />
+                      <div className="h-4 w-32 rounded-md bg-[#161619] skeleton-shimmer" />
                     </div>
-                    <div className="h-6 w-3/4 rounded-md bg-[#1a1a24] skeleton-shimmer" />
-                    <div className="h-4 w-1/2 rounded-md bg-[#1a1a24] skeleton-shimmer" />
-                    <div className="h-40 w-full rounded-xl bg-[#1a1a24] skeleton-shimmer mt-4" />
+                    <div className="h-6 w-3/4 rounded-md bg-[#161619] skeleton-shimmer" />
+                    <div className="h-4 w-1/2 rounded-md bg-[#161619] skeleton-shimmer" />
+                    <div className="h-40 w-full rounded-xl bg-[#161619] skeleton-shimmer mt-4" />
                   </div>
                 )}
 
                 {iframeError && (
-                  <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0f0f17]/95 backdrop-blur-sm">
+                  <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#09090b]/95 backdrop-blur-sm">
                     <AlertCircle className="h-10 w-10 text-[#ef4444] mb-3" />
                     <h3 className="text-[13px] font-medium text-[#e2e2e8] mb-1">Error al cargar la vista previa</h3>
                     <p className="text-[12px] text-[#8888a0] mb-4 max-w-[220px] text-center leading-relaxed">El servidor puede estar iniciando.</p>

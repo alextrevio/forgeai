@@ -150,13 +150,13 @@ export function PreviewPanel() {
           </div>
           <button onClick={() => setActiveTab("preview")}
             className={cn("flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-medium transition-all duration-150",
-              activeTab === "preview" ? "bg-[#7c3aed]/10 text-[#a78bfa]" : "text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#1a1a24]"
+              activeTab === "preview" ? "bg-[#7c3aed]/10 text-[#a78bfa]" : "text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#161619]"
             )}>
             <Globe className="h-3 w-3" /> Preview
           </button>
           <button onClick={() => setActiveTab("console")}
             className={cn("flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-medium transition-all duration-150 relative",
-              activeTab === "console" ? "bg-[#7c3aed]/10 text-[#a78bfa]" : "text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#1a1a24]"
+              activeTab === "console" ? "bg-[#7c3aed]/10 text-[#a78bfa]" : "text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#161619]"
             )}>
             <Terminal className="h-3 w-3" /> Console
             {(Array.isArray(consoleEntries) ? consoleEntries : []).length > 0 && (
@@ -168,7 +168,7 @@ export function PreviewPanel() {
         </div>
 
         <div className="flex items-center gap-1">
-          <div className="flex items-center rounded-lg bg-[#13131a] p-0.5">
+          <div className="flex items-center rounded-lg bg-[#111114] p-0.5">
             {(["desktop", "tablet", "mobile"] as DeviceMode[]).map((mode) => {
               const Icon = mode === "desktop" ? Monitor : mode === "tablet" ? Tablet : Smartphone;
               return (
@@ -181,10 +181,10 @@ export function PreviewPanel() {
             })}
           </div>
           <div className="mx-1 h-3.5 w-px bg-border" />
-          <button onClick={handleRefresh} className="rounded-lg p-1.5 text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#1a1a24] transition-all duration-150" title="Refresh">
+          <button onClick={handleRefresh} className="rounded-lg p-1.5 text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#161619] transition-all duration-150" title="Refresh">
             <RefreshCw className={cn("h-3 w-3", isRefreshing && "animate-spin")} />
           </button>
-          <button onClick={handleOpenExternal} disabled={!previewUrl} className="rounded-lg p-1.5 text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#1a1a24] transition-all duration-150 disabled:opacity-30" title="Open in new tab">
+          <button onClick={handleOpenExternal} disabled={!previewUrl} className="rounded-lg p-1.5 text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#161619] transition-all duration-150 disabled:opacity-30" title="Open in new tab">
             <ExternalLink className="h-3 w-3" />
           </button>
         </div>
@@ -240,7 +240,7 @@ export function PreviewPanel() {
                 </p>
               )}
 
-              <div className="w-56 h-1.5 rounded-full bg-[#1a1a24] overflow-hidden mb-6">
+              <div className="w-56 h-1.5 rounded-full bg-[#161619] overflow-hidden mb-6">
                 {stepsTotal > 0 ? (
                   <div className="h-full rounded-full progress-animated transition-all duration-700 ease-out" style={{ width: `${progressPercent}%` }} />
                 ) : (
@@ -251,7 +251,7 @@ export function PreviewPanel() {
               {recentFiles.length > 0 && (
                 <div className="flex flex-col items-center gap-1.5 max-w-[300px]">
                   {recentFiles.map((file) => (
-                    <div key={file} className="flex items-center gap-2 rounded-lg bg-[#13131a] border border-border px-3 py-1.5 animate-fade-in">
+                    <div key={file} className="flex items-center gap-2 rounded-lg bg-[#111114] border border-border px-3 py-1.5 animate-fade-in">
                       <FileCode2 className="h-3 w-3 text-[#3b82f6] shrink-0" />
                       <span className="text-[11px] text-[#8888a0] font-mono truncate">{file}</span>
                     </div>
@@ -274,15 +274,15 @@ export function PreviewPanel() {
                 <>
                   <div className="mb-5">
                     <svg width="120" height="80" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <rect x="10" y="5" width="100" height="65" rx="8" stroke="#1e1e2e" strokeWidth="2" />
-                      <rect x="10" y="5" width="100" height="14" rx="8" fill="#13131a" />
-                      <rect x="10" y="17" width="100" height="2" fill="#1e1e2e" />
+                      <rect x="10" y="5" width="100" height="65" rx="8" stroke="#1a1a1f" strokeWidth="2" />
+                      <rect x="10" y="5" width="100" height="14" rx="8" fill="#111114" />
+                      <rect x="10" y="17" width="100" height="2" fill="#1a1a1f" />
                       <circle cx="20" cy="12" r="2.5" fill="#ef4444" opacity="0.4" />
                       <circle cx="28" cy="12" r="2.5" fill="#f59e0b" opacity="0.4" />
                       <circle cx="36" cy="12" r="2.5" fill="#22c55e" opacity="0.4" />
-                      <rect x="44" y="9.5" width="40" height="5" rx="2.5" fill="#1e1e2e" />
-                      <rect x="30" y="30" width="60" height="4" rx="2" fill="#1e1e2e" />
-                      <rect x="38" y="38" width="44" height="3" rx="1.5" fill="#1e1e2e" opacity="0.5" />
+                      <rect x="44" y="9.5" width="40" height="5" rx="2.5" fill="#1a1a1f" />
+                      <rect x="30" y="30" width="60" height="4" rx="2" fill="#1a1a1f" />
+                      <rect x="38" y="38" width="44" height="3" rx="1.5" fill="#1a1a1f" opacity="0.5" />
                       <rect x="45" y="48" width="30" height="8" rx="4" fill="#7c3aed" opacity="0.15" />
                       <text x="60" y="54" textAnchor="middle" fill="#7c3aed" fontSize="5" opacity="0.4">Preview</text>
                     </svg>
@@ -302,15 +302,15 @@ export function PreviewPanel() {
               {iframeLoading && !iframeError && (
                 <div className="absolute inset-0 z-10 bg-[#0e0e14] p-6 space-y-4">
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="h-8 w-8 rounded-lg bg-[#1a1a24] skeleton-shimmer" />
-                    <div className="h-4 w-32 rounded-md bg-[#1a1a24] skeleton-shimmer" />
+                    <div className="h-8 w-8 rounded-lg bg-[#161619] skeleton-shimmer" />
+                    <div className="h-4 w-32 rounded-md bg-[#161619] skeleton-shimmer" />
                     <div className="flex-1" />
-                    <div className="h-4 w-16 rounded-md bg-[#1a1a24] skeleton-shimmer" />
-                    <div className="h-4 w-16 rounded-md bg-[#1a1a24] skeleton-shimmer" />
+                    <div className="h-4 w-16 rounded-md bg-[#161619] skeleton-shimmer" />
+                    <div className="h-4 w-16 rounded-md bg-[#161619] skeleton-shimmer" />
                   </div>
-                  <div className="h-6 w-3/4 rounded-md bg-[#1a1a24] skeleton-shimmer" />
-                  <div className="h-4 w-1/2 rounded-md bg-[#1a1a24] skeleton-shimmer" />
-                  <div className="h-40 w-full rounded-xl bg-[#1a1a24] skeleton-shimmer mt-4" />
+                  <div className="h-6 w-3/4 rounded-md bg-[#161619] skeleton-shimmer" />
+                  <div className="h-4 w-1/2 rounded-md bg-[#161619] skeleton-shimmer" />
+                  <div className="h-40 w-full rounded-xl bg-[#161619] skeleton-shimmer mt-4" />
                 </div>
               )}
 

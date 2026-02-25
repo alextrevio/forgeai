@@ -66,7 +66,7 @@ function StepGroup({ title, steps, defaultExpanded = false }: {
     <div className="step-group-enter">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-2 w-full text-left py-1.5 px-2 rounded-lg hover:bg-[#1a1a24]/50 transition-colors"
+        className="flex items-center gap-2 w-full text-left py-1.5 px-2 rounded-lg hover:bg-[#161619]/50 transition-colors"
       >
         {allCompleted ? (
           <CheckCircle2 className="h-4 w-4 text-[#22c55e] shrink-0" />
@@ -88,7 +88,7 @@ function StepGroup({ title, steps, defaultExpanded = false }: {
       </button>
 
       {expanded && (
-        <div className="ml-3 pl-4 border-l border-[#1e1e2e] space-y-0.5 mt-1 mb-2">
+        <div className="ml-3 pl-4 border-l border-[#1a1a1f] space-y-0.5 mt-1 mb-2">
           {safeSteps.map((step) => (
             <div key={step.id} className="flex items-center gap-2 py-0.5 step-item-enter">
               {step.status === "completed" ? (
@@ -221,7 +221,7 @@ export function ChatPanel() {
   return (
     <div className="flex h-full flex-col bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-[#1e1e2e] px-4 py-3">
+      <div className="flex items-center justify-between border-b border-[#1a1a1f] px-4 py-3">
         <div className="flex items-center gap-2.5">
           <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-[#7c3aed] to-[#3b82f6] flex items-center justify-center">
             <Zap className="h-4 w-4 text-white" />
@@ -253,7 +253,7 @@ export function ChatPanel() {
             <div className="flex flex-wrap items-center justify-center gap-2 max-w-[340px]">
               {INITIAL_CHIPS.map((chip) => (
                 <button key={chip} onClick={() => handleSubmit(chip)}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-[#1e1e2e] bg-[#13131a] px-3.5 py-2 text-[12px] text-[#8888a0] hover:text-[#e2e2e8] hover:border-[#7c3aed]/30 hover:bg-[#7c3aed]/5 transition-all duration-150 cursor-pointer">
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[#1a1a1f] bg-[#111114] px-3.5 py-2 text-[12px] text-[#8888a0] hover:text-[#e2e2e8] hover:border-[#7c3aed]/30 hover:bg-[#7c3aed]/5 transition-all duration-150 cursor-pointer">
                   <Sparkles className="h-3 w-3 text-[#7c3aed]/60" />
                   {chip}
                 </button>
@@ -285,13 +285,13 @@ export function ChatPanel() {
             return (
               <div key={msg.id} className="msg-enter">
                 <button onClick={() => toggleDebug(msg.id)}
-                  className="flex items-center gap-2 text-[11px] text-[#8888a0] hover:text-[#e2e2e8] transition-colors w-full text-left py-1 px-2 rounded-lg hover:bg-[#1a1a24]/30">
+                  className="flex items-center gap-2 text-[11px] text-[#8888a0] hover:text-[#e2e2e8] transition-colors w-full text-left py-1 px-2 rounded-lg hover:bg-[#161619]/30">
                   <Wrench className="h-3 w-3 text-[#f59e0b] shrink-0" />
                   <span className="truncate">Corregido automáticamente: {debugSummary}</span>
                   <ChevronDown className={cn("h-3 w-3 shrink-0 transition-transform", isExpanded && "rotate-180")} />
                 </button>
                 {isExpanded && (
-                  <div className="ml-5 pl-3 border-l border-[#1e1e2e] text-[11px] text-[#8888a0]/60 whitespace-pre-wrap mt-1 mb-1">{msg.content}</div>
+                  <div className="ml-5 pl-3 border-l border-[#1a1a1f] text-[11px] text-[#8888a0]/60 whitespace-pre-wrap mt-1 mb-1">{msg.content}</div>
                 )}
               </div>
             );
@@ -342,7 +342,7 @@ export function ChatPanel() {
         {/* Project card — shown when project initializes */}
         {!isAgentRunning && safeArray(messages).length > 0 && projectName && (
           <div className="msg-enter">
-            <div className="rounded-xl border border-[#1e1e2e] bg-[#13131a] p-3 flex items-center gap-3">
+            <div className="rounded-xl border border-[#1a1a1f] bg-[#111114] p-3 flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#7c3aed]/20 to-[#3b82f6]/20 flex items-center justify-center shrink-0">
                 <Zap className="h-5 w-5 text-[#a78bfa]" />
               </div>
@@ -383,8 +383,8 @@ export function ChatPanel() {
       )}
 
       {/* Input Area */}
-      <div className="border-t border-[#1e1e2e] p-3">
-        <div className="relative flex items-end gap-2 rounded-xl border border-[#1e1e2e] bg-[#0a0a12] p-2.5 focus-within:border-[#7c3aed]/30 transition-colors">
+      <div className="border-t border-[#1a1a1f] p-3">
+        <div className="relative flex items-end gap-2 rounded-xl border border-[#1a1a1f] bg-[#0a0a12] p-2.5 focus-within:border-[#7c3aed]/30 transition-colors">
           <textarea
             ref={textareaRef}
             value={input}
@@ -402,7 +402,7 @@ export function ChatPanel() {
               "flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-150 shrink-0",
               input.trim() && !isAgentRunning && !isSending
                 ? "btn-gradient text-white hover:scale-[1.05]"
-                : "bg-[#1a1a24] text-[#8888a0]/40 cursor-not-allowed"
+                : "bg-[#161619] text-[#8888a0]/40 cursor-not-allowed"
             )}
           >
             {isSending || isAgentRunning ? (

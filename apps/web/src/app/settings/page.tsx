@@ -100,7 +100,7 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0f]">
       {/* Header */}
-      <header className="border-b border-[#27274a] bg-[#131320]">
+      <header className="border-b border-[#1a1a1f] bg-[#111114]">
         <div className="mx-auto max-w-4xl flex items-center gap-4 px-6 py-4">
           <button
             onClick={() => router.push("/dashboard")}
@@ -128,7 +128,7 @@ export default function SettingsPage() {
                   ? "bg-[#6d5cff]/10 text-[#6d5cff]"
                   : tab.id === "danger"
                     ? "text-red-400 hover:bg-red-500/10"
-                    : "text-gray-400 hover:bg-[#1e1e3a] hover:text-white"
+                    : "text-gray-400 hover:bg-[#161619] hover:text-white"
               )}
             >
               {tab.icon}
@@ -164,7 +164,7 @@ export default function SettingsPage() {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full max-w-md rounded-lg border border-[#27274a] bg-[#0a0a0f] px-4 py-2.5 text-sm text-white placeholder:text-gray-500 outline-none focus:border-[#6d5cff]"
+                  className="w-full max-w-md rounded-lg border border-[#1a1a1f] bg-[#0a0a0f] px-4 py-2.5 text-sm text-white placeholder:text-gray-500 outline-none focus:border-[#6d5cff]"
                   placeholder="Your name"
                 />
               </div>
@@ -176,7 +176,7 @@ export default function SettingsPage() {
                   type="email"
                   value={user?.email || ""}
                   disabled
-                  className="w-full max-w-md rounded-lg border border-[#27274a] bg-[#0a0a0f] px-4 py-2.5 text-sm text-gray-500 outline-none opacity-60"
+                  className="w-full max-w-md rounded-lg border border-[#1a1a1f] bg-[#0a0a0f] px-4 py-2.5 text-sm text-gray-500 outline-none opacity-60"
                 />
               </div>
             </div>
@@ -201,7 +201,7 @@ export default function SettingsPage() {
                         "rounded-lg border px-4 py-2 text-sm font-medium capitalize transition-colors",
                         theme === t
                           ? "border-[#6d5cff] bg-[#6d5cff]/10 text-[#6d5cff]"
-                          : "border-[#27274a] text-gray-400 hover:border-[#6d5cff]/50"
+                          : "border-[#1a1a1f] text-gray-400 hover:border-[#6d5cff]/50"
                       )}
                     >
                       {t}
@@ -229,7 +229,7 @@ export default function SettingsPage() {
                 <select
                   value={defaultFramework}
                   onChange={(e) => setDefaultFramework(e.target.value)}
-                  className="rounded-lg border border-[#27274a] bg-[#0a0a0f] px-4 py-2.5 text-sm text-white outline-none focus:border-[#6d5cff]"
+                  className="rounded-lg border border-[#1a1a1f] bg-[#0a0a0f] px-4 py-2.5 text-sm text-white outline-none focus:border-[#6d5cff]"
                 >
                   <option value="react-vite">React + Vite</option>
                   <option value="nextjs">Next.js</option>
@@ -247,7 +247,7 @@ export default function SettingsPage() {
                   onClick={() => setAutoSave(!autoSave)}
                   className={cn(
                     "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
-                    autoSave ? "bg-[#6d5cff]" : "bg-[#27274a]"
+                    autoSave ? "bg-[#6d5cff]" : "bg-[#1a1a1f]"
                   )}
                 >
                   <span
@@ -276,7 +276,7 @@ export default function SettingsPage() {
                     type={showAnthropicKey ? "text" : "password"}
                     value={anthropicKey}
                     onChange={(e) => setAnthropicKey(e.target.value)}
-                    className="w-full rounded-lg border border-[#27274a] bg-[#0a0a0f] px-4 py-2.5 pr-10 text-sm text-white placeholder:text-gray-500 outline-none focus:border-[#6d5cff]"
+                    className="w-full rounded-lg border border-[#1a1a1f] bg-[#0a0a0f] px-4 py-2.5 pr-10 text-sm text-white placeholder:text-gray-500 outline-none focus:border-[#6d5cff]"
                     placeholder="sk-ant-..."
                   />
                   <button
@@ -296,7 +296,7 @@ export default function SettingsPage() {
                     type={showOpenaiKey ? "text" : "password"}
                     value={openaiKey}
                     onChange={(e) => setOpenaiKey(e.target.value)}
-                    className="w-full rounded-lg border border-[#27274a] bg-[#0a0a0f] px-4 py-2.5 pr-10 text-sm text-white placeholder:text-gray-500 outline-none focus:border-[#6d5cff]"
+                    className="w-full rounded-lg border border-[#1a1a1f] bg-[#0a0a0f] px-4 py-2.5 pr-10 text-sm text-white placeholder:text-gray-500 outline-none focus:border-[#6d5cff]"
                     placeholder="sk-..."
                   />
                   <button
@@ -317,7 +317,7 @@ export default function SettingsPage() {
                 <p className="text-sm text-gray-400">Manage your plan and usage</p>
               </div>
 
-              <div className="rounded-xl border border-[#27274a] bg-[#131320] p-6">
+              <div className="rounded-xl border border-[#1a1a1f] bg-[#111114] p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <p className="text-sm text-gray-400">Current Plan</p>
@@ -327,7 +327,7 @@ export default function SettingsPage() {
                     "rounded-full px-3 py-1 text-xs font-medium",
                     user?.plan === "PRO" ? "bg-[#6d5cff]/10 text-[#6d5cff]" :
                     user?.plan === "BUSINESS" ? "bg-[#f59e0b]/10 text-[#f59e0b]" :
-                    "bg-[#1e1e3a] text-gray-400"
+                    "bg-[#161619] text-gray-400"
                   )}>
                     {user?.plan || "FREE"}
                   </span>
@@ -338,7 +338,7 @@ export default function SettingsPage() {
                     <span className="text-gray-400">Credits used</span>
                     <span className="text-white">{user?.creditsUsed ?? 0} / {user?.creditsLimit ?? 50}</span>
                   </div>
-                  <div className="h-2 rounded-full bg-[#1e1e3a] overflow-hidden">
+                  <div className="h-2 rounded-full bg-[#161619] overflow-hidden">
                     <div
                       className="h-full rounded-full bg-[#6d5cff] transition-all"
                       style={{ width: `${Math.min(100, ((user?.creditsUsed ?? 0) / (user?.creditsLimit ?? 50)) * 100)}%` }}
@@ -373,7 +373,7 @@ export default function SettingsPage() {
           )}
 
           {/* Save button (sticky) */}
-          <div className="mt-8 pt-4 border-t border-[#27274a]">
+          <div className="mt-8 pt-4 border-t border-[#1a1a1f]">
             <button
               onClick={handleSave}
               disabled={saving}

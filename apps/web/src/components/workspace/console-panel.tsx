@@ -34,7 +34,7 @@ export function ConsolePanel({ entries: rawEntries, onClear }: ConsolePanelProps
     <div className="flex h-full flex-col bg-[#08080d]">
       <div className="flex items-center justify-between border-b border-border px-3 py-1.5">
         <span className="text-[10px] font-medium text-[#8888a0]/60 uppercase tracking-wider">Console ({entries.length})</span>
-        <button onClick={onClear} className="rounded-lg p-1 text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#1a1a24] transition-all duration-150" title="Clear console">
+        <button onClick={onClear} className="rounded-lg p-1 text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#161619] transition-all duration-150" title="Clear console">
           <Trash2 className="h-3 w-3" />
         </button>
       </div>
@@ -45,7 +45,7 @@ export function ConsolePanel({ entries: rawEntries, onClear }: ConsolePanelProps
           entries.map((entry, i) => {
             const style = levelStyles[entry.level] || levelStyles.log;
             return (
-              <div key={i} className={cn("flex items-start gap-2 px-3 py-1 border-b border-[#1e1e2e]/30 hover:bg-[#1a1a24]/30 transition-colors", style.bg)}>
+              <div key={i} className={cn("flex items-start gap-2 px-3 py-1 border-b border-[#1a1a1f]/30 hover:bg-[#161619]/30 transition-colors", style.bg)}>
                 <span className="text-[#8888a0]/30 shrink-0 w-16 tabular-nums">{new Date(entry.timestamp).toLocaleTimeString([], { hour12: false })}</span>
                 {style.icon && <span className={cn("shrink-0 mt-0.5", style.color)}>{style.icon}</span>}
                 <span className={cn("flex-1 break-all whitespace-pre-wrap", style.color)}>{entry.message}</span>

@@ -77,7 +77,7 @@ function FileTreeItem({ node, depth, onSelect, changedFiles }: {
       <button
         onClick={() => { if (isDir) setExpanded(!expanded); else onSelect(node.path); }}
         className={cn(
-          "flex w-full items-center gap-1.5 px-2 py-[3px] text-[11px] hover:bg-[#1a1a24] transition-all duration-100 file-slide-in",
+          "flex w-full items-center gap-1.5 px-2 py-[3px] text-[11px] hover:bg-[#161619] transition-all duration-100 file-slide-in",
           !isDir && "cursor-pointer",
           isChanged && "bg-[#7c3aed]/5"
         )}
@@ -144,7 +144,7 @@ export function CodePanel() {
     <div className="flex h-full flex-col bg-[#0a0a12]">
       {/* Breadcrumb */}
       {activeFilePath && (
-        <div className="flex items-center gap-1 border-b border-[#1e1e2e] px-3 py-1.5 bg-[#0a0a12]">
+        <div className="flex items-center gap-1 border-b border-[#1a1a1f] px-3 py-1.5 bg-[#0a0a12]">
           {breadcrumb.map((part, i) => (
             <span key={i} className="flex items-center gap-1">
               {i > 0 && <ChevronRight className="h-3 w-3 text-[#8888a0]/30" />}
@@ -160,7 +160,7 @@ export function CodePanel() {
       <PanelGroup direction="horizontal" className="flex-1">
         {/* File Tree */}
         <Panel defaultSize={28} minSize={15} maxSize={45}>
-          <div className="h-full overflow-y-auto border-r border-[#1e1e2e] bg-[#0a0a12]">
+          <div className="h-full overflow-y-auto border-r border-[#1a1a1f] bg-[#0a0a12]">
             <div className="px-3 py-2 text-[10px] font-semibold text-[#8888a0]/60 uppercase tracking-widest">Explorer</div>
             {safeArray(fileTree).length === 0 ? (
               <div className="px-3 py-4 text-[11px] text-[#8888a0]/40 text-center">No hay archivos</div>
@@ -170,23 +170,23 @@ export function CodePanel() {
           </div>
         </Panel>
 
-        <PanelResizeHandle className="w-[1px] bg-[#1e1e2e] hover:bg-[#7c3aed]/50 transition-colors" />
+        <PanelResizeHandle className="w-[1px] bg-[#1a1a1f] hover:bg-[#7c3aed]/50 transition-colors" />
 
         {/* Editor */}
         <Panel defaultSize={72}>
           <div className="flex h-full flex-col">
             {safeArray(openFiles).length > 0 && (
-              <div className="flex items-center overflow-x-auto border-b border-[#1e1e2e] bg-[#0a0a12]">
+              <div className="flex items-center overflow-x-auto border-b border-[#1a1a1f] bg-[#0a0a12]">
                 {safeArray(openFiles).map((file) => {
                   const fileName = file.path.split("/").pop() || file.path;
                   return (
                     <div
                       key={file.path}
                       className={cn(
-                        "group flex items-center gap-1.5 border-r border-[#1e1e2e] px-3 py-1.5 text-[11px] cursor-pointer transition-all duration-100",
+                        "group flex items-center gap-1.5 border-r border-[#1a1a1f] px-3 py-1.5 text-[11px] cursor-pointer transition-all duration-100",
                         file.path === activeFilePath
-                          ? "bg-[#13131a] text-[#e2e2e8]"
-                          : "text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#13131a]/50"
+                          ? "bg-[#111114] text-[#e2e2e8]"
+                          : "text-[#8888a0] hover:text-[#e2e2e8] hover:bg-[#111114]/50"
                       )}
                       onClick={() => setActiveFile(file.path)}
                     >
@@ -194,7 +194,7 @@ export function CodePanel() {
                       <span className="max-w-[120px] truncate">{fileName}</span>
                       <button
                         onClick={(e) => { e.stopPropagation(); closeFile(file.path); }}
-                        className="ml-1 rounded p-0.5 hover:bg-[#1a1a24] transition-colors opacity-0 group-hover:opacity-100"
+                        className="ml-1 rounded p-0.5 hover:bg-[#161619] transition-colors opacity-0 group-hover:opacity-100"
                       >
                         <X className="h-3 w-3" />
                       </button>
