@@ -21,8 +21,12 @@ COPY apps/api/ apps/api/
 RUN cd packages/db && npx prisma generate
 RUN pnpm turbo build --filter=@forgeai/api...
 
-# Use pnpm deploy to create a standalone directory with real deps
+# Create standalone deployed directory with real deps
 RUN pnpm --filter=@forgeai/api deploy --legacy --prod /app/deployed
+
+# Copy Prisma generated client into deployed node_modules
+RUN cp -rL $(find /app/node_modules/.pnpm -path "*/@prisma/client" -type d | head -1)/../../.prisma /app/deployed/node_modules/.prisma 2>/dev/null || true
+RUN cp -rL $(find /app/node_modules/.pnpm -path "*/@prisma/client" -type d | head -1)/../../@prisma /app/deployed/node_modules/@prisma 2>/dev/null || true
 
 # ── Stage 2: Runner ──────────────────────────────────────
 FROM node:20-alpine AS runner
@@ -33,7 +37,7 @@ RUN addgroup --system --gid 1001 forgeai && \
 
 WORKDIR /app
 
-# Copy the deployed standalone app (real deps, no symlinks)
+# Copy deployed node_modules (real deps + prisma)
 COPY --from=builder /app/deployed/node_modules ./node_modules
 
 # Copy built API dist
@@ -50,13 +54,10 @@ COPY --from=builder /app/packages/agents/package.json ./node_modules/@forgeai/ag
 COPY --from=builder /app/packages/sandbox-manager/dist ./node_modules/@forgeai/sandbox-manager/dist
 COPY --from=builder /app/packages/sandbox-manager/package.json ./node_modules/@forgeai/sandbox-manager/
 
-# Copy Prisma client from deployed
-COPY --from=builder /app/deployed/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/deployed/node_modules/@prisma ./node_modules/@prisma
-
 # Copy Prisma schema
 COPY --from=builder /app/packages/db/prisma ./prisma
 
+# Create required directories
 RUN mkdir -p deploys .sandboxes tmp && chown -R forgeai:forgeai /app
 
 ENV NODE_ENV=production
