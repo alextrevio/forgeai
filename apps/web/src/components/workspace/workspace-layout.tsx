@@ -23,7 +23,7 @@ export function WorkspaceLayout() {
     sandboxStatus,
     fileTree,
     previewUrl,
-    codeChanges,
+    changedFiles,
   } = useProjectStore();
 
   // Show the computer panel only when there's actual content to display
@@ -31,7 +31,7 @@ export function WorkspaceLayout() {
     sandboxStatus === "running" ||
     (fileTree && fileTree.length > 0) ||
     !!previewUrl ||
-    (codeChanges && codeChanges.length > 0) ||
+    (changedFiles (codeChanges && codeChanges.length > 0)(codeChanges && codeChanges.length > 0) changedFiles.size > 0) ||
     (isAgentRunning && activeAgent === "coder");
 
   useEffect(() => {
