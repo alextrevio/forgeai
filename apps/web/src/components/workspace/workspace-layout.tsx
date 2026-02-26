@@ -5,7 +5,7 @@ import { Panel, PanelGroup, PanelResizeHandle, type ImperativePanelGroupHandle }
 import { Activity } from "lucide-react";
 import { ChatPanel } from "./chat-panel";
 import { ComputerPanel } from "./computer-panel";
-import { AgentActivityPanel } from "./agent-activity-panel";
+import { ActivityFeed } from "./activity-feed";
 import { useProjectStore } from "@/stores/project-store";
 import { cn } from "@/lib/utils";
 
@@ -101,10 +101,10 @@ export function WorkspaceLayout() {
           >
             <div className="relative h-full">
               <ChatPanel />
-              {/* Activity panel overlay */}
+              {/* Activity feed overlay */}
               {showActivity && (
                 <div className="absolute inset-0 z-30">
-                  <AgentActivityPanel onClose={() => setShowActivity(false)} />
+                  <ActivityFeed onClose={() => setShowActivity(false)} />
                 </div>
               )}
             </div>

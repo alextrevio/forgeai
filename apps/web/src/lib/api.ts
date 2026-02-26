@@ -165,6 +165,14 @@ class ApiClient {
     });
   }
 
+  async getEngineStatus(projectId: string) {
+    return this.request<any>(`/api/engine/status/${projectId}`);
+  }
+
+  async getEngineActivity(projectId: string, limit = 50) {
+    return this.request<any>(`/api/engine/activity/${projectId}?limit=${limit}`);
+  }
+
   async updateProjectSettings(id: string, data: { customInstructions?: string; settings?: any }) {
     return this.request<any>(`/api/projects/${id}/settings`, {
       method: "PATCH",
