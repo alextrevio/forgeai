@@ -80,6 +80,17 @@ model Project {
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
+  // ─── Arya Engine fields ───
+  engineStatus    String   @default("idle") // idle, planning, running, completed, failed, paused
+  planSteps       Json?    // Array of orchestrator plan steps
+  memoryContext   Json?    // Persistent project memory
+  totalTokensUsed Int      @default(0)
+  estimatedCost   Float    @default(0)
+  activeAgents    Json?    // Currently active agents: [{ type: "coder", taskId: "..." }]
+
+  tasks           Task[]
+  activityLogs    ActivityLog[]
+
   @@index([userId])
 }
 
@@ -164,4 +175,66 @@ model ApiKey {
 
   @@index([userId])
   @@index([keyHash])
+}
+
+// ─── Arya Engine: Task orchestration ───
+
+model Task {
+  id            String   @id @default(cuid())
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parentTaskId  String?
+  parentTask    Task?    @relation("SubTasks", fields: [parentTaskId], references: [id])
+  subTasks      Task[]   @relation("SubTasks")
+
+  agentType     String   // coder, research, designer, analyst, writer, deploy, qa, planner
+  modelUsed     String?  // opus, sonnet, haiku, gpt4o, gemini, etc
+  status        String   @default("pending") // pending, running, completed, failed, cancelled
+
+  title         String   // "Investigando competidores", "Creando componentes React"
+  description   String?  @db.Text
+  inputPrompt   String?  @db.Text
+  outputResult  Json?    // Flexible result (text, code, files, etc)
+
+  tokensUsed    Int      @default(0)
+  durationMs    Int?
+  errorMessage  String?  @db.Text
+
+  order         Int      @default(0)
+
+  createdAt     DateTime  @default(now())
+  startedAt     DateTime?
+  completedAt   DateTime?
+  updatedAt     DateTime  @updatedAt
+
+  activityLogs  ActivityLog[]
+
+  @@index([projectId])
+  @@index([parentTaskId])
+  @@index([projectId, status])
+}
+
+// ─── Arya Engine: Real-time activity feed ───
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  taskId      String?
+  task        Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  type        String   // plan_step, file_change, terminal_cmd, agent_message, thinking, error, agent_spawn, agent_complete
+  agentType   String?  // coder, research, designer, etc
+
+  content     Json     // Flexible payload per type
+  // file_change: { action: "create"|"modify"|"delete", path: "src/...", diff: "..." }
+  // terminal_cmd: { command: "npm install", output: "...", exitCode: 0 }
+  // thinking: { message: "Analizando la estructura..." }
+  // plan_step: { step: "Crear componentes", status: "running" }
+  // agent_spawn: { agentType: "coder", taskTitle: "..." }
+
+  timestamp   DateTime @default(now())
+
+  @@index([projectId, timestamp])
+  @@index([taskId])
 }
