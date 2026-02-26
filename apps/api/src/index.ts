@@ -18,6 +18,7 @@ import { supabaseRouter } from "./routes/supabase";
 import { sharingRouter } from "./routes/sharing";
 import { notificationRouter } from "./routes/notifications";
 import { exportImportRouter } from "./routes/export-import";
+import { engineRouter } from "./routes/engine";
 import { authenticate } from "./middleware/auth";
 import { errorHandler } from "./middleware/error-handler";
 import { rateLimit } from "./middleware/rate-limit";
@@ -160,6 +161,7 @@ app.use("/api/supabase", authenticate, generalLimiter, supabaseRouter);
 app.use("/api/projects", authenticate, generalLimiter, sharingRouter);
 app.use("/api/projects", authenticate, generalLimiter, exportImportRouter);
 app.use("/api/notifications", authenticate, generalLimiter, notificationRouter);
+app.use("/api/engine", authenticate, agentLimiter, engineRouter);
 
 // 404 handler for API routes
 app.use("/api/*", (req, res) => {
