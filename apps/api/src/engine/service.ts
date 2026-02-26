@@ -10,7 +10,9 @@ import type { AgentPlan, AgentStep, CodeChange } from "@forgeai/shared";
 import { sandboxManager } from "../sandbox/manager";
 import { logger } from "../lib/logger";
 
-// ── Planner System Prompt (Arya Engine) ──────────────────────────
+// ══════════════════════════════════════════════════════════════════
+// AGENT SYSTEM PROMPTS
+// ══════════════════════════════════════════════════════════════════
 
 const ENGINE_PLANNER_PROMPT = `Eres el Planner de Arya AI, una plataforma de agentes autónomos.
 Tu trabajo es analizar lo que el usuario quiere lograr y crear un plan de ejecución estructurado.
@@ -48,6 +50,126 @@ Reglas:
 6. El último paso suele ser deploy o qa
 `;
 
+const RESEARCH_AGENT_PROMPT = `Eres un agente de investigación de Arya AI.
+Tu trabajo es investigar, analizar y generar un reporte estructurado basado en la solicitud.
+
+Utiliza tu conocimiento para:
+- Analizar el dominio del problema
+- Identificar mejores prácticas y patrones relevantes
+- Sugerir tecnologías, librerías y enfoques apropiados
+- Identificar riesgos y consideraciones importantes
+
+Responde SOLO con un JSON válido:
+{
+  "summary": "Resumen ejecutivo de la investigación",
+  "findings": [
+    {
+      "topic": "Nombre del hallazgo",
+      "description": "Descripción detallada",
+      "relevance": "high|medium|low"
+    }
+  ],
+  "recommendations": [
+    "Recomendación 1",
+    "Recomendación 2"
+  ],
+  "techStack": {
+    "suggested": ["tech1", "tech2"],
+    "reasoning": "Por qué estas tecnologías"
+  },
+  "risks": [
+    {
+      "risk": "Descripción del riesgo",
+      "mitigation": "Cómo mitigarlo"
+    }
+  ]
+}`;
+
+const ANALYST_AGENT_PROMPT = `Eres un agente analista de Arya AI.
+Tu trabajo es analizar datos, estructuras y requerimientos para generar insights accionables.
+
+Responde SOLO con un JSON válido:
+{
+  "summary": "Resumen del análisis",
+  "dataModel": {
+    "entities": [
+      {
+        "name": "EntityName",
+        "fields": ["field1: type", "field2: type"],
+        "relationships": ["relates to EntityB via fieldX"]
+      }
+    ]
+  },
+  "insights": [
+    {
+      "insight": "Descripción del insight",
+      "impact": "high|medium|low",
+      "actionable": true
+    }
+  ],
+  "metrics": [
+    {
+      "name": "Métrica clave",
+      "description": "Qué mide y por qué importa"
+    }
+  ],
+  "recommendations": ["Recomendación 1", "Recomendación 2"]
+}`;
+
+const WRITER_AGENT_PROMPT = `Eres un agente redactor de Arya AI.
+Tu trabajo es crear contenido profesional, claro y bien estructurado.
+
+Puedes crear: documentación técnica, copy de UI, emails, blog posts, README files, guías de usuario.
+
+Responde SOLO con un JSON válido:
+{
+  "summary": "Resumen del contenido creado",
+  "content": [
+    {
+      "title": "Título de la sección o documento",
+      "type": "readme|docs|copy|email|blog|guide",
+      "body": "Contenido completo en markdown",
+      "targetFile": "path/to/file.md (opcional, si debe guardarse)"
+    }
+  ],
+  "metadata": {
+    "tone": "professional|casual|technical",
+    "audience": "developers|users|stakeholders",
+    "wordCount": 500
+  }
+}`;
+
+const DEPLOY_AGENT_PROMPT = `Eres un agente de deployment de Arya AI.
+Tu trabajo es configurar y preparar el proyecto para deployment.
+
+Analiza el proyecto y genera los comandos y configuraciones necesarias.
+
+Responde SOLO con un JSON válido:
+{
+  "summary": "Resumen de la estrategia de deployment",
+  "platform": "vercel|netlify|docker|custom",
+  "steps": [
+    {
+      "description": "Qué hacer",
+      "commands": ["comando1", "comando2"],
+      "configFiles": [
+        {
+          "path": "archivo.config",
+          "content": "contenido del archivo"
+        }
+      ]
+    }
+  ],
+  "envVars": [
+    {
+      "name": "VAR_NAME",
+      "description": "Para qué se usa",
+      "required": true
+    }
+  ],
+  "checks": ["verificación 1", "verificación 2"]
+}`;
+
 // ── Types ────────────────────────────────────────────────────────
 
 interface PlannerResult {
@@ -60,6 +182,36 @@ interface PlannerResult {
     dependsOn: number[];
     estimatedDuration: string;
   }>;
+}
+
+interface ResearchResult {
+  summary: string;
+  findings: Array<{ topic: string; description: string; relevance: string }>;
+  recommendations: string[];
+  techStack?: { suggested: string[]; reasoning: string };
+  risks?: Array<{ risk: string; mitigation: string }>;
+}
+
+interface AnalystResult {
+  summary: string;
+  dataModel?: { entities: Array<{ name: string; fields: string[]; relationships: string[] }> };
+  insights: Array<{ insight: string; impact: string; actionable: boolean }>;
+  metrics?: Array<{ name: string; description: string }>;
+  recommendations: string[];
+}
+
+interface WriterResult {
+  summary: string;
+  content: Array<{ title: string; type: string; body: string; targetFile?: string }>;
+  metadata?: { tone: string; audience: string; wordCount: number };
+}
+
+interface DeployResult {
+  summary: string;
+  platform: string;
+  steps: Array<{ description: string; commands: string[]; configFiles?: Array<{ path: string; content: string }> }>;
+  envVars?: Array<{ name: string; description: string; required: boolean }>;
+  checks?: string[];
 }
 
 // ── AbortControllers for running engines ──────────────────────────
@@ -89,6 +241,22 @@ async function logActivity(
   });
 }
 
+function emitActivity(
+  io: SocketIOServer,
+  projectId: string,
+  type: string,
+  content: Record<string, unknown>,
+  opts?: { taskId?: string; agentType?: string }
+) {
+  emit(io, projectId, "engine:activity", {
+    type,
+    taskId: opts?.taskId,
+    agentType: opts?.agentType,
+    content,
+  });
+  logActivity(projectId, type, content, opts).catch(() => {});
+}
+
 function getSandboxInterface(sandboxId: string): SandboxInterface {
   return {
     executeCommand: (cmd: string) => sandboxManager.executeCommand(sandboxId, cmd),
@@ -98,6 +266,51 @@ function getSandboxInterface(sandboxId: string): SandboxInterface {
     getFileTree: () => sandboxManager.getFileTree(sandboxId),
     getPreviewUrl: () => sandboxManager.getPreviewUrl(sandboxId),
   };
+}
+
+async function updateTokenUsage(projectId: string, taskId: string, tokensUsed: number) {
+  if (tokensUsed <= 0) return;
+  await prisma.task.update({
+    where: { id: taskId },
+    data: { tokensUsed },
+  });
+  await prisma.project.update({
+    where: { id: projectId },
+    data: { totalTokensUsed: { increment: tokensUsed } },
+  });
+}
+
+/**
+ * Gather output results from completed dependency tasks to pass as context.
+ */
+async function gatherDependencyResults(
+  projectId: string,
+  step: PlannerResult["steps"][number],
+  taskMap: Map<number, { id: string; title: string; agentType: string }>
+): Promise<string> {
+  if (!step.dependsOn || step.dependsOn.length === 0) return "";
+
+  const results: string[] = [];
+  for (const depOrder of step.dependsOn) {
+    const depTask = taskMap.get(depOrder);
+    if (!depTask) continue;
+
+    const task = await prisma.task.findUnique({
+      where: { id: depTask.id },
+      select: { title: true, agentType: true, outputResult: true },
+    });
+    if (!task?.outputResult) continue;
+
+    const output = typeof task.outputResult === "string"
+      ? task.outputResult
+      : JSON.stringify(task.outputResult, null, 2);
+
+    results.push(`--- Resultado de "${task.title}" (${task.agentType}) ---\n${output}`);
+  }
+
+  return results.length > 0
+    ? `\n\nResultado de tareas previas:\n${results.join("\n\n")}`
+    : "";
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -125,13 +338,8 @@ export async function startEngine(
 
     emit(io, projectId, "engine:started", { projectId, status: "planning" });
 
-    await logActivity(projectId, "thinking", {
+    emitActivity(io, projectId, "thinking", {
       message: "Analyzing request and creating execution plan...",
-    });
-
-    emit(io, projectId, "engine:activity", {
-      type: "thinking",
-      content: { message: "Analyzing request and creating execution plan..." },
     });
 
     // Call LLM to generate plan
@@ -152,7 +360,6 @@ export async function startEngine(
       planSteps = parsed.steps.slice(0, 8); // Max 8 steps
     } else {
       logger.warn({ parseError }, "Planner: falling back to default plan");
-      // Fallback plan: use the existing PlannerAgent which has robust fallbacks
       planSteps = [
         { order: 1, title: "Analyze requirements", description: `Analyze: ${prompt.slice(0, 100)}`, agentType: "coder", dependsOn: [], estimatedDuration: "2min" },
         { order: 2, title: "Setup project structure", description: "Install dependencies and create project structure", agentType: "coder", dependsOn: [1], estimatedDuration: "5min" },
@@ -254,7 +461,6 @@ async function executeTasksInOrder(
   signal: AbortSignal
 ) {
   try {
-    // Group tasks by dependency layers
     const taskMap = new Map(tasks.map((t) => [t.order, t]));
     const stepMap = new Map(planSteps.map((s) => [s.order, s]));
 
@@ -276,7 +482,6 @@ async function executeTasksInOrder(
         select: { engineStatus: true },
       });
       if (project?.engineStatus === "paused") {
-        // Wait and poll for resume
         await new Promise<void>((resolve) => {
           const check = setInterval(async () => {
             if (signal.aborted) {
@@ -303,7 +508,6 @@ async function executeTasksInOrder(
       );
 
       if (ready.length === 0) {
-        // Safety: avoid infinite loop
         remaining.forEach((s) => completed.add(s.order));
         break;
       }
@@ -318,12 +522,13 @@ async function executeTasksInOrder(
         data: { activeAgents: activeAgents as unknown as Prisma.InputJsonValue },
       });
 
-      // Execute ready tasks in parallel
+      // Execute ready tasks in parallel, passing dependency results
       await Promise.all(
-        ready.map((step) => {
+        ready.map(async (step) => {
           const task = taskMap.get(step.order);
-          if (!task) return Promise.resolve();
-          return executeTask(projectId, task.id, step, originalPrompt, io, signal);
+          if (!task) return;
+          const depContext = await gatherDependencyResults(projectId, step, taskMap);
+          return executeTask(projectId, task.id, step, originalPrompt, depContext, io, signal);
         })
       );
 
@@ -364,7 +569,7 @@ async function executeTasksInOrder(
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// EXECUTE SINGLE TASK — Uses existing Orchestrator for coder agent
+// EXECUTE SINGLE TASK — Routes to the appropriate agent
 // ═══════════════════════════════════════════════════════════════════
 
 async function executeTask(
@@ -372,6 +577,7 @@ async function executeTask(
   taskId: string,
   step: PlannerResult["steps"][number],
   originalPrompt: string,
+  dependencyContext: string,
   io: SocketIOServer,
   signal: AbortSignal
 ) {
@@ -396,15 +602,42 @@ async function executeTask(
       status: "running",
     }, { taskId, agentType: step.agentType });
 
-    // For Phase 1: only coder agent is fully implemented
-    // Other agents log their intent and complete as "simulated"
-    if (step.agentType === "coder" || step.agentType === "qa" || step.agentType === "designer") {
-      await executeCoderTask(projectId, taskId, step, originalPrompt, io, signal);
-    } else {
-      // Phase 2 agents: log and mark as completed with a note
-      await logActivity(projectId, "agent_message", {
-        message: `Agent "${step.agentType}" task queued: ${step.description}. Full agent implementation coming in Phase 2.`,
-      }, { taskId, agentType: step.agentType });
+    // Route to the appropriate agent executor
+    switch (step.agentType) {
+      case "coder":
+        await executeCoderTask(projectId, taskId, step, originalPrompt, dependencyContext, io, signal);
+        break;
+
+      case "designer":
+        await executeCoderTask(projectId, taskId, step, originalPrompt, dependencyContext, io, signal, "designer");
+        break;
+
+      case "qa":
+        await executeCoderTask(projectId, taskId, step, originalPrompt, dependencyContext, io, signal, "qa");
+        break;
+
+      case "research":
+        await executeResearchTask(projectId, taskId, step, originalPrompt, dependencyContext, io, signal);
+        break;
+
+      case "analyst":
+        await executeAnalystTask(projectId, taskId, step, originalPrompt, dependencyContext, io, signal);
+        break;
+
+      case "writer":
+        await executeWriterTask(projectId, taskId, step, originalPrompt, dependencyContext, io, signal);
+        break;
+
+      case "deploy":
+        await executeDeployTask(projectId, taskId, step, originalPrompt, dependencyContext, io, signal);
+        break;
+
+      default:
+        // Unknown agent type — log and continue
+        emitActivity(io, projectId, "agent_message", {
+          message: `Agent "${step.agentType}" ejecutando: ${step.description}`,
+        }, { taskId, agentType: step.agentType });
+        break;
     }
 
     // Mark task as completed
@@ -448,25 +681,28 @@ async function executeTask(
   }
 }
 
-// ── Execute coder task using existing Orchestrator ───────────────
+// ═══════════════════════════════════════════════════════════════════
+// CODER AGENT — Uses existing Orchestrator
+// ═══════════════════════════════════════════════════════════════════
 
 async function executeCoderTask(
   projectId: string,
   taskId: string,
   step: PlannerResult["steps"][number],
   originalPrompt: string,
+  dependencyContext: string,
   io: SocketIOServer,
-  signal: AbortSignal
+  signal: AbortSignal,
+  agentOverlay?: "designer" | "qa"
 ) {
   const project = await prisma.project.findUnique({ where: { id: projectId } });
   if (!project) throw new Error("Project not found");
 
   let sandboxId = project.sandboxId;
   if (!sandboxId) {
-    emit(io, projectId, "engine:activity", {
-      type: "thinking",
-      content: { message: "Creating sandbox environment..." },
-    });
+    emitActivity(io, projectId, "thinking", {
+      message: "Creating sandbox environment...",
+    }, { taskId, agentType: step.agentType });
 
     const sandbox = await sandboxManager.createSandbox(projectId, project.framework);
     sandboxId = sandbox.containerId;
@@ -490,7 +726,20 @@ async function executeCoderTask(
   const sandboxInterface = getSandboxInterface(sandboxId);
 
   // Build context for this specific task
-  const taskPrompt = `${step.description}\n\nOriginal user request: ${originalPrompt}`;
+  let taskPrompt = step.description;
+
+  // Add agent-specific overlay instructions
+  if (agentOverlay === "designer") {
+    taskPrompt = `[MODO DISEÑADOR] Enfócate en aspectos visuales, UX/UI, estilos, y diseño.\n\n${taskPrompt}`;
+  } else if (agentOverlay === "qa") {
+    taskPrompt = `[MODO QA] Enfócate en testing, revisión de código, manejo de errores, y calidad.\n\n${taskPrompt}`;
+  }
+
+  taskPrompt += `\n\nOriginal user request: ${originalPrompt}`;
+  if (dependencyContext) {
+    taskPrompt += dependencyContext;
+  }
+
   const fileTree = await sandboxManager.getFileTree(sandboxId);
   let projectContext = `Framework: ${project.framework}\n`;
   if (project.customInstructions) {
@@ -505,19 +754,11 @@ async function executeCoderTask(
     } catch { /* skip */ }
   }
 
-  // Use the existing Orchestrator to run this step
   const orchestrator = new Orchestrator();
-  let totalTokens = 0;
 
   const callbacks: OrchestratorCallbacks = {
     onThinking: (content) => {
-      emit(io, projectId, "engine:activity", {
-        type: "thinking",
-        agentType: step.agentType,
-        taskId,
-        content: { message: content },
-      });
-      logActivity(projectId, "thinking", { message: content }, { taskId, agentType: step.agentType }).catch(() => {});
+      emitActivity(io, projectId, "thinking", { message: content }, { taskId, agentType: step.agentType });
     },
     onPlan: (plan) => {
       emit(io, projectId, "engine:activity", {
@@ -541,42 +782,23 @@ async function executeCoderTask(
       });
     },
     onStepMessage: (message) => {
-      emit(io, projectId, "engine:activity", {
-        type: "agent_message",
-        taskId,
-        content: { message },
-      });
+      emitActivity(io, projectId, "agent_message", { message }, { taskId });
     },
     onCodeChange: (change: CodeChange) => {
-      emit(io, projectId, "engine:activity", {
-        type: "file_change",
-        taskId,
-        agentType: step.agentType,
-        content: { action: change.action, path: change.file, diff: change.diff },
-      });
-      logActivity(projectId, "file_change", {
+      emitActivity(io, projectId, "file_change", {
         action: change.action,
         path: change.file,
-      }, { taskId, agentType: step.agentType }).catch(() => {});
+        diff: change.diff,
+      }, { taskId, agentType: step.agentType });
     },
     onFileChanged: (path) => {
       emit(io, projectId, "sandbox:file_changed", { path });
     },
     onTerminalOutput: (output) => {
-      emit(io, projectId, "engine:activity", {
-        type: "terminal_cmd",
-        taskId,
-        content: { output },
-      });
-      logActivity(projectId, "terminal_cmd", { output: output.slice(0, 1000) }, { taskId }).catch(() => {});
+      emitActivity(io, projectId, "terminal_cmd", { output: output.slice(0, 1000) }, { taskId });
     },
     onError: (message) => {
-      emit(io, projectId, "engine:activity", {
-        type: "error",
-        taskId,
-        content: { message },
-      });
-      logActivity(projectId, "error", { message }, { taskId }).catch(() => {});
+      emitActivity(io, projectId, "error", { message }, { taskId });
     },
     onComplete: async (summary) => {
       await prisma.task.update({
@@ -598,6 +820,318 @@ async function executeCoderTask(
   };
 
   await orchestrator.run(taskPrompt, projectContext, sandboxInterface, callbacks, signal);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// RESEARCH AGENT — LLM knowledge-based research
+// ═══════════════════════════════════════════════════════════════════
+
+async function executeResearchTask(
+  projectId: string,
+  taskId: string,
+  step: PlannerResult["steps"][number],
+  originalPrompt: string,
+  dependencyContext: string,
+  io: SocketIOServer,
+  signal: AbortSignal
+) {
+  emitActivity(io, projectId, "thinking", {
+    message: `Investigando: ${step.title}...`,
+  }, { taskId, agentType: "research" });
+
+  const userMessage = `Tarea: ${step.description}\n\nSolicitud original del usuario: ${originalPrompt}${dependencyContext}`;
+
+  const { parsed, text, parseError } = await callLLMForJSON<ResearchResult>(
+    "research",
+    RESEARCH_AGENT_PROMPT,
+    [{ role: "user", content: userMessage }],
+    signal
+  );
+
+  if (signal.aborted) return;
+
+  // Estimate tokens (~4 chars per token)
+  const estimatedTokens = Math.ceil((userMessage.length + (text?.length || 0)) / 4);
+  await updateTokenUsage(projectId, taskId, estimatedTokens);
+
+  if (parsed) {
+    // Emit findings as activity
+    emitActivity(io, projectId, "agent_message", {
+      message: parsed.summary,
+    }, { taskId, agentType: "research" });
+
+    for (const finding of parsed.findings || []) {
+      emitActivity(io, projectId, "agent_message", {
+        message: `[${finding.relevance?.toUpperCase()}] ${finding.topic}: ${finding.description}`,
+      }, { taskId, agentType: "research" });
+    }
+
+    if (parsed.recommendations?.length) {
+      emitActivity(io, projectId, "agent_message", {
+        message: `Recomendaciones: ${parsed.recommendations.join("; ")}`,
+      }, { taskId, agentType: "research" });
+    }
+
+    // Store full result for downstream tasks
+    await prisma.task.update({
+      where: { id: taskId },
+      data: { outputResult: parsed as unknown as Prisma.InputJsonValue },
+    });
+  } else {
+    logger.warn({ parseError }, "Research agent: failed to parse JSON, storing raw text");
+    await prisma.task.update({
+      where: { id: taskId },
+      data: { outputResult: { summary: text || "Research completed", raw: true } },
+    });
+
+    emitActivity(io, projectId, "agent_message", {
+      message: text?.slice(0, 500) || "Research completed",
+    }, { taskId, agentType: "research" });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ANALYST AGENT — Data analysis and insights
+// ═══════════════════════════════════════════════════════════════════
+
+async function executeAnalystTask(
+  projectId: string,
+  taskId: string,
+  step: PlannerResult["steps"][number],
+  originalPrompt: string,
+  dependencyContext: string,
+  io: SocketIOServer,
+  signal: AbortSignal
+) {
+  emitActivity(io, projectId, "thinking", {
+    message: `Analizando: ${step.title}...`,
+  }, { taskId, agentType: "analyst" });
+
+  const userMessage = `Tarea: ${step.description}\n\nSolicitud original del usuario: ${originalPrompt}${dependencyContext}`;
+
+  const { parsed, text, parseError } = await callLLMForJSON<AnalystResult>(
+    "analyst",
+    ANALYST_AGENT_PROMPT,
+    [{ role: "user", content: userMessage }],
+    signal
+  );
+
+  if (signal.aborted) return;
+
+  const estimatedTokens = Math.ceil((userMessage.length + (text?.length || 0)) / 4);
+  await updateTokenUsage(projectId, taskId, estimatedTokens);
+
+  if (parsed) {
+    emitActivity(io, projectId, "agent_message", {
+      message: parsed.summary,
+    }, { taskId, agentType: "analyst" });
+
+    for (const insight of parsed.insights || []) {
+      emitActivity(io, projectId, "agent_message", {
+        message: `[${insight.impact?.toUpperCase()}] ${insight.insight}`,
+      }, { taskId, agentType: "analyst" });
+    }
+
+    await prisma.task.update({
+      where: { id: taskId },
+      data: { outputResult: parsed as unknown as Prisma.InputJsonValue },
+    });
+  } else {
+    logger.warn({ parseError }, "Analyst agent: failed to parse JSON");
+    await prisma.task.update({
+      where: { id: taskId },
+      data: { outputResult: { summary: text || "Analysis completed", raw: true } },
+    });
+
+    emitActivity(io, projectId, "agent_message", {
+      message: text?.slice(0, 500) || "Analysis completed",
+    }, { taskId, agentType: "analyst" });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// WRITER AGENT — Content creation
+// ═══════════════════════════════════════════════════════════════════
+
+async function executeWriterTask(
+  projectId: string,
+  taskId: string,
+  step: PlannerResult["steps"][number],
+  originalPrompt: string,
+  dependencyContext: string,
+  io: SocketIOServer,
+  signal: AbortSignal
+) {
+  emitActivity(io, projectId, "thinking", {
+    message: `Redactando: ${step.title}...`,
+  }, { taskId, agentType: "writer" });
+
+  const userMessage = `Tarea: ${step.description}\n\nSolicitud original del usuario: ${originalPrompt}${dependencyContext}`;
+
+  const { parsed, text, parseError } = await callLLMForJSON<WriterResult>(
+    "writer",
+    WRITER_AGENT_PROMPT,
+    [{ role: "user", content: userMessage }],
+    signal
+  );
+
+  if (signal.aborted) return;
+
+  const estimatedTokens = Math.ceil((userMessage.length + (text?.length || 0)) / 4);
+  await updateTokenUsage(projectId, taskId, estimatedTokens);
+
+  if (parsed) {
+    emitActivity(io, projectId, "agent_message", {
+      message: parsed.summary,
+    }, { taskId, agentType: "writer" });
+
+    // If content has targetFile, write to sandbox
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: { sandboxId: true },
+    });
+
+    for (const item of parsed.content || []) {
+      if (item.targetFile && project?.sandboxId) {
+        try {
+          await sandboxManager.writeFile(project.sandboxId, item.targetFile, item.body);
+          emitActivity(io, projectId, "file_change", {
+            action: "create",
+            path: item.targetFile,
+          }, { taskId, agentType: "writer" });
+          emit(io, projectId, "sandbox:file_changed", { path: item.targetFile });
+        } catch (err) {
+          logger.warn({ err, file: item.targetFile }, "Writer: failed to write file to sandbox");
+        }
+      }
+
+      emitActivity(io, projectId, "agent_message", {
+        message: `${item.title} (${item.type}): ${item.body.slice(0, 200)}...`,
+      }, { taskId, agentType: "writer" });
+    }
+
+    await prisma.task.update({
+      where: { id: taskId },
+      data: { outputResult: parsed as unknown as Prisma.InputJsonValue },
+    });
+  } else {
+    logger.warn({ parseError }, "Writer agent: failed to parse JSON");
+    await prisma.task.update({
+      where: { id: taskId },
+      data: { outputResult: { summary: text || "Content created", raw: true } },
+    });
+
+    emitActivity(io, projectId, "agent_message", {
+      message: text?.slice(0, 500) || "Content created",
+    }, { taskId, agentType: "writer" });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// DEPLOY AGENT — Deployment configuration via sandbox
+// ═══════════════════════════════════════════════════════════════════
+
+async function executeDeployTask(
+  projectId: string,
+  taskId: string,
+  step: PlannerResult["steps"][number],
+  originalPrompt: string,
+  dependencyContext: string,
+  io: SocketIOServer,
+  signal: AbortSignal
+) {
+  emitActivity(io, projectId, "thinking", {
+    message: `Preparando deployment: ${step.title}...`,
+  }, { taskId, agentType: "deploy" });
+
+  // Gather project context
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { sandboxId: true, framework: true },
+  });
+
+  let projectInfo = `Framework: ${project?.framework || "unknown"}`;
+  if (project?.sandboxId) {
+    try {
+      const fileTree = await sandboxManager.getFileTree(project.sandboxId);
+      projectInfo += `\nProject files: ${JSON.stringify(fileTree, null, 2)}`;
+      const pkg = await sandboxManager.readFile(project.sandboxId, "package.json");
+      projectInfo += `\n\n--- package.json ---\n${pkg}`;
+    } catch { /* skip */ }
+  }
+
+  const userMessage = `Tarea: ${step.description}\n\nSolicitud original: ${originalPrompt}\n\nProyecto:\n${projectInfo}${dependencyContext}`;
+
+  const { parsed, text, parseError } = await callLLMForJSON<DeployResult>(
+    "deploy",
+    DEPLOY_AGENT_PROMPT,
+    [{ role: "user", content: userMessage }],
+    signal
+  );
+
+  if (signal.aborted) return;
+
+  const estimatedTokens = Math.ceil((userMessage.length + (text?.length || 0)) / 4);
+  await updateTokenUsage(projectId, taskId, estimatedTokens);
+
+  const sbId = project?.sandboxId;
+  if (parsed && sbId) {
+    emitActivity(io, projectId, "agent_message", {
+      message: parsed.summary,
+    }, { taskId, agentType: "deploy" });
+
+    // Write config files to sandbox
+    for (const deployStep of parsed.steps || []) {
+      for (const configFile of deployStep.configFiles || []) {
+        try {
+          await sandboxManager.writeFile(sbId, configFile.path, configFile.content);
+          emitActivity(io, projectId, "file_change", {
+            action: "create",
+            path: configFile.path,
+          }, { taskId, agentType: "deploy" });
+          emit(io, projectId, "sandbox:file_changed", { path: configFile.path });
+        } catch (err) {
+          logger.warn({ err, file: configFile.path }, "Deploy: failed to write config file");
+        }
+      }
+
+      // Execute deploy commands in sandbox
+      for (const cmd of deployStep.commands || []) {
+        try {
+          emitActivity(io, projectId, "terminal_cmd", {
+            command: cmd,
+            output: `$ ${cmd}`,
+          }, { taskId, agentType: "deploy" });
+
+          const result = await sandboxManager.executeCommand(sbId, cmd);
+          const output = result.stdout || result.stderr || "";
+          emitActivity(io, projectId, "terminal_cmd", {
+            output: output.slice(0, 1000),
+          }, { taskId, agentType: "deploy" });
+        } catch (err) {
+          const errMsg = err instanceof Error ? err.message : String(err);
+          emitActivity(io, projectId, "error", {
+            message: `Deploy command failed: ${cmd} — ${errMsg}`,
+          }, { taskId, agentType: "deploy" });
+        }
+      }
+    }
+
+    await prisma.task.update({
+      where: { id: taskId },
+      data: { outputResult: parsed as unknown as Prisma.InputJsonValue },
+    });
+  } else {
+    logger.warn({ parseError }, "Deploy agent: using raw output");
+    await prisma.task.update({
+      where: { id: taskId },
+      data: { outputResult: { summary: text || "Deploy analysis completed", raw: true } },
+    });
+
+    emitActivity(io, projectId, "agent_message", {
+      message: text?.slice(0, 500) || "Deploy analysis completed",
+    }, { taskId, agentType: "deploy" });
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -648,14 +1182,12 @@ export async function controlEngine(
         throw new Error("Engine is not active");
       }
 
-      // Abort the running controller
       const controller = engineAbortControllers.get(projectId);
       if (controller) {
         controller.abort();
         engineAbortControllers.delete(projectId);
       }
 
-      // Cancel pending/running tasks
       await prisma.task.updateMany({
         where: { projectId, status: { in: ["running", "pending"] } },
         data: { status: "cancelled" },
@@ -680,7 +1212,6 @@ export async function controlEngine(
       if (!task) throw new Error("Task not found");
       if (task.status !== "failed") throw new Error("Can only retry failed tasks");
 
-      // Reset the task
       await prisma.task.update({
         where: { id: taskId },
         data: {
@@ -704,7 +1235,6 @@ export async function controlEngine(
         message: "Task queued for retry",
       });
 
-      // If engine is not running, restart it to pick up the retried task
       if (project.engineStatus !== "running") {
         await prisma.project.update({
           where: { id: projectId },
@@ -712,7 +1242,6 @@ export async function controlEngine(
         });
         emit(io, projectId, "engine:status_change", { status: "running" });
 
-        // Re-execute just this task
         const step: PlannerResult["steps"][number] = {
           order: task.order,
           title: task.title,

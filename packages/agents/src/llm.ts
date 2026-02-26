@@ -43,6 +43,31 @@ export const LLM_CONFIGS: Record<string, LLMConfig> = {
     temperature: 0.3,
     maxTokens: 4096,
   },
+  research: {
+    model: "claude-sonnet-4-20250514",
+    temperature: 0.4,
+    maxTokens: 8192,
+  },
+  analyst: {
+    model: "claude-sonnet-4-20250514",
+    temperature: 0.3,
+    maxTokens: 8192,
+  },
+  writer: {
+    model: "claude-sonnet-4-20250514",
+    temperature: 0.5,
+    maxTokens: 8192,
+  },
+  qa: {
+    model: "claude-haiku-4-5-20251001",
+    temperature: 0.2,
+    maxTokens: 4096,
+  },
+  deploy: {
+    model: "claude-haiku-4-5-20251001",
+    temperature: 0.2,
+    maxTokens: 4096,
+  },
 };
 
 export function isDemoMode(): boolean {
