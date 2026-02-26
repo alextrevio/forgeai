@@ -7,130 +7,121 @@ import {
   Zap,
   Brain,
   Monitor,
-  Paintbrush,
   Rocket,
   Github,
   Database,
-  MessageSquare,
-  Code2,
   ArrowRight,
   Check,
   Sparkles,
-  Layout,
-  LayoutDashboard,
-  CreditCard,
-  BookOpen,
-  ShoppingCart,
-  FileText,
+  MessageSquare,
+  Code2,
+  Play,
+  Twitter,
   Menu,
   X,
+  Star,
+  Globe,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const DEMO_PROMPTS = [
-  "Build a project management dashboard with kanban boards and team analytics",
-  "Create a SaaS landing page with pricing, testimonials, and a signup flow",
-  "Design an e-commerce store with product listings, cart, and checkout",
-];
-
-const DEMO_STEPS = [
-  "Planning your app...",
-  "Writing components...",
-  "Applying design...",
-  "Running checks...",
-];
+// ─── Data ──────────────────────────────────────────────────────
 
 const FEATURES = [
   {
     icon: Brain,
-    title: "AI-Powered Development",
+    title: "Generación full-stack",
     description:
-      "Describe what you want in plain English. Our AI understands context, best practices, and modern design patterns.",
+      "Describe tu idea en español o inglés. Arya genera frontend, backend y base de datos con código limpio y producción-ready.",
   },
   {
     icon: Monitor,
-    title: "Live Preview",
+    title: "Preview en tiempo real",
     description:
-      "See your app come to life in real-time. Every change is instantly reflected in a live preview window.",
-  },
-  {
-    icon: Paintbrush,
-    title: "Professional Design",
-    description:
-      "Every app is built with modern UI components, responsive layouts, and polished animations out of the box.",
+      "Ve tu app cobrar vida mientras se construye. Cada cambio se refleja al instante en una preview interactiva.",
   },
   {
     icon: Rocket,
-    title: "One-Click Deploy",
+    title: "Deploy con un click",
     description:
-      "Deploy your app to production with a single click. Get a live URL instantly with automatic SSL and CDN.",
+      "Despliega a producción con un solo click. URL en vivo con SSL automático, CDN global y dominio personalizable.",
   },
   {
     icon: Github,
-    title: "GitHub Export",
+    title: "Export a GitHub",
     description:
-      "Export your complete codebase to GitHub. Full ownership of your code with clean, maintainable structure.",
+      "Tu código, tu propiedad. Exporta el proyecto completo a GitHub con estructura limpia y mantenible.",
   },
   {
     icon: Database,
-    title: "Supabase Built-in",
+    title: "Supabase integrado",
     description:
-      "Database, auth, and storage powered by Supabase. No backend setup required - it just works.",
+      "Base de datos, autenticación y storage listos para usar. Sin configuración de backend — simplemente funciona.",
+  },
+  {
+    icon: Shield,
+    title: "Código seguro",
+    description:
+      "Revisión automática de seguridad, mejores prácticas y patrones modernos aplicados en cada línea generada.",
   },
 ];
 
 const STEPS = [
   {
     icon: MessageSquare,
-    title: "Describe your idea",
+    num: "01",
+    title: "Describe tu idea",
     description:
-      "Tell the AI what you want to build. Be as simple or detailed as you like.",
+      "Escribe lo que necesitas en lenguaje natural. Sé tan simple o detallado como quieras.",
   },
   {
     icon: Code2,
-    title: "AI builds it",
+    num: "02",
+    title: "Arya lo construye",
     description:
-      "Watch as your app is generated with production-quality code and design.",
+      "Observa cómo tu app se genera con código de producción, diseño profesional y arquitectura moderna.",
   },
   {
     icon: Rocket,
-    title: "Deploy & share",
+    num: "03",
+    title: "Despliega y comparte",
     description:
-      "One click to deploy. Share your app with the world in seconds.",
+      "Un click para publicar. Comparte tu app con el mundo en segundos con una URL permanente.",
   },
 ];
 
-const TEMPLATES = [
+const TESTIMONIALS = [
   {
-    icon: FileText,
-    name: "Blank",
-    description: "Start from scratch with a clean slate",
+    quote: "Construí mi SaaS en una tarde. Lo que antes tomaba semanas ahora son minutos.",
+    author: "María G.",
+    role: "Indie Hacker",
+    avatar: "MG",
   },
   {
-    icon: Layout,
-    name: "Landing Page",
-    description: "Marketing page with hero, features, and CTA",
+    quote: "La calidad del código generado es impresionante. Listo para producción desde el primer momento.",
+    author: "Carlos R.",
+    role: "Senior Developer",
+    avatar: "CR",
   },
   {
-    icon: LayoutDashboard,
-    name: "Dashboard",
-    description: "Admin panel with charts, tables, and sidebar",
+    quote: "Mis clientes no pueden creer la velocidad. Entrego prototipos funcionales en la primera reunión.",
+    author: "Ana P.",
+    role: "Product Designer",
+    avatar: "AP",
   },
-  {
-    icon: CreditCard,
-    name: "SaaS",
-    description: "Full SaaS app with auth, billing, and settings",
-  },
-  {
-    icon: BookOpen,
-    name: "Blog",
-    description: "Content-driven site with posts and categories",
-  },
-  {
-    icon: ShoppingCart,
-    name: "E-commerce",
-    description: "Online store with products, cart, and checkout",
-  },
+];
+
+const DEMO_PROMPTS = [
+  "Crea un dashboard de analytics con gráficas interactivas y métricas en tiempo real",
+  "Construye un e-commerce con catálogo, carrito y flujo de checkout completo",
+  "Diseña una landing page SaaS con pricing, testimonials y signup flow",
+];
+
+const DEMO_STEPS = [
+  "Planificando tu app...",
+  "Generando componentes...",
+  "Aplicando diseño...",
+  "Ejecutando verificaciones...",
 ];
 
 const PRICING = [
@@ -138,63 +129,102 @@ const PRICING = [
     name: "Free",
     price: "$0",
     period: "",
-    description: "Perfect for trying things out",
+    description: "Para probar y explorar",
     features: [
-      "50 credits / month",
-      "3 projects",
-      "Community support",
-      "Basic templates",
+      "50 créditos / mes",
+      "3 proyectos",
+      "Templates básicos",
+      "Soporte comunidad",
     ],
-    cta: "Get Started",
+    cta: "Empieza gratis",
     highlighted: false,
   },
   {
     name: "Pro",
     price: "$25",
-    period: "/mo",
-    description: "For serious builders and indie hackers",
+    period: "/mes",
+    description: "Para builders e indie hackers",
     features: [
-      "500 credits / month",
-      "20 projects",
-      "Priority support",
+      "500 créditos / mes",
+      "20 proyectos",
       "GitHub export",
-      "Custom domains",
-      "All templates",
+      "Dominios personalizados",
+      "Soporte prioritario",
+      "Todos los templates",
     ],
-    cta: "Start Pro Trial",
+    cta: "Iniciar Pro",
     highlighted: true,
   },
   {
     name: "Business",
     price: "$50",
-    period: "/mo",
-    description: "For teams and agencies",
+    period: "/mes",
+    description: "Para equipos y agencias",
     features: [
-      "2,000 credits / month",
-      "100 projects",
-      "Dedicated support",
-      "Team collaboration",
+      "2,000 créditos / mes",
+      "100 proyectos",
+      "Colaboración en equipo",
       "API access",
-      "White-label option",
+      "Soporte dedicado",
+      "White-label",
     ],
-    cta: "Contact Sales",
+    cta: "Contactar ventas",
     highlighted: false,
   },
 ];
+
+// ─── Scroll Reveal Hook ────────────────────────────────────────
+
+function useScrollReveal() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.unobserve(el);
+        }
+      },
+      { threshold: 0.15, rootMargin: "0px 0px -40px 0px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return { ref, isVisible };
+}
+
+// ─── Smooth Scroll ─────────────────────────────────────────────
+
+function smoothScrollTo(id: string) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+// ─── Page Component ────────────────────────────────────────────
 
 export default function Home() {
   const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
+
+  // Demo typewriter
   const [typedText, setTypedText] = useState("");
   const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
   const [activeSteps, setActiveSteps] = useState<number[]>([]);
   const [isTypingDone, setIsTypingDone] = useState(false);
-  const [isChecking, setIsChecking] = useState(true);
   const typingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stepRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Check if user is logged in
+  // Parallax for hero
+  const [scrollY, setScrollY] = useState(0);
+
+  // Auth check
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
     if (token) {
@@ -204,16 +234,17 @@ export default function Home() {
     }
   }, [router]);
 
-  // Scroll handler for nav
+  // Scroll + parallax
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
+      setScrollY(window.scrollY);
     };
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Typewriter effect
+  // Typewriter
   const startTyping = useCallback(() => {
     const prompt = DEMO_PROMPTS[currentPromptIndex];
     let charIndex = 0;
@@ -240,14 +271,12 @@ export default function Home() {
           } else {
             if (stepRef.current) clearInterval(stepRef.current);
             setTimeout(() => {
-              setCurrentPromptIndex(
-                (prev) => (prev + 1) % DEMO_PROMPTS.length
-              );
-            }, 2000);
+              setCurrentPromptIndex((prev) => (prev + 1) % DEMO_PROMPTS.length);
+            }, 2500);
           }
         }, 800);
       }
-    }, 40);
+    }, 35);
   }, [currentPromptIndex]);
 
   useEffect(() => {
@@ -259,105 +288,105 @@ export default function Home() {
     };
   }, [currentPromptIndex, startTyping, isChecking]);
 
+  // Section reveal hooks
+  const socialProof = useScrollReveal();
+  const featuresSection = useScrollReveal();
+  const demoSection = useScrollReveal();
+  const stepsSection = useScrollReveal();
+  const testimonialsSection = useScrollReveal();
+  const pricingSection = useScrollReveal();
+  const ctaSection = useScrollReveal();
+
   if (isChecking) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Zap className="h-8 w-8 text-primary animate-pulse" />
+      <div className="flex min-h-screen items-center justify-center bg-[#0A0A0A]">
+        <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#7c3aed] to-[#3b82f6] flex items-center justify-center animate-pulse">
+          <Zap className="h-5 w-5 text-white" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
-      {/* Navigation */}
+    <div className="min-h-screen bg-[#0A0A0A] text-[#EDEDED] overflow-x-hidden">
+      {/* ─── Navigation ─── */}
       <nav
         className={cn(
-          "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+          "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
           scrolled
-            ? "bg-background/80 backdrop-blur-xl border-b border-border"
+            ? "bg-[#0A0A0A]/80 backdrop-blur-2xl border-b border-[#2A2A2A]/60"
             : "bg-transparent"
         )}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-2">
-              <Zap className="h-6 w-6 text-primary" />
-              <span className="text-lg font-bold">ForgeAI</span>
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-[#7c3aed] to-[#3b82f6] flex items-center justify-center">
+                <Zap className="h-4 w-4 text-white" />
+              </div>
+              <span className="text-[16px] font-bold tracking-tight">Arya AI</span>
             </div>
 
-            {/* Desktop nav */}
+            {/* Desktop */}
             <div className="hidden md:flex items-center gap-8">
-              <a
-                href="#features"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              {[
+                { label: "Features", id: "features" },
+                { label: "Demo", id: "demo" },
+                { label: "Pricing", id: "pricing" },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => smoothScrollTo(item.id)}
+                  className="text-[13px] text-[#8888a0] hover:text-[#EDEDED] transition-colors"
+                >
+                  {item.label}
+                </button>
+              ))}
+              <Link
+                href="/login"
+                className="text-[13px] text-[#8888a0] hover:text-[#EDEDED] transition-colors"
               >
-                Features
-              </a>
-              <a
-                href="#how-it-works"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                How it Works
-              </a>
-              <a
-                href="#pricing"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Pricing
-              </a>
+                Iniciar sesión
+              </Link>
               <Link
                 href="/register"
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-[#7c3aed] px-4 py-2 text-[13px] font-medium text-white hover:bg-[#6d28d9] transition-all duration-200 shadow-lg shadow-[#7c3aed]/20 hover:shadow-[#7c3aed]/30 hover:scale-[1.02] active:scale-[0.98]"
               >
-                Get Started
-                <ArrowRight className="h-4 w-4" />
+                Empieza gratis
+                <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </div>
 
-            {/* Mobile menu button */}
+            {/* Mobile */}
             <button
-              className="md:hidden text-muted-foreground hover:text-foreground"
+              className="md:hidden text-[#8888a0] hover:text-[#EDEDED]"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
-              {mobileMenuOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
         </div>
 
-        {/* Mobile menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden bg-background/95 backdrop-blur-xl border-b border-border">
+          <div className="md:hidden bg-[#0A0A0A]/95 backdrop-blur-2xl border-b border-[#2A2A2A]">
             <div className="px-4 py-4 space-y-3">
-              <a
-                href="#features"
-                className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Features
-              </a>
-              <a
-                href="#how-it-works"
-                className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                How it Works
-              </a>
-              <a
-                href="#pricing"
-                className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Pricing
-              </a>
+              {["features", "demo", "pricing"].map((id) => (
+                <button
+                  key={id}
+                  onClick={() => { smoothScrollTo(id); setMobileMenuOpen(false); }}
+                  className="block text-sm text-[#8888a0] hover:text-[#EDEDED] transition-colors capitalize"
+                >
+                  {id}
+                </button>
+              ))}
+              <Link href="/login" className="block text-sm text-[#8888a0] hover:text-[#EDEDED]">
+                Iniciar sesión
+              </Link>
               <Link
                 href="/register"
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-[#7c3aed] px-4 py-2 text-sm font-medium text-white"
               >
-                Get Started
+                Empieza gratis
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
@@ -365,79 +394,184 @@ export default function Home() {
         )}
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative pt-32 pb-20 md:pt-44 md:pb-32">
-        {/* Background grid pattern */}
-        <div className="absolute inset-0 bg-grid-pattern opacity-50" />
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
+      {/* ─── Hero Section ─── */}
+      <section className="relative pt-32 pb-24 md:pt-48 md:pb-36 overflow-hidden">
+        {/* Radial gradient background */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: "radial-gradient(ellipse 80% 50% at 50% -20%, rgba(124,58,237,0.12) 0%, transparent 70%)",
+            transform: `translateY(${scrollY * 0.15}px)`,
+          }}
+        />
+        {/* Grid pattern */}
+        <div
+          className="absolute inset-0 bg-grid-pattern opacity-30 pointer-events-none"
+          style={{ transform: `translateY(${scrollY * 0.05}px)` }}
+        />
+        {/* Glow orbs */}
+        <div
+          className="absolute top-20 left-1/4 w-[500px] h-[500px] rounded-full opacity-[0.04] pointer-events-none"
+          style={{
+            background: "radial-gradient(circle, #7c3aed 0%, transparent 70%)",
+            transform: `translateY(${scrollY * 0.1}px)`,
+          }}
+        />
+        <div
+          className="absolute top-40 right-1/4 w-[400px] h-[400px] rounded-full opacity-[0.03] pointer-events-none"
+          style={{
+            background: "radial-gradient(circle, #3b82f6 0%, transparent 70%)",
+            transform: `translateY(${scrollY * 0.08}px)`,
+          }}
+        />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/50 px-4 py-1.5 text-sm text-muted-foreground mb-8 animate-fade-in-up">
-            <Sparkles className="h-4 w-4 text-primary" />
-            Now in public beta
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#2A2A2A] bg-[#111111]/60 backdrop-blur-sm px-4 py-1.5 text-[13px] text-[#8888a0] mb-8 animate-fade-in-up">
+            <Sparkles className="h-3.5 w-3.5 text-[#7c3aed]" />
+            Ahora en beta pública
+            <span className="h-1 w-1 rounded-full bg-[#22c55e]" />
           </div>
 
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 animate-fade-in-up animation-delay-200">
-            Build apps with AI.
+          {/* Main heading */}
+          <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[1.05] mb-6 animate-fade-in-up animation-delay-200">
+            Convierte ideas
             <br />
-            <span className="text-primary">Just describe what you want.</span>
+            <span className="landing-gradient-text">en apps</span>
           </h1>
 
-          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-fade-in-up animation-delay-400">
-            ForgeAI turns your ideas into production-ready web apps in minutes,
-            not weeks. No coding experience required.
+          {/* Subheading */}
+          <p className="text-lg sm:text-xl text-[#8888a0] max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in-up animation-delay-400">
+            Describe lo que necesitas. Arya AI lo construye en minutos.
+            <br className="hidden sm:block" />
+            Full-stack, con diseño profesional, listo para producción.
           </p>
 
+          {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up animation-delay-600">
             <Link
               href="/register"
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-base font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-lg shadow-primary/25"
+              className="group inline-flex items-center gap-2 rounded-xl bg-[#7c3aed] px-8 py-3.5 text-[15px] font-semibold text-white transition-all duration-300 shadow-[0_0_30px_rgba(124,58,237,0.3)] hover:shadow-[0_0_50px_rgba(124,58,237,0.45)] hover:bg-[#6d28d9] hover:scale-[1.03] active:scale-[0.98]"
             >
-              Start Building — Free
-              <ArrowRight className="h-5 w-5" />
+              Empieza gratis
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
-            <a
-              href="#demo"
-              className="inline-flex items-center gap-2 rounded-lg border border-border px-6 py-3 text-base font-medium text-foreground hover:bg-card transition-colors"
+            <button
+              onClick={() => smoothScrollTo("demo")}
+              className="inline-flex items-center gap-2 rounded-xl border border-[#2A2A2A] bg-transparent px-8 py-3.5 text-[15px] font-medium text-[#EDEDED] hover:bg-[#111111] hover:border-[#3A3A3A] transition-all duration-200"
             >
-              Watch Demo
-            </a>
+              <Play className="h-4 w-4 text-[#7c3aed]" />
+              Ver demo
+            </button>
           </div>
         </div>
       </section>
 
-      {/* Demo Section */}
-      <section id="demo" className="py-20 md:py-28">
+      {/* ─── Social Proof ─── */}
+      <section
+        ref={socialProof.ref}
+        className={cn(
+          "py-12 border-y border-[#2A2A2A]/40 bg-[#0A0A0A]",
+          "landing-reveal",
+          socialProof.isVisible && "landing-reveal-visible"
+        )}
+      >
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-12">
+            {/* Avatar stack */}
+            <div className="flex items-center">
+              <div className="flex -space-x-2.5">
+                {["MG", "CR", "AP", "LS", "DR"].map((initials, i) => (
+                  <div
+                    key={initials}
+                    className="h-9 w-9 rounded-full border-2 border-[#0A0A0A] bg-gradient-to-br from-[#7c3aed] to-[#3b82f6] flex items-center justify-center text-[10px] font-bold text-white"
+                    style={{ zIndex: 5 - i }}
+                  >
+                    {initials}
+                  </div>
+                ))}
+              </div>
+              <div className="ml-3.5">
+                <div className="flex items-center gap-0.5 mb-0.5">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="h-3.5 w-3.5 fill-[#f59e0b] text-[#f59e0b]" />
+                  ))}
+                </div>
+                <p className="text-[12px] text-[#8888a0]">
+                  <span className="text-[#EDEDED] font-semibold">2,400+</span> desarrolladores confían en Arya
+                </p>
+              </div>
+            </div>
+
+            {/* Separator */}
+            <div className="hidden sm:block h-8 w-px bg-[#2A2A2A]" />
+
+            {/* Stats */}
+            <div className="flex items-center gap-8">
+              {[
+                { value: "10K+", label: "apps creadas" },
+                { value: "99.9%", label: "uptime" },
+                { value: "<30s", label: "tiempo deploy" },
+              ].map((stat) => (
+                <div key={stat.label} className="text-center">
+                  <p className="text-[18px] font-bold text-[#EDEDED]">{stat.value}</p>
+                  <p className="text-[11px] text-[#4a4a5e]">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Demo Section ─── */}
+      <section
+        id="demo"
+        ref={demoSection.ref}
+        className={cn(
+          "py-24 md:py-32",
+          "landing-reveal",
+          demoSection.isVisible && "landing-reveal-visible"
+        )}
+      >
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
+            <p className="text-[13px] font-semibold text-[#7c3aed] uppercase tracking-widest mb-3">Demo en vivo</p>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              See it in action
+              Mira cómo funciona
             </h2>
-            <p className="text-muted-foreground text-lg">
-              Watch ForgeAI turn a simple prompt into a full application
+            <p className="text-[#8888a0] text-lg max-w-xl mx-auto">
+              Un prompt. Una app completa. En minutos.
             </p>
           </div>
 
-          <div className="rounded-xl border border-border bg-card overflow-hidden shadow-2xl shadow-primary/5">
-            {/* Terminal header */}
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-card">
-              <div className="w-3 h-3 rounded-full bg-red-500/70" />
-              <div className="w-3 h-3 rounded-full bg-yellow-500/70" />
-              <div className="w-3 h-3 rounded-full bg-green-500/70" />
-              <span className="text-xs text-muted-foreground ml-2">
-                ForgeAI Terminal
-              </span>
+          {/* Mock browser */}
+          <div className="rounded-2xl border border-[#2A2A2A] bg-[#111111] overflow-hidden shadow-2xl shadow-[#7c3aed]/5 landing-stagger-1">
+            {/* Browser chrome */}
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-[#2A2A2A] bg-[#0E0E0E]">
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-[#ef4444]/60" />
+                <div className="w-3 h-3 rounded-full bg-[#f59e0b]/60" />
+                <div className="w-3 h-3 rounded-full bg-[#22c55e]/60" />
+              </div>
+              <div className="flex-1 flex justify-center">
+                <div className="flex items-center gap-2 rounded-lg bg-[#0A0A0A] border border-[#2A2A2A] px-4 py-1.5 text-[12px] text-[#4a4a5e] min-w-[260px]">
+                  <Globe className="h-3 w-3" />
+                  arya.ai/workspace
+                </div>
+              </div>
+              <div className="w-[52px]" />
             </div>
 
-            <div className="p-6 font-mono text-sm">
-              {/* Prompt area */}
-              <div className="flex items-start gap-2 mb-6">
-                <span className="text-primary font-bold shrink-0">&gt;</span>
-                <div>
-                  <span className="text-foreground">{typedText}</span>
+            {/* Terminal body */}
+            <div className="p-6 md:p-8 font-mono text-sm min-h-[280px]">
+              {/* Prompt */}
+              <div className="flex items-start gap-3 mb-6">
+                <span className="text-[#7c3aed] font-bold shrink-0 mt-0.5">&#10095;</span>
+                <div className="flex-1">
+                  <span className="text-[#EDEDED]">{typedText}</span>
                   <span
                     className={cn(
-                      "inline-block w-2 h-5 bg-primary ml-0.5 align-middle",
+                      "inline-block w-[2px] h-5 bg-[#7c3aed] ml-0.5 align-middle rounded-full",
                       isTypingDone ? "opacity-0" : "animate-pulse"
                     )}
                   />
@@ -446,45 +580,43 @@ export default function Home() {
 
               {/* Steps */}
               {isTypingDone && (
-                <div className="space-y-3 pl-4 border-l-2 border-border ml-1">
+                <div className="space-y-3 pl-5 border-l-2 border-[#2A2A2A] ml-1.5">
                   {DEMO_STEPS.map((step, index) => (
                     <div
                       key={step}
                       className={cn(
-                        "flex items-center gap-3 transition-all duration-300",
+                        "flex items-center gap-3 transition-all duration-400",
                         activeSteps.includes(index)
                           ? "opacity-100 translate-x-0"
-                          : "opacity-0 -translate-x-2"
+                          : "opacity-0 -translate-x-3"
                       )}
                     >
                       {activeSteps.includes(index) ? (
-                        index < activeSteps.length - 1 ||
-                        activeSteps.length === DEMO_STEPS.length ? (
-                          <Check className="h-4 w-4 text-success shrink-0" />
+                        index < activeSteps.length - 1 || activeSteps.length === DEMO_STEPS.length ? (
+                          <Check className="h-4 w-4 text-[#22c55e] shrink-0" />
                         ) : (
-                          <div className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0" />
+                          <div className="h-4 w-4 rounded-full border-2 border-[#7c3aed] border-t-transparent animate-spin shrink-0" />
                         )
                       ) : (
                         <div className="h-4 w-4" />
                       )}
-                      <span
-                        className={cn(
-                          "text-sm",
-                          activeSteps.includes(index) &&
-                            (index < activeSteps.length - 1 ||
-                              activeSteps.length === DEMO_STEPS.length)
-                            ? "text-success"
-                            : "text-muted-foreground"
-                        )}
-                      >
+                      <span className={cn(
+                        "text-[13px]",
+                        activeSteps.includes(index) && (index < activeSteps.length - 1 || activeSteps.length === DEMO_STEPS.length)
+                          ? "text-[#22c55e]"
+                          : "text-[#8888a0]"
+                      )}>
                         {step}
                       </span>
                     </div>
                   ))}
 
                   {activeSteps.length === DEMO_STEPS.length && (
-                    <div className="pt-2 text-success font-medium animate-fade-in-up">
-                      Your app is ready!
+                    <div className="pt-3 flex items-center gap-2 animate-fade-in-up">
+                      <Sparkles className="h-4 w-4 text-[#7c3aed]" />
+                      <span className="text-[#7c3aed] font-semibold text-[13px]">
+                        ¡Tu app está lista!
+                      </span>
                     </div>
                   )}
                 </div>
@@ -494,30 +626,43 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-20 md:py-28">
+      {/* ─── Features Grid ─── */}
+      <section
+        id="features"
+        ref={featuresSection.ref}
+        className={cn(
+          "py-24 md:py-32",
+          "landing-reveal",
+          featuresSection.isVisible && "landing-reveal-visible"
+        )}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
+            <p className="text-[13px] font-semibold text-[#7c3aed] uppercase tracking-widest mb-3">Features</p>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              Everything you need to build
+              Todo lo que necesitas para construir
             </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              From idea to production in minutes. ForgeAI handles the heavy
-              lifting so you can focus on what matters.
+            <p className="text-[#8888a0] text-lg max-w-2xl mx-auto">
+              De la idea a producción en minutos. Arya se encarga de lo pesado
+              para que tú te enfoques en lo que importa.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {FEATURES.map((feature) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {FEATURES.map((feature, i) => (
               <div
                 key={feature.title}
-                className="glass-card rounded-xl p-6 transition-all duration-300 group"
+                className={cn(
+                  "group rounded-2xl border border-[#2A2A2A]/60 bg-[#111111]/40 p-6 transition-all duration-300",
+                  "hover:border-[#7c3aed]/20 hover:bg-[#111111]/80 hover:shadow-lg hover:shadow-[#7c3aed]/5 hover:-translate-y-0.5",
+                  `landing-stagger-${(i % 3) + 1}`
+                )}
               >
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10 text-primary mb-4 group-hover:bg-primary/20 transition-colors">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#7c3aed]/10 text-[#7c3aed] mb-5 group-hover:bg-[#7c3aed]/15 group-hover:scale-110 transition-all duration-300">
                   <feature.icon className="h-6 w-6" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
+                <h3 className="text-[16px] font-semibold mb-2 text-[#EDEDED]">{feature.title}</h3>
+                <p className="text-[14px] text-[#8888a0] leading-relaxed">
                   {feature.description}
                 </p>
               </div>
@@ -526,32 +671,42 @@ export default function Home() {
         </div>
       </section>
 
-      {/* How it Works Section */}
-      <section id="how-it-works" className="py-20 md:py-28 bg-card/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* ─── How it works ─── */}
+      <section
+        id="how-it-works"
+        ref={stepsSection.ref}
+        className={cn(
+          "py-24 md:py-32 relative",
+          "landing-reveal",
+          stepsSection.isVisible && "landing-reveal-visible"
+        )}
+      >
+        {/* Subtle bg */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#7c3aed]/[0.02] to-transparent pointer-events-none" />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
+            <p className="text-[13px] font-semibold text-[#7c3aed] uppercase tracking-widest mb-3">Cómo funciona</p>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              How it works
+              Tres pasos. Cero fricción.
             </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Three simple steps from idea to live application
+            <p className="text-[#8888a0] text-lg max-w-2xl mx-auto">
+              De la idea a una app en producción más rápido de lo que crees
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-            {/* Dashed connecting lines (desktop only) */}
-            <div className="hidden md:block absolute top-16 left-1/3 right-1/3 h-px border-t-2 border-dashed border-border" />
+            {/* Connector line (desktop) */}
+            <div className="hidden md:block absolute top-[52px] left-[calc(16.67%+24px)] right-[calc(16.67%+24px)] h-px border-t-2 border-dashed border-[#2A2A2A]" />
 
-            {STEPS.map((step, index) => (
-              <div key={step.title} className="text-center relative">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 text-primary mb-6 relative z-10">
-                  <step.icon className="h-7 w-7" />
-                  <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
-                    {index + 1}
-                  </div>
+            {STEPS.map((step, i) => (
+              <div key={step.title} className={cn("text-center relative", `landing-stagger-${i + 1}`)}>
+                {/* Number badge */}
+                <div className="inline-flex items-center justify-center w-[72px] h-[72px] rounded-2xl bg-[#111111] border border-[#2A2A2A] mb-6 relative z-10">
+                  <span className="text-[24px] font-bold landing-gradient-text">{step.num}</span>
                 </div>
                 <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
-                <p className="text-muted-foreground text-sm max-w-xs mx-auto">
+                <p className="text-[14px] text-[#8888a0] max-w-xs mx-auto leading-relaxed">
                   {step.description}
                 </p>
               </div>
@@ -560,107 +715,114 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Templates Section */}
-      <section className="py-20 md:py-28">
+      {/* ─── Testimonials ─── */}
+      <section
+        ref={testimonialsSection.ref}
+        className={cn(
+          "py-24 md:py-32",
+          "landing-reveal",
+          testimonialsSection.isVisible && "landing-reveal-visible"
+        )}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
+            <p className="text-[13px] font-semibold text-[#7c3aed] uppercase tracking-widest mb-3">Testimonios</p>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              Start from a template
+              Lo que dicen nuestros usuarios
             </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Jump-start your project with pre-built templates designed for
-              common use cases
-            </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {TEMPLATES.map((template) => (
-              <Link
-                href="/register"
-                key={template.name}
-                className="glass-card rounded-xl p-5 transition-all duration-300 group cursor-pointer"
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {TESTIMONIALS.map((t, i) => (
+              <div
+                key={t.author}
+                className={cn(
+                  "rounded-2xl border border-[#2A2A2A]/60 bg-[#111111]/40 p-6 transition-all duration-300",
+                  "hover:border-[#7c3aed]/20 hover:bg-[#111111]/80",
+                  `landing-stagger-${i + 1}`
+                )}
               >
-                <div className="flex items-start gap-4">
-                  <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-secondary text-muted-foreground group-hover:text-primary group-hover:bg-primary/10 transition-colors shrink-0">
-                    <template.icon className="h-5 w-5" />
+                {/* Stars */}
+                <div className="flex gap-0.5 mb-4">
+                  {[...Array(5)].map((_, j) => (
+                    <Star key={j} className="h-4 w-4 fill-[#f59e0b] text-[#f59e0b]" />
+                  ))}
+                </div>
+                <p className="text-[14px] text-[#EDEDED] leading-relaxed mb-5 italic">
+                  &ldquo;{t.quote}&rdquo;
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#7c3aed] to-[#3b82f6] flex items-center justify-center text-[12px] font-bold text-white">
+                    {t.avatar}
                   </div>
                   <div>
-                    <h3 className="font-semibold mb-1 group-hover:text-primary transition-colors">
-                      {template.name}
-                    </h3>
-                    <p className="text-muted-foreground text-sm">
-                      {template.description}
-                    </p>
+                    <p className="text-[13px] font-semibold text-[#EDEDED]">{t.author}</p>
+                    <p className="text-[12px] text-[#4a4a5e]">{t.role}</p>
                   </div>
                 </div>
-              </Link>
+              </div>
             ))}
-          </div>
-
-          <div className="text-center mt-10">
-            <Link
-              href="/register"
-              className="inline-flex items-center gap-2 text-primary hover:underline font-medium"
-            >
-              Browse all templates
-              <ArrowRight className="h-4 w-4" />
-            </Link>
           </div>
         </div>
       </section>
 
-      {/* Pricing Section */}
-      <section id="pricing" className="py-20 md:py-28 bg-card/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* ─── Pricing ─── */}
+      <section
+        id="pricing"
+        ref={pricingSection.ref}
+        className={cn(
+          "py-24 md:py-32 relative",
+          "landing-reveal",
+          pricingSection.isVisible && "landing-reveal-visible"
+        )}
+      >
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#7c3aed]/[0.02] to-transparent pointer-events-none" />
+
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
+            <p className="text-[13px] font-semibold text-[#7c3aed] uppercase tracking-widest mb-3">Pricing</p>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              Simple, transparent pricing
+              Simple y transparente
             </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Start free, scale as you grow. No hidden fees, no surprises.
+            <p className="text-[#8888a0] text-lg max-w-2xl mx-auto">
+              Empieza gratis, escala cuando lo necesites. Sin costos ocultos.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {PRICING.map((plan) => (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {PRICING.map((plan, i) => (
               <div
                 key={plan.name}
                 className={cn(
-                  "rounded-xl p-6 transition-all duration-300 relative",
+                  "relative rounded-2xl p-6 transition-all duration-300",
+                  `landing-stagger-${i + 1}`,
                   plan.highlighted
-                    ? "border-2 border-primary bg-card shadow-xl shadow-primary/10 scale-105"
-                    : "border border-border bg-card/50"
+                    ? "border-2 border-[#7c3aed]/50 bg-[#111111] shadow-xl shadow-[#7c3aed]/10 scale-[1.02] md:scale-105"
+                    : "border border-[#2A2A2A]/60 bg-[#111111]/40 hover:border-[#2A2A2A]"
                 )}
               >
                 {plan.highlighted && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-xs font-medium text-primary-foreground">
-                    Most Popular
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#7c3aed] px-3.5 py-1 text-[11px] font-semibold text-white">
+                    Más popular
                   </div>
                 )}
 
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-1">{plan.name}</h3>
-                  <p className="text-muted-foreground text-sm mb-4">
-                    {plan.description}
-                  </p>
+                  <h3 className="text-[16px] font-semibold mb-1">{plan.name}</h3>
+                  <p className="text-[13px] text-[#8888a0] mb-4">{plan.description}</p>
                   <div className="flex items-baseline gap-1">
                     <span className="text-4xl font-bold">{plan.price}</span>
                     {plan.period && (
-                      <span className="text-muted-foreground">
-                        {plan.period}
-                      </span>
+                      <span className="text-[#8888a0] text-[14px]">{plan.period}</span>
                     )}
                   </div>
                 </div>
 
                 <ul className="space-y-3 mb-8">
-                  {plan.features.map((feature) => (
-                    <li
-                      key={feature}
-                      className="flex items-center gap-2 text-sm"
-                    >
-                      <Check className="h-4 w-4 text-success shrink-0" />
-                      <span className="text-muted-foreground">{feature}</span>
+                  {plan.features.map((feat) => (
+                    <li key={feat} className="flex items-center gap-2.5 text-[13px]">
+                      <Check className="h-4 w-4 text-[#22c55e] shrink-0" />
+                      <span className="text-[#8888a0]">{feat}</span>
                     </li>
                   ))}
                 </ul>
@@ -668,10 +830,10 @@ export default function Home() {
                 <Link
                   href="/register"
                   className={cn(
-                    "block w-full text-center rounded-lg py-2.5 text-sm font-medium transition-colors",
+                    "block w-full text-center rounded-xl py-2.5 text-[13px] font-semibold transition-all duration-200",
                     plan.highlighted
-                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                      : "border border-border text-foreground hover:bg-card"
+                      ? "bg-[#7c3aed] text-white hover:bg-[#6d28d9] shadow-lg shadow-[#7c3aed]/20 hover:shadow-[#7c3aed]/30"
+                      : "border border-[#2A2A2A] text-[#EDEDED] hover:bg-[#1A1A1A] hover:border-[#3A3A3A]"
                   )}
                 >
                   {plan.cta}
@@ -682,145 +844,125 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 md:py-28">
+      {/* ─── Final CTA ─── */}
+      <section
+        ref={ctaSection.ref}
+        className={cn(
+          "py-24 md:py-32",
+          "landing-reveal",
+          ctaSection.isVisible && "landing-reveal-visible"
+        )}
+      >
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="rounded-2xl border border-border bg-gradient-to-b from-primary/10 to-card/50 p-12 md:p-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              Ready to build something amazing?
-            </h2>
-            <p className="text-muted-foreground text-lg mb-8 max-w-xl mx-auto">
-              Join thousands of makers who are building the future with AI. Start
-              for free, no credit card required.
-            </p>
-            <Link
-              href="/register"
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-8 py-3.5 text-base font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-lg shadow-primary/25"
-            >
-              Start Building — Free
-              <ArrowRight className="h-5 w-5" />
-            </Link>
+          <div className="relative rounded-3xl border border-[#2A2A2A]/60 overflow-hidden px-8 py-16 md:px-16 md:py-20 landing-stagger-1">
+            {/* CTA background glow */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#7c3aed]/10 via-[#7c3aed]/5 to-transparent pointer-events-none" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full bg-[#7c3aed]/5 blur-3xl pointer-events-none" />
+
+            <div className="relative">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-5">
+                ¿Listo para construir
+                <br />
+                <span className="landing-gradient-text">algo increíble?</span>
+              </h2>
+              <p className="text-[#8888a0] text-lg mb-10 max-w-xl mx-auto">
+                Únete a miles de makers que construyen el futuro con IA.
+                Gratis, sin tarjeta de crédito.
+              </p>
+              <Link
+                href="/register"
+                className="group inline-flex items-center gap-2 rounded-xl bg-[#7c3aed] px-10 py-4 text-[16px] font-semibold text-white transition-all duration-300 shadow-[0_0_40px_rgba(124,58,237,0.3)] hover:shadow-[0_0_60px_rgba(124,58,237,0.5)] hover:bg-[#6d28d9] hover:scale-[1.03] active:scale-[0.98]"
+              >
+                Empieza gratis
+                <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border py-16">
+      {/* ─── Footer ─── */}
+      <footer className="border-t border-[#2A2A2A]/40 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {/* Logo & tagline */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+            {/* Brand */}
             <div className="col-span-2 md:col-span-1">
-              <div className="flex items-center gap-2 mb-3">
-                <Zap className="h-5 w-5 text-primary" />
-                <span className="text-lg font-bold">ForgeAI</span>
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-[#7c3aed] to-[#3b82f6] flex items-center justify-center">
+                  <Zap className="h-4 w-4 text-white" />
+                </div>
+                <span className="text-[16px] font-bold">Arya AI</span>
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Turn your ideas into production-ready web apps with the power of
-                AI.
+              <p className="text-[13px] text-[#8888a0] leading-relaxed max-w-[240px]">
+                Convierte tus ideas en apps de producción con el poder de la inteligencia artificial.
               </p>
             </div>
 
-            {/* Product */}
+            {/* Producto */}
             <div>
-              <h4 className="font-semibold text-sm mb-4">Product</h4>
+              <h4 className="text-[13px] font-semibold mb-4 text-[#EDEDED]">Producto</h4>
               <ul className="space-y-2.5">
-                <li>
-                  <a
-                    href="#features"
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Features
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#pricing"
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Pricing
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Templates
-                  </a>
-                </li>
+                {["Features", "Pricing", "Templates", "Changelog"].map((item) => (
+                  <li key={item}>
+                    <button
+                      onClick={() => {
+                        if (item === "Features") smoothScrollTo("features");
+                        else if (item === "Pricing") smoothScrollTo("pricing");
+                      }}
+                      className="text-[13px] text-[#4a4a5e] hover:text-[#8888a0] transition-colors"
+                    >
+                      {item}
+                    </button>
+                  </li>
+                ))}
               </ul>
             </div>
 
-            {/* Resources */}
+            {/* Recursos */}
             <div>
-              <h4 className="font-semibold text-sm mb-4">Resources</h4>
+              <h4 className="text-[13px] font-semibold mb-4 text-[#EDEDED]">Recursos</h4>
               <ul className="space-y-2.5">
-                <li>
-                  <a
-                    href="#"
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Docs
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    GitHub
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Discord
-                  </a>
-                </li>
+                {["Docs", "GitHub", "Discord", "Blog"].map((item) => (
+                  <li key={item}>
+                    <a href="#" className="text-[13px] text-[#4a4a5e] hover:text-[#8888a0] transition-colors">
+                      {item}
+                    </a>
+                  </li>
+                ))}
               </ul>
             </div>
 
-            {/* Company */}
+            {/* Legal */}
             <div>
-              <h4 className="font-semibold text-sm mb-4">Company</h4>
+              <h4 className="text-[13px] font-semibold mb-4 text-[#EDEDED]">Legal</h4>
               <ul className="space-y-2.5">
-                <li>
-                  <a
-                    href="#"
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    About
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Blog
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Careers
-                  </a>
-                </li>
+                {["Privacidad", "Términos", "Cookies"].map((item) => (
+                  <li key={item}>
+                    <a href="#" className="text-[13px] text-[#4a4a5e] hover:text-[#8888a0] transition-colors">
+                      {item}
+                    </a>
+                  </li>
+                ))}
               </ul>
             </div>
           </div>
 
-          <div className="mt-12 pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground">
-              Hecho con &#10084;&#65039; por ForgeAI
+          {/* Bottom */}
+          <div className="pt-8 border-t border-[#2A2A2A]/40 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-[12px] text-[#4a4a5e]">
+              &copy; 2026 Arya AI. Todos los derechos reservados.
             </p>
-            <p className="text-sm text-muted-foreground">
-              &copy; 2026 ForgeAI. All rights reserved.
-            </p>
+            <div className="flex items-center gap-4">
+              <a href="#" className="text-[#4a4a5e] hover:text-[#8888a0] transition-colors">
+                <Twitter className="h-4 w-4" />
+              </a>
+              <a href="#" className="text-[#4a4a5e] hover:text-[#8888a0] transition-colors">
+                <Github className="h-4 w-4" />
+              </a>
+              <a href="#" className="text-[#4a4a5e] hover:text-[#8888a0] transition-colors">
+                <MessageSquare className="h-4 w-4" />
+              </a>
+            </div>
           </div>
         </div>
       </footer>

@@ -467,3 +467,44 @@ select:focus-visible {
 .animate-thinking-pulse {
   animation: thinkingPulse 2s ease-in-out infinite;
 }
+
+/* ─── Landing Page ─── */
+
+/* Gradient text */
+.landing-gradient-text {
+  background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 40%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Scroll reveal — base state */
+.landing-reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+}
+.landing-reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Stagger children inside visible sections */
+.landing-reveal-visible .landing-stagger-1 { transition-delay: 0.1s; }
+.landing-reveal-visible .landing-stagger-2 { transition-delay: 0.2s; }
+.landing-reveal-visible .landing-stagger-3 { transition-delay: 0.3s; }
+
+/* Stagger elements also need reveal */
+.landing-stagger-1,
+.landing-stagger-2,
+.landing-stagger-3 {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+.landing-reveal-visible .landing-stagger-1,
+.landing-reveal-visible .landing-stagger-2,
+.landing-reveal-visible .landing-stagger-3 {
+  opacity: 1;
+  transform: translateY(0);
+}
