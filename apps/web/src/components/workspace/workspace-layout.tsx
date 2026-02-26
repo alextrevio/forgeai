@@ -7,6 +7,7 @@ import { ChatPanel } from "./chat-panel";
 import { ComputerPanel } from "./computer-panel";
 import { ActivityFeed } from "./activity-feed";
 import { useProjectStore } from "@/stores/project-store";
+import { useEngineActivity } from "@/hooks/useEngineActivity";
 import { cn } from "@/lib/utils";
 
 function safeArray<T>(data: T[]): T[];
@@ -21,13 +22,24 @@ export function WorkspaceLayout() {
   const [isVertical, setIsVertical] = useState(false);
   const [showActivity, setShowActivity] = useState(false);
   const {
+    currentProjectId,
     isAgentRunning,
     currentPlan,
     activeAgent,
     activityItems,
   } = useProjectStore();
 
-  const activityCount = safeArray(activityItems).length;
+  const engine = useEngineActivity(currentProjectId);
+  const activityCount = safeArray(activityItems).length + engine.activities.length;
+
+  // Auto-show activity panel when engine starts
+  const prevRunning = useRef(false);
+  useEffect(() => {
+    if (engine.isRunning && !prevRunning.current) {
+      setShowActivity(true);
+    }
+    prevRunning.current = engine.isRunning;
+  }, [engine.isRunning]);
 
   useEffect(() => {
     const checkWidth = () => setIsVertical(window.innerWidth < 1024);
@@ -84,8 +96,30 @@ export function WorkspaceLayout() {
     panelGroupRef.current?.setLayout([50, 50]);
   }, []);
 
+  // Use engine progress when available, otherwise fall back to plan steps
+  const engineProgress = engine.progress.total > 0
+    ? engine.progress
+    : { completed: stepsCompleted, total: stepsTotal, percentage: progressPercent };
+
+  const anyRunning = isAgentRunning || engine.isRunning;
+
   return (
     <div className="flex h-screen flex-col bg-[#0A0A0A]">
+      {/* Global progress bar — top of workspace */}
+      {anyRunning && (
+        <div className="h-1 bg-[#1E1E1E] w-full shrink-0">
+          <div
+            className="h-full bg-gradient-to-r from-[#7c3aed] to-[#a78bfa] transition-all duration-500 ease-out"
+            style={{
+              width: engineProgress.total > 0
+                ? `${engineProgress.percentage}%`
+                : "30%",
+              animation: engineProgress.total === 0 ? "topProgress 2s ease-in-out infinite" : undefined,
+            }}
+          />
+        </div>
+      )}
+
       {/* Main 2-column layout */}
       <div className="flex-1 overflow-hidden">
         <PanelGroup
@@ -162,10 +196,22 @@ export function WorkspaceLayout() {
 
         {/* Live indicator */}
         <div className="flex items-center gap-2 shrink-0">
-          {isAgentRunning ? (
+          {anyRunning ? (
             <div className="flex items-center gap-1.5">
               <div className="h-2 w-2 rounded-full bg-[#22c55e] live-pulse" />
-              <span className="text-[11px] text-[#22c55e] font-medium">en vivo</span>
+              <span className="text-[11px] text-[#22c55e] font-medium">
+                {engine.engineStatus === "planning" ? "planificando" : "en vivo"}
+              </span>
+            </div>
+          ) : engine.engineStatus === "completed" ? (
+            <div className="flex items-center gap-1.5">
+              <div className="h-2 w-2 rounded-full bg-[#22c55e]" />
+              <span className="text-[11px] text-[#22c55e]">completado</span>
+            </div>
+          ) : engine.engineStatus === "failed" ? (
+            <div className="flex items-center gap-1.5">
+              <div className="h-2 w-2 rounded-full bg-[#ef4444]" />
+              <span className="text-[11px] text-[#ef4444]">error</span>
             </div>
           ) : (
             <div className="flex items-center gap-1.5">
@@ -177,27 +223,27 @@ export function WorkspaceLayout() {
 
         {/* Progress bar */}
         <div className="flex-1 h-1.5 rounded-full bg-[#2A2A2A] overflow-hidden">
-          {isAgentRunning && stepsTotal > 0 ? (
+          {anyRunning && engineProgress.total > 0 ? (
             <div
               className="h-full rounded-full progress-bar-gradient transition-all duration-700 ease-out shimmer-bar"
-              style={{ width: `${progressPercent}%` }}
+              style={{ width: `${engineProgress.percentage}%` }}
             />
-          ) : isAgentRunning ? (
+          ) : anyRunning ? (
             <div className="h-full w-1/3 rounded-full progress-bar-gradient animate-pulse" />
           ) : (
             <div
               className="h-full rounded-full bg-[#7c3aed]/30 transition-all duration-500"
-              style={{ width: `${progressPercent}%` }}
+              style={{ width: `${engineProgress.percentage}%` }}
             />
           )}
         </div>
 
         {/* Step info */}
         <div className="flex items-center gap-2 shrink-0 min-w-0 max-w-[300px]">
-          {stepsTotal > 0 && (
+          {engineProgress.total > 0 && (
             <>
               <span className="text-[10px] text-[#8888a0] tabular-nums shrink-0">
-                {stepsCompleted} / {stepsTotal}
+                {engineProgress.completed} / {engineProgress.total}
               </span>
               {currentStepText && (
                 <span className="text-[11px] text-[#a78bfa] truncate">
@@ -206,8 +252,12 @@ export function WorkspaceLayout() {
               )}
             </>
           )}
-          {isAgentRunning && !currentStepText && activeAgent && (
-            <span className="text-[11px] text-[#a78bfa] capitalize">{activeAgent === "planner" ? "Pensando" : activeAgent === "coder" ? "Codificando" : activeAgent}</span>
+          {anyRunning && !currentStepText && engineProgress.total === 0 && (
+            <span className="text-[11px] text-[#a78bfa] capitalize">
+              {engine.engineStatus === "planning" ? "Planificando" :
+               activeAgent === "coder" ? "Codificando" :
+               activeAgent || "Procesando"}
+            </span>
           )}
         </div>
       </div>

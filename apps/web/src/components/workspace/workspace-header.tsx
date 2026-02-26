@@ -26,6 +26,8 @@ import {
 } from "lucide-react";
 import { useProjectStore } from "@/stores/project-store";
 import { useAuthStore } from "@/stores/auth-store";
+import { useEngineActivity } from "@/hooks/useEngineActivity";
+import { EngineStatusIndicator } from "./engine-status-indicator";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -57,6 +59,22 @@ export function WorkspaceHeader() {
     setPreviewUrl,
   } = useProjectStore();
   const { user } = useAuthStore();
+  const engine = useEngineActivity(currentProjectId);
+
+  const handleRetryEngine = async () => {
+    if (!currentProjectId) return;
+    try {
+      // Get the last user message to retry with
+      const messages = useProjectStore.getState().messages;
+      const lastUserMsg = [...messages].reverse().find((m) => m.role === "USER");
+      if (lastUserMsg) {
+        await api.startEngine(currentProjectId, lastUserMsg.content);
+      }
+    } catch (err) {
+      console.error("Engine retry failed:", err);
+    }
+  };
+
   const [isDeploying, setIsDeploying] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
   const [modal, setModal] = useState<ModalType>(null);
@@ -204,6 +222,14 @@ export function WorkspaceHeader() {
     <>
       {/* Inline action buttons — rendered inside the computer panel header */}
       <div className="flex items-center gap-1">
+        {/* Engine status */}
+        <EngineStatusIndicator
+          engineStatus={engine.engineStatus}
+          progress={engine.progress}
+          isRunning={engine.isRunning}
+          onRetry={handleRetryEngine}
+        />
+
         {isAgentRunning && (
           <button onClick={handleStop} className="flex items-center gap-1.5 rounded-lg bg-[#ef4444]/10 px-2.5 py-1 text-[11px] font-medium text-[#ef4444] hover:bg-[#ef4444]/20 active:scale-95 transition-all duration-200">
             <Square className="h-3 w-3" /> Stop

@@ -22,11 +22,13 @@ import {
   LayoutTemplate,
 } from "lucide-react";
 import { useProjectStore } from "@/stores/project-store";
+import { useEngineActivity } from "@/hooks/useEngineActivity";
 import { api } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
 import { cn, generateId } from "@/lib/utils";
 import { RichMessage } from "./rich-message";
 import { SuggestionChips } from "./suggestion-chips";
+import { PlanOverview } from "./plan-overview";
 
 function safeArray<T>(data: T[]): T[];
 function safeArray<T>(data: null | undefined): T[];
@@ -182,8 +184,10 @@ export function ChatPanel() {
     setAgentRunning,
   } = useProjectStore();
 
+  const engine = useEngineActivity(currentProjectId);
+
   const safeMessages = useMemo(() => safeArray(messages), [messages]);
-  const isEmpty = safeMessages.length === 0 && !isAgentRunning;
+  const isEmpty = safeMessages.length === 0 && !isAgentRunning && !engine.isRunning;
 
   const lastAction = useMemo(() => {
     const assistantMsgs = safeMessages.filter((m) => m.role === "ASSISTANT");
@@ -224,6 +228,16 @@ export function ChatPanel() {
       createdAt: new Date().toISOString(),
     });
     setAgentRunning(true);
+
+    // Start the engine if it's not already running
+    if (!engine.isRunning) {
+      try {
+        await api.startEngine(currentProjectId, content);
+      } catch (engineErr) {
+        console.error("[ChatPanel] engine start failed, falling back to chat:", engineErr);
+        // Fall through to regular message send
+      }
+    }
 
     try {
       const socket = getSocket();
@@ -329,13 +343,26 @@ export function ChatPanel() {
             <span className="text-[11px] text-[#8888a0]">{projectName || "Nuevo proyecto"}</span>
           </div>
         </div>
-        {isAgentRunning && (
+        {(isAgentRunning || engine.isRunning) && (
           <div className="flex items-center gap-1.5">
             <div className="h-2 w-2 rounded-full bg-[#22c55e] live-pulse" />
-            <span className="text-[11px] text-[#22c55e] font-medium">Trabajando</span>
+            <span className="text-[11px] text-[#22c55e] font-medium">
+              {engine.engineStatus === "planning" ? "Planificando" :
+               engine.isRunning ? `Ejecutando (${engine.progress.completed}/${engine.progress.total})` :
+               "Trabajando"}
+            </span>
           </div>
         )}
       </div>
+
+      {/* Plan Overview — shown when engine has steps */}
+      {engine.planSteps.length > 0 && (
+        <PlanOverview
+          planSteps={engine.planSteps}
+          progress={engine.progress}
+          isRunning={engine.isRunning}
+        />
+      )}
 
       {/* Messages / Empty State */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
@@ -532,8 +559,16 @@ export function ChatPanel() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isAgentRunning ? "Arya está trabajando..." : PLACEHOLDERS[placeholderIdx]}
-            disabled={isAgentRunning}
+            placeholder={
+              engine.isRunning
+                ? "Puedes dar instrucciones adicionales..."
+                : engine.engineStatus === "completed"
+                ? "¿Qué más quieres ajustar?"
+                : isAgentRunning
+                ? "Arya está trabajando..."
+                : PLACEHOLDERS[placeholderIdx]
+            }
+            disabled={isAgentRunning && !engine.isRunning}
             rows={1}
             className="flex-1 resize-none bg-transparent text-[13px] text-[#EDEDED] placeholder:text-[#8888a0]/50 outline-none disabled:opacity-40 min-h-[36px] max-h-[200px] py-0.5 leading-relaxed"
           />
