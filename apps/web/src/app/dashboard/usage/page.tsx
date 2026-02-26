@@ -13,7 +13,7 @@ import {
   Sparkles,
   ArrowUpRight,
 } from "lucide-react";
-import { DashboardShell } from "@/components/dashboard-shell";
+import { AppLayout } from "@/components/layout/app-layout";
 import { useAuthStore } from "@/stores/auth-store";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -135,7 +135,7 @@ export default function UsagePage() {
 
   if (authLoading || isLoading) {
     return (
-      <DashboardShell>
+      <AppLayout>
         <div className="mx-auto max-w-5xl px-6 py-8">
           <div className="mb-8">
             <SkeletonBlock className="h-8 w-48 mb-2" />
@@ -148,12 +148,12 @@ export default function UsagePage() {
           </div>
           <SkeletonBlock className="h-72 rounded-xl" />
         </div>
-      </DashboardShell>
+      </AppLayout>
     );
   }
 
   return (
-    <DashboardShell>
+    <AppLayout>
       <div className="mx-auto max-w-5xl px-6 py-8">
         {/* Page header */}
         <div className="mb-8">
@@ -324,6 +324,6 @@ export default function UsagePage() {
           </div>
         </div>
       </div>
-    </DashboardShell>
+    </AppLayout>
   );
 }

@@ -8,6 +8,7 @@ import { api } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
 import { generateId } from "@/lib/utils";
 import { WorkspaceLayout } from "@/components/workspace/workspace-layout";
+import { AppLayout } from "@/components/layout/app-layout";
 
 /** Safely extract an array from API responses that may be objects with wrapper keys */
 function safeArray<T>(data: unknown): T[] {
@@ -367,15 +368,19 @@ export default function ProjectPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
-      </div>
+      <AppLayout>
+        <div className="flex h-screen items-center justify-center bg-background">
+          <div className="animate-pulse text-muted-foreground">Loading...</div>
+        </div>
+      </AppLayout>
     );
   }
 
   return (
-    <ProjectErrorBoundary>
-      <WorkspaceLayout />
-    </ProjectErrorBoundary>
+    <AppLayout>
+      <ProjectErrorBoundary>
+        <WorkspaceLayout />
+      </ProjectErrorBoundary>
+    </AppLayout>
   );
 }

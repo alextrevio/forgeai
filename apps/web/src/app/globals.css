@@ -224,6 +224,14 @@ select:focus-visible {
   animation: slideInUp 0.3s ease-out forwards;
 }
 
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+.animate-slide-in-left {
+  animation: slideInLeft 0.25s ease-out forwards;
+}
+
 .animate-slide-out-down {
   animation: slideOutDown 0.25s ease-in forwards;
 }

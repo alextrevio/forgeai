@@ -31,7 +31,7 @@ import {
   Download,
   Clock,
 } from "lucide-react";
-import { DashboardShell } from "@/components/dashboard-shell";
+import { AppLayout } from "@/components/layout/app-layout";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { useAuthStore } from "@/stores/auth-store";
 import { api } from "@/lib/api";
@@ -215,7 +215,7 @@ export default function DashboardPage() {
   // Loading skeleton
   if (authLoading || isLoading) {
     return (
-      <DashboardShell>
+      <AppLayout>
         <div className="mx-auto max-w-7xl px-6 py-8">
           <div className="mb-8">
             <div className="h-8 w-48 rounded-lg bg-[#1A1A1A] skeleton-shimmer mb-2" />
@@ -228,7 +228,7 @@ export default function DashboardPage() {
             <SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard />
           </div>
         </div>
-      </DashboardShell>
+      </AppLayout>
     );
   }
 
@@ -244,7 +244,7 @@ export default function DashboardPage() {
   const today = new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
 
   return (
-    <DashboardShell onNewProject={openNewProjectModal}>
+    <AppLayout onNewProject={openNewProjectModal}>
       <div className="mx-auto max-w-7xl px-6 py-8">
         {/* Page header — personalized greeting */}
         <div className="flex items-start justify-between mb-8">
@@ -609,6 +609,6 @@ export default function DashboardPage() {
 
       {/* Click outside to close context menu */}
       {contextMenu && <div className="fixed inset-0 z-10" onClick={() => setContextMenu(null)} />}
-    </DashboardShell>
+    </AppLayout>
   );
 }

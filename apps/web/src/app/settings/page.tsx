@@ -14,7 +14,7 @@ import {
   EyeOff,
   Save,
 } from "lucide-react";
-import { DashboardShell } from "@/components/dashboard-shell";
+import { AppLayout } from "@/components/layout/app-layout";
 import { useAuthStore } from "@/stores/auth-store";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -72,16 +72,16 @@ export default function SettingsPage() {
 
   if (authLoading) {
     return (
-      <DashboardShell>
+      <AppLayout>
         <div className="flex items-center justify-center h-[60vh]">
           <Loader2 className="h-8 w-8 animate-spin text-[#7c3aed]" />
         </div>
-      </DashboardShell>
+      </AppLayout>
     );
   }
 
   return (
-    <DashboardShell>
+    <AppLayout>
       <div className="mx-auto max-w-4xl px-6 py-8">
         {/* Page header */}
         <div className="mb-8">
@@ -276,6 +276,6 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
-    </DashboardShell>
+    </AppLayout>
   );
 }
