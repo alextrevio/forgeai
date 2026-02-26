@@ -306,3 +306,8 @@ body {
   backdrop-filter: blur(8px);
   border: 1px solid rgba(30, 30, 46, 0.8);
 }
+
+/* Safe area for mobile bottom nav */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
