@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Panel, PanelGroup, PanelResizeHandle, type ImperativePanelGroupHandle } from "react-resizable-panels";
+import { Activity } from "lucide-react";
 import { ChatPanel } from "./chat-panel";
 import { ComputerPanel } from "./computer-panel";
+import { AgentActivityPanel } from "./agent-activity-panel";
 import { useProjectStore } from "@/stores/project-store";
 import { cn } from "@/lib/utils";
 
@@ -17,11 +19,15 @@ function safeArray(data: any): any[] {
 
 export function WorkspaceLayout() {
   const [isVertical, setIsVertical] = useState(false);
+  const [showActivity, setShowActivity] = useState(false);
   const {
     isAgentRunning,
     currentPlan,
     activeAgent,
+    activityItems,
   } = useProjectStore();
+
+  const activityCount = safeArray(activityItems).length;
 
   useEffect(() => {
     const checkWidth = () => setIsVertical(window.innerWidth < 1024);
@@ -87,13 +93,21 @@ export function WorkspaceLayout() {
           direction={isVertical ? "vertical" : "horizontal"}
           className="h-full"
         >
-          {/* Left Column — Chat */}
+          {/* Left Column — Chat + Activity */}
           <Panel
             defaultSize={isVertical ? 40 : 40}
             minSize={isVertical ? 25 : 25}
             maxSize={isVertical ? 60 : 55}
           >
-            <ChatPanel />
+            <div className="relative h-full">
+              <ChatPanel />
+              {/* Activity panel overlay */}
+              {showActivity && (
+                <div className="absolute inset-0 z-30">
+                  <AgentActivityPanel onClose={() => setShowActivity(false)} />
+                </div>
+              )}
+            </div>
           </Panel>
 
           {/* Resize Handle — 2px, subtle, hover visible */}
@@ -126,6 +140,26 @@ export function WorkspaceLayout() {
 
       {/* Bottom Bar — progress */}
       <div className="flex items-center gap-3 border-t border-[#2A2A2A] bg-[#0A0A0A] px-4 py-2">
+        {/* Activity toggle */}
+        <button
+          onClick={() => setShowActivity((v) => !v)}
+          className={cn(
+            "relative flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium transition-all duration-200 shrink-0",
+            showActivity
+              ? "bg-[#7c3aed]/10 text-[#a78bfa]"
+              : "text-[#8888a0] hover:text-[#EDEDED] hover:bg-[#1A1A1A]"
+          )}
+          title="Ver actividad detallada"
+        >
+          <Activity className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">{showActivity ? "Ocultar" : "Actividad"}</span>
+          {activityCount > 0 && !showActivity && (
+            <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#7c3aed] text-[9px] font-bold text-white px-1">
+              {activityCount > 99 ? "99+" : activityCount}
+            </span>
+          )}
+        </button>
+
         {/* Live indicator */}
         <div className="flex items-center gap-2 shrink-0">
           {isAgentRunning ? (

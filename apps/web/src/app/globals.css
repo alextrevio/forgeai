@@ -437,3 +437,33 @@ select:focus-visible {
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+
+/* ─── Agent Activity Panel ─── */
+
+@keyframes slideInPanel {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes activityItemEnter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes thinkingPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.92); }
+}
+
+.animate-slide-in-panel {
+  animation: slideInPanel 0.25s ease-out forwards;
+}
+
+.activity-item-enter {
+  animation: activityItemEnter 0.2s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-thinking-pulse {
+  animation: thinkingPulse 2s ease-in-out infinite;
+}
