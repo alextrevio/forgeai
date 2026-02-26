@@ -1,14 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Panel, PanelGroup, PanelResizeHandle, type ImperativePanelGroupHandle } from "react-resizable-panels";
+import { Activity } from "lucide-react";
 import { ChatPanel } from "./chat-panel";
 import { ComputerPanel } from "./computer-panel";
+import { AgentActivityPanel } from "./agent-activity-panel";
 import { useProjectStore } from "@/stores/project-store";
 import { cn } from "@/lib/utils";
 
 function safeArray<T>(data: T[]): T[];
 function safeArray<T>(data: T[] | null | undefined): T[];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function safeArray(data: any): any[] {
   if (Array.isArray(data)) return data;
   return [];
@@ -16,23 +19,15 @@ function safeArray(data: any): any[] {
 
 export function WorkspaceLayout() {
   const [isVertical, setIsVertical] = useState(false);
+  const [showActivity, setShowActivity] = useState(false);
   const {
     isAgentRunning,
     currentPlan,
     activeAgent,
-    sandboxStatus,
-    fileTree,
-    previewUrl,
-    changedFiles,
+    activityItems,
   } = useProjectStore();
 
-  // Show the computer panel only when there's actual content to display
-  const hasWorkspaceContent =
-    sandboxStatus === "running" ||
-    (fileTree && fileTree.length > 0) ||
-    !!previewUrl ||
-    (changedFiles && changedFiles.size > 0) ||
-    (isAgentRunning && activeAgent === "coder");
+  const activityCount = safeArray(activityItems).length;
 
   useEffect(() => {
     const checkWidth = () => setIsVertical(window.innerWidth < 1024);
@@ -45,15 +40,18 @@ export function WorkspaceLayout() {
   useEffect(() => {
     const handleKeyboard = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
+      // Cmd+K → focus chat input
       if (mod && e.key === "k") {
         e.preventDefault();
         const el = document.querySelector<HTMLTextAreaElement>("[data-chat-input]");
         el?.focus();
       }
+      // Cmd+Enter → submit chat message (when input focused)
       if (mod && e.key === "Enter") {
         const el = document.querySelector<HTMLButtonElement>("[data-chat-send]");
         el?.click();
       }
+      // Esc → close any open modal
       if (e.key === "Escape") {
         const modals = document.querySelectorAll("[data-modal-close]");
         if (modals.length > 0) {
@@ -80,65 +78,89 @@ export function WorkspaceLayout() {
     };
   })();
 
+  const panelGroupRef = useRef<ImperativePanelGroupHandle>(null);
+
+  const handleDoubleClickHandle = useCallback(() => {
+    panelGroupRef.current?.setLayout([50, 50]);
+  }, []);
+
   return (
     <div className="flex h-screen flex-col bg-[#0A0A0A]">
-      {/* Main layout */}
+      {/* Main 2-column layout */}
       <div className="flex-1 overflow-hidden">
-        {hasWorkspaceContent ? (
-          /* Two-panel layout when workspace has content */
-          <PanelGroup
-            direction={isVertical ? "vertical" : "horizontal"}
-            className="h-full"
+        <PanelGroup
+          ref={panelGroupRef}
+          direction={isVertical ? "vertical" : "horizontal"}
+          className="h-full"
+        >
+          {/* Left Column — Chat + Activity */}
+          <Panel
+            defaultSize={isVertical ? 40 : 40}
+            minSize={isVertical ? 25 : 25}
+            maxSize={isVertical ? 60 : 55}
           >
-            <Panel
-              defaultSize={isVertical ? 40 : 40}
-              minSize={isVertical ? 25 : 25}
-              maxSize={isVertical ? 60 : 55}
-            >
+            <div className="relative h-full">
               <ChatPanel />
-            </Panel>
-
-            <PanelResizeHandle
-              className={cn(
-                "group relative transition-colors",
-                isVertical ? "h-[5px]" : "w-[5px]"
+              {/* Activity panel overlay */}
+              {showActivity && (
+                <div className="absolute inset-0 z-30">
+                  <AgentActivityPanel onClose={() => setShowActivity(false)} />
+                </div>
               )}
-            >
-              <div
-                className={cn(
-                  "absolute bg-[#2A2A2A] group-hover:bg-[#7c3aed]/60 transition-colors duration-200",
-                  isVertical
-                    ? "inset-x-0 h-[1px] top-1/2 -translate-y-1/2"
-                    : "inset-y-0 w-[1px] left-1/2 -translate-x-1/2"
-                )}
-              />
-              <div
-                className={cn(
-                  "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200",
-                  isVertical ? "flex gap-1" : "flex flex-col gap-1"
-                )}
-              >
-                <div className="h-1 w-1 rounded-full bg-[#7c3aed]/60" />
-                <div className="h-1 w-1 rounded-full bg-[#7c3aed]/60" />
-                <div className="h-1 w-1 rounded-full bg-[#7c3aed]/60" />
-              </div>
-            </PanelResizeHandle>
+            </div>
+          </Panel>
 
-            <Panel
-              defaultSize={isVertical ? 60 : 60}
-              minSize={isVertical ? 35 : 35}
-            >
-              <ComputerPanel />
-            </Panel>
-          </PanelGroup>
-        ) : (
-          /* Full-width chat when no workspace content — Manus-style */
-          <ChatPanel />
-        )}
+          {/* Resize Handle — 2px, subtle, hover visible */}
+          <PanelResizeHandle
+            className={cn(
+              "group relative transition-colors",
+              isVertical ? "h-[4px]" : "w-[4px]"
+            )}
+            onDoubleClick={handleDoubleClickHandle}
+          >
+            <div
+              className={cn(
+                "absolute bg-[#2A2A2A] group-hover:bg-[#555555] group-active:bg-[#7c3aed] transition-colors duration-200",
+                isVertical
+                  ? "inset-x-0 h-[2px] top-1/2 -translate-y-1/2"
+                  : "inset-y-0 w-[2px] left-1/2 -translate-x-1/2"
+              )}
+            />
+          </PanelResizeHandle>
+
+          {/* Right Column — Computer */}
+          <Panel
+            defaultSize={isVertical ? 60 : 60}
+            minSize={isVertical ? 35 : 35}
+          >
+            <ComputerPanel />
+          </Panel>
+        </PanelGroup>
       </div>
 
       {/* Bottom Bar — progress */}
       <div className="flex items-center gap-3 border-t border-[#2A2A2A] bg-[#0A0A0A] px-4 py-2">
+        {/* Activity toggle */}
+        <button
+          onClick={() => setShowActivity((v) => !v)}
+          className={cn(
+            "relative flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium transition-all duration-200 shrink-0",
+            showActivity
+              ? "bg-[#7c3aed]/10 text-[#a78bfa]"
+              : "text-[#8888a0] hover:text-[#EDEDED] hover:bg-[#1A1A1A]"
+          )}
+          title="Ver actividad detallada"
+        >
+          <Activity className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">{showActivity ? "Ocultar" : "Actividad"}</span>
+          {activityCount > 0 && !showActivity && (
+            <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#7c3aed] text-[9px] font-bold text-white px-1">
+              {activityCount > 99 ? "99+" : activityCount}
+            </span>
+          )}
+        </button>
+
+        {/* Live indicator */}
         <div className="flex items-center gap-2 shrink-0">
           {isAgentRunning ? (
             <div className="flex items-center gap-1.5">
@@ -147,12 +169,13 @@ export function WorkspaceLayout() {
             </div>
           ) : (
             <div className="flex items-center gap-1.5">
-              <div className="h-2 w-2 rounded-full bg-[#555555]" />
-              <span className="text-[11px] text-[#888888]">inactivo</span>
+              <div className="h-2 w-2 rounded-full bg-[#4a4a5e]" />
+              <span className="text-[11px] text-[#8888a0]">inactivo</span>
             </div>
           )}
         </div>
 
+        {/* Progress bar */}
         <div className="flex-1 h-1.5 rounded-full bg-[#2A2A2A] overflow-hidden">
           {isAgentRunning && stepsTotal > 0 ? (
             <div
@@ -169,10 +192,11 @@ export function WorkspaceLayout() {
           )}
         </div>
 
+        {/* Step info */}
         <div className="flex items-center gap-2 shrink-0 min-w-0 max-w-[300px]">
           {stepsTotal > 0 && (
             <>
-              <span className="text-[10px] text-[#888888] tabular-nums shrink-0">
+              <span className="text-[10px] text-[#8888a0] tabular-nums shrink-0">
                 {stepsCompleted} / {stepsTotal}
               </span>
               {currentStepText && (

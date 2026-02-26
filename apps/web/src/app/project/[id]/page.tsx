@@ -141,20 +141,36 @@ export default function ProjectPage() {
         case "agent:thinking":
           s.setAgentThinking(event.data.content);
           if (!s.isAgentRunning) s.setAgentRunning(true);
+          s.addActivity({ type: "thinking", thinkingText: event.data.content });
           break;
 
         case "agent:plan":
           s.setPlan(event.data.plan);
           s.setActiveAgent("coder");
+          s.addActivity({
+            type: "plan",
+            planSummary: event.data.plan?.understanding,
+            stepCount: Array.isArray(event.data.plan?.steps) ? event.data.plan.steps.length : 0,
+          });
           break;
 
         case "agent:step_start":
           s.updateStepStatus(event.data.step.id, "in_progress");
           s.setActiveAgent("coder");
+          s.addActivity({
+            type: "step_start",
+            stepId: event.data.step.id,
+            stepDescription: event.data.step.description,
+          });
           break;
 
         case "agent:step_complete":
           s.updateStepStatus(event.data.step.id, event.data.step.status);
+          s.addActivity({
+            type: event.data.step.status === "failed" ? "step_error" : "step_complete",
+            stepId: event.data.step.id,
+            stepDescription: event.data.step.description,
+          });
           break;
 
         case "agent:step_message":
@@ -170,10 +186,15 @@ export default function ProjectPage() {
 
         case "agent:code_change":
           s.addCodeChange(event.data.change);
-          // If the file is open, refresh its content
           if (event.data.change.content) {
             s.refreshOpenFile(event.data.change.file, event.data.change.content);
           }
+          s.addActivity({
+            type: "file_change",
+            filePath: event.data.change.file,
+            fileAction: event.data.change.action,
+            fileDiff: event.data.change.diff,
+          });
           break;
 
         case "sandbox:file_changed":
@@ -183,22 +204,32 @@ export default function ProjectPage() {
         case "agent:terminal_output":
         case "sandbox:terminal_output":
           queueTerminal(event.data.output);
+          // Detect commands (lines starting with $)
+          if (typeof event.data.output === "string" && event.data.output.trim().startsWith("$")) {
+            s.addActivity({
+              type: "terminal_cmd",
+              command: event.data.output.trim().replace(/^\$\s*/, ""),
+              output: "",
+            });
+          }
           break;
 
         case "agent:designer_start":
           s.setActiveAgent("designer");
           s.setAgentThinking("Designer is improving the visual design...");
+          s.addActivity({ type: "agent_switch", agent: "designer" });
           break;
 
         case "agent:designer_complete":
           s.setActiveAgent("coder");
-          // Refresh file tree after designer changes
           api.getFileTree(projectId).then((t) => s.setFileTree(safeArray(t))).catch(() => {});
+          s.addActivity({ type: "agent_switch", agent: "coder" });
           break;
 
         case "agent:debugger_start":
           s.setActiveAgent("debugger");
           s.setAgentThinking("Debugger is fixing errors...");
+          s.addActivity({ type: "agent_switch", agent: "debugger" });
           break;
 
         case "agent:debugger_fix":
@@ -226,6 +257,7 @@ export default function ProjectPage() {
         case "agent:reviewer_start":
           s.setActiveAgent("reviewer");
           s.setAgentThinking("Reviewing code quality...");
+          s.addActivity({ type: "agent_switch", agent: "reviewer" });
           break;
 
         case "agent:reviewer_report":
@@ -244,6 +276,7 @@ export default function ProjectPage() {
         case "agent:deploy_start":
           s.setActiveAgent("deployer");
           s.setAgentThinking("Building and deploying...");
+          s.addActivity({ type: "agent_switch", agent: "deployer" });
           break;
 
         case "agent:deploy_complete":
@@ -284,6 +317,7 @@ export default function ProjectPage() {
             messageType: null, plan: null, codeChanges: null, tokensUsed: null, creditsConsumed: 0, model: null,
             createdAt: new Date().toISOString(),
           });
+          s.addActivity({ type: "error", errorMessage: event.data.message });
           break;
 
         case "agent:complete":
@@ -298,9 +332,9 @@ export default function ProjectPage() {
             messageType: null, plan: null, codeChanges: null, tokensUsed: null, creditsConsumed: 0, model: null,
             createdAt: new Date().toISOString(),
           });
-          // Refresh file tree and snapshots
           api.getFileTree(projectId).then((t) => s.setFileTree(safeArray(t))).catch(() => {});
           api.getSnapshots(projectId).then((sn) => s.setSnapshots(safeArray(sn))).catch(() => {});
+          s.addActivity({ type: "complete", summary: event.data.summary });
           break;
 
         case "preview:reload":

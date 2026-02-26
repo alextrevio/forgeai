@@ -29,6 +29,35 @@ export interface SnapshotInfo {
   createdAt: string;
 }
 
+// ─── Activity Feed ─────────────────────────────────────────────
+export type ActivityType = "thinking" | "plan" | "step_start" | "step_complete" | "step_error" | "file_change" | "terminal_cmd" | "agent_switch" | "complete" | "error";
+
+export interface ActivityItem {
+  id: string;
+  type: ActivityType;
+  timestamp: number;
+  // Thinking
+  thinkingText?: string;
+  // Plan
+  planSummary?: string;
+  stepCount?: number;
+  // Step
+  stepId?: number;
+  stepDescription?: string;
+  // File change
+  filePath?: string;
+  fileAction?: "create" | "edit" | "delete";
+  fileDiff?: string;
+  // Terminal
+  command?: string;
+  output?: string;
+  // Agent
+  agent?: string;
+  // Completion / error
+  summary?: string;
+  errorMessage?: string;
+}
+
 interface ProjectState {
   // Current project
   currentProjectId: string | null;
@@ -64,6 +93,10 @@ interface ProjectState {
   // Snapshots
   snapshots: SnapshotInfo[];
 
+  // Activity feed
+  activityItems: ActivityItem[];
+  activityExpanded: boolean;
+
   // Actions
   setProject: (id: string, name: string, framework: string) => void;
   clearProject: () => void;
@@ -91,6 +124,9 @@ interface ProjectState {
   setSnapshots: (snapshots: SnapshotInfo[]) => void;
   addConsoleEntry: (entry: ConsoleEntry) => void;
   clearConsoleEntries: () => void;
+  addActivity: (item: Omit<ActivityItem, "id" | "timestamp">) => void;
+  clearActivity: () => void;
+  setActivityExpanded: (expanded: boolean) => void;
 }
 
 export const useProjectStore = create<ProjectState>((set, get) => ({
@@ -112,6 +148,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   lastReviewReport: null,
   consoleEntries: [],
   snapshots: [],
+  activityItems: [],
+  activityExpanded: false,
 
   setProject: (id, name, framework) =>
     set({
@@ -128,6 +166,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       lastReviewReport: null,
       consoleEntries: [],
       snapshots: [],
+      activityItems: [],
     }),
 
   clearProject: () =>
@@ -150,6 +189,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       lastReviewReport: null,
       consoleEntries: [],
       snapshots: [],
+      activityItems: [],
+      activityExpanded: false,
     }),
 
   addMessage: (message) =>
@@ -259,4 +300,16 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     })),
 
   clearConsoleEntries: () => set({ consoleEntries: [] }),
+
+  addActivity: (item) =>
+    set((state) => ({
+      activityItems: [
+        ...ensureArray<ActivityItem>(state.activityItems),
+        { ...item, id: `act-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, timestamp: Date.now() },
+      ].slice(-100),
+    })),
+
+  clearActivity: () => set({ activityItems: [] }),
+
+  setActivityExpanded: (expanded) => set({ activityExpanded: expanded }),
 }));
