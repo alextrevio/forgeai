@@ -468,6 +468,37 @@ select:focus-visible {
   animation: thinkingPulse 2s ease-in-out infinite;
 }
 
+/* ─── Sidebar ─── */
+
+@keyframes sidebarItemEnter {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInSidebar {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes dashboardHeroEnter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.sidebar-item-enter {
+  animation: sidebarItemEnter 0.25s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-slide-in-sidebar {
+  animation: slideInSidebar 0.25s ease-out forwards;
+}
+
+.dashboard-hero-enter {
+  animation: dashboardHeroEnter 0.5s ease-out forwards;
+  opacity: 0;
+}
+
 /* ─── Landing Page ─── */
 
 /* Gradient text */
