@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { ToastProvider } from "./toast";
+import { TopProgressBar } from "./top-progress-bar";
 import { ErrorBoundary } from "./error-boundary";
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -21,6 +22,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
+        <TopProgressBar />
         <ErrorBoundary>{children}</ErrorBoundary>
       </ToastProvider>
     </QueryClientProvider>

@@ -191,11 +191,11 @@ export function WorkspaceHeader() {
 
   const IconBtn = ({ onClick, title, children, className: extra }: { onClick: () => void; title: string; children: React.ReactNode; className?: string }) => (
     <div className="group relative">
-      <button onClick={onClick} className={cn("flex h-7 w-7 items-center justify-center rounded-lg text-[#8888a0] hover:bg-[#161619] hover:text-[#e2e2e8] transition-all duration-150", extra)}>
+      <button onClick={onClick} className={cn("flex h-7 w-7 items-center justify-center rounded-lg text-[#8888a0] hover:bg-[#1A1A1A] hover:text-[#EDEDED] active:scale-95 transition-all duration-200", extra)}>
         {children}
       </button>
-      <div className="pointer-events-none absolute top-full left-1/2 -translate-x-1/2 mt-1.5 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50">
-        <div className="tooltip-glass rounded-md px-2 py-1 text-[10px] text-[#e2e2e8] shadow-lg">{title}</div>
+      <div className="pointer-events-none absolute top-full left-1/2 -translate-x-1/2 mt-1.5 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity delay-500 duration-200 z-50">
+        <div className="tooltip-glass rounded-md px-2 py-1 text-[10px] text-[#EDEDED] shadow-lg">{title}</div>
       </div>
     </div>
   );
@@ -205,7 +205,7 @@ export function WorkspaceHeader() {
       {/* Inline action buttons — rendered inside the computer panel header */}
       <div className="flex items-center gap-1">
         {isAgentRunning && (
-          <button onClick={handleStop} className="flex items-center gap-1.5 rounded-lg bg-[#ef4444]/10 px-2.5 py-1 text-[11px] font-medium text-[#ef4444] hover:bg-[#ef4444]/20 transition-all duration-150">
+          <button onClick={handleStop} className="flex items-center gap-1.5 rounded-lg bg-[#ef4444]/10 px-2.5 py-1 text-[11px] font-medium text-[#ef4444] hover:bg-[#ef4444]/20 active:scale-95 transition-all duration-200">
             <Square className="h-3 w-3" /> Stop
           </button>
         )}
@@ -227,7 +227,7 @@ export function WorkspaceHeader() {
 
       {/* Timeline panel */}
       {showTimeline && (
-        <div className="fixed top-12 right-4 z-40 w-[400px] rounded-xl border border-[#1a1a1f] bg-[#111114] p-4 shadow-2xl animate-fade-in">
+        <div className="fixed top-12 right-4 z-40 w-[400px] rounded-xl border border-[#2A2A2A] bg-[#111111] p-4 shadow-2xl animate-dropdown">
           <div className="flex items-center justify-between mb-3">
             <span className="text-[12px] font-medium text-[#8888a0]">Version Timeline</span>
             <button onClick={() => setShowTimeline(false)} className="text-[#8888a0] hover:text-[#e2e2e8] transition-colors"><X className="h-3.5 w-3.5" /></button>
@@ -253,8 +253,8 @@ export function WorkspaceHeader() {
 
       {/* Modals */}
       {modal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl border border-[#1a1a1f] bg-[#111114] p-6 shadow-2xl animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-md rounded-xl border border-[#2A2A2A] bg-[#111111] p-6 shadow-2xl animate-slide-in-up">
             {modal === "github" && (
               <>
                 <div className="flex items-center justify-between mb-4">

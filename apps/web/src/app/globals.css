@@ -1,45 +1,45 @@
 @import "tailwindcss";
 
-/* ─── ForgeAI Design System ─── */
+/* ─── Arya AI Design System ─── */
 :root {
-  --bg-primary: #09090b;
+  --bg-primary: #0A0A0A;
   --bg-secondary: #0d0d10;
-  --bg-card: #111114;
-  --bg-hover: #161619;
-  --bg-input: #111114;
-  --bg-terminal: #0a0a12;
-  --border: #1a1a1f;
-  --border-subtle: #141418;
+  --bg-card: #111111;
+  --bg-hover: #1A1A1A;
+  --bg-input: #111111;
+  --bg-terminal: #0A0A0A;
+  --border: #2A2A2A;
+  --border-subtle: #1A1A1A;
   --accent: #7c3aed;
   --accent-hover: #6d28d9;
   --accent-blue: #3b82f6;
   --success: #22c55e;
   --warning: #f59e0b;
   --error: #ef4444;
-  --text-primary: #e2e2e8;
+  --text-primary: #EDEDED;
   --text-secondary: #8888a0;
   --text-muted: #4a4a5e;
 }
 
 @theme {
-  --color-background: #09090b;
-  --color-foreground: #e2e2e8;
-  --color-card: #111114;
-  --color-card-foreground: #e2e2e8;
-  --color-popover: #111114;
-  --color-popover-foreground: #e2e2e8;
+  --color-background: #0A0A0A;
+  --color-foreground: #EDEDED;
+  --color-card: #111111;
+  --color-card-foreground: #EDEDED;
+  --color-popover: #111111;
+  --color-popover-foreground: #EDEDED;
   --color-primary: #7c3aed;
   --color-primary-foreground: #ffffff;
   --color-secondary: #18181b;
-  --color-secondary-foreground: #e2e2e8;
+  --color-secondary-foreground: #EDEDED;
   --color-muted: #141416;
   --color-muted-foreground: #8888a0;
   --color-accent: #7c3aed;
   --color-accent-foreground: #ffffff;
   --color-destructive: #ef4444;
   --color-destructive-foreground: #ffffff;
-  --color-border: #1a1a1f;
-  --color-input: #1a1a1f;
+  --color-border: #2A2A2A;
+  --color-input: #2A2A2A;
   --color-ring: #7c3aed;
   --color-success: #22c55e;
   --color-warning: #f59e0b;
@@ -57,26 +57,62 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Scrollbar styling */
-::-webkit-scrollbar {
+/* ─── Scrollbar — consistent across all panels ─── */
+*::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
-::-webkit-scrollbar-track {
+*::-webkit-scrollbar-track {
   background: transparent;
 }
-::-webkit-scrollbar-thumb {
-  background: #1a1a1f;
+*::-webkit-scrollbar-thumb {
+  background: #2A2A2A;
   border-radius: 3px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #2a2a2f;
+*::-webkit-scrollbar-thumb:hover {
+  background: #555555;
+}
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2A2A2A transparent;
 }
 
 /* Monaco editor container */
 .monaco-editor-container {
   height: 100%;
   width: 100%;
+}
+
+/* ─── Focus rings — consistent accent ─── */
+*:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #0A0A0A, 0 0 0 4px #7c3aed;
+  border-radius: inherit;
+}
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  box-shadow: 0 0 0 1px #7c3aed;
+}
+
+/* ─── Button micro-interactions ─── */
+.btn-primary {
+  background-color: #7c3aed;
+  color: white;
+  transition: all 200ms ease;
+}
+.btn-primary:hover:not(:disabled) {
+  background-color: #6d28d9;
+  transform: scale(1.02);
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.25);
+}
+.btn-primary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ─── Keyframes ─── */
@@ -121,6 +157,16 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes slideInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideOutDown {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(12px); }
+}
+
 @keyframes livePulse {
   0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
   50% { opacity: 0.8; box-shadow: 0 0 0 4px rgba(34, 197, 94, 0); }
@@ -136,6 +182,33 @@ body {
   to { opacity: 1; }
 }
 
+@keyframes topProgress {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(0%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes checkScale {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes badgePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+@keyframes toastProgress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+@keyframes dropdownOpen {
+  from { opacity: 0; transform: translateY(-4px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 /* ─── Animation classes ─── */
 
 .animate-fade-in-up {
@@ -145,6 +218,26 @@ body {
 
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-slide-in-up {
+  animation: slideInUp 0.3s ease-out forwards;
+}
+
+.animate-slide-out-down {
+  animation: slideOutDown 0.25s ease-in forwards;
+}
+
+.animate-dropdown {
+  animation: dropdownOpen 0.2s ease-out forwards;
+}
+
+.animate-check-scale {
+  animation: checkScale 0.3s ease-out forwards;
+}
+
+.animate-badge-pulse {
+  animation: badgePulse 2s ease-in-out infinite;
 }
 
 .animation-delay-200 { animation-delay: 200ms; }
@@ -261,12 +354,22 @@ body {
 /* Gradient accent button */
 .btn-gradient {
   background: linear-gradient(135deg, #7c3aed 0%, #3b82f6 100%);
-  transition: all 150ms ease;
+  transition: all 200ms ease;
 }
 
-.btn-gradient:hover {
+.btn-gradient:hover:not(:disabled) {
   background: linear-gradient(135deg, #6d28d9 0%, #2563eb 100%);
   box-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
+  transform: scale(1.02);
+}
+
+.btn-gradient:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.btn-gradient:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* Progress bar — violet→blue gradient */
@@ -302,9 +405,32 @@ body {
 
 /* Tooltip glassmorphism */
 .tooltip-glass {
-  background: rgba(19, 19, 26, 0.9);
+  background: #1A1A1A;
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(30, 30, 46, 0.8);
+  border: 1px solid #2A2A2A;
+}
+
+/* Top progress bar — YouTube/GitHub style */
+.top-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  z-index: 9999;
+  overflow: hidden;
+}
+.top-progress-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, #7c3aed, #3b82f6, transparent);
+  animation: topProgress 1.5s ease-in-out infinite;
+}
+
+/* Toast progress bar */
+.toast-progress {
+  transform-origin: left;
 }
 
 /* Safe area for mobile bottom nav */
