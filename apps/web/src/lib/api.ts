@@ -157,6 +157,14 @@ class ApiClient {
     return this.request<any>(`/api/projects/${id}/deploy`, { method: "POST" });
   }
 
+  // Engine
+  async startEngine(projectId: string, prompt: string) {
+    return this.request<any>("/api/engine/start", {
+      method: "POST",
+      body: JSON.stringify({ projectId, prompt }),
+    });
+  }
+
   async updateProjectSettings(id: string, data: { customInstructions?: string; settings?: any }) {
     return this.request<any>(`/api/projects/${id}/settings`, {
       method: "PATCH",
