@@ -2,6 +2,7 @@ import { Server as SocketIOServer } from "socket.io";
 import { prisma, Prisma } from "@forgeai/db";
 import { logger } from "../lib/logger";
 import { EngineOrchestrator } from "../services/orchestrator";
+import { enqueueEngineExecution, enqueueAgentTask, cancelEngineJob } from "../services/queue/job-queue";
 import type { PlanStep } from "../services/agents/base-agent";
 
 // ── AbortControllers for running engines ──────────────────────────
@@ -22,6 +23,7 @@ export async function startEngine(
   analysis: string;
   complexity: string;
   estimatedTime: string;
+  queued: boolean;
 }> {
   const controller = new AbortController();
   engineAbortControllers.set(projectId, controller);
@@ -30,20 +32,22 @@ export async function startEngine(
     const project = await prisma.project.findUnique({ where: { id: projectId } });
     if (!project) throw new Error("Project not found");
 
-    // Create orchestrator and run planning phase
+    // Phase 1: Plan (synchronous — fast LLM call)
     const orchestrator = new EngineOrchestrator(projectId, io, controller.signal);
     const planResult = await orchestrator.plan(prompt);
 
-    // Fire-and-forget: execute tasks in parallel with dependency resolution
-    orchestrator.execute(planResult.planSteps, planResult.tasks).catch((err) => {
-      logger.error(err, "Engine execution error");
-      io.to(`project:${projectId}`).emit("event", {
-        type: "engine:failed",
-        data: { projectId, error: String(err) },
-      });
-    }).finally(() => {
-      engineAbortControllers.delete(projectId);
-    });
+    // Phase 2: Execute in background via BullMQ queue
+    await enqueueEngineExecution(
+      projectId,
+      planResult.planSteps,
+      planResult.tasks,
+      prompt
+    );
+
+    // Clean up the abort controller — the worker will create its own
+    engineAbortControllers.delete(projectId);
+
+    logger.info({ projectId }, "Engine execution queued via BullMQ");
 
     return {
       planSteps: planResult.planSteps,
@@ -51,6 +55,7 @@ export async function startEngine(
       analysis: planResult.analysis,
       complexity: planResult.complexity,
       estimatedTime: planResult.estimatedTime,
+      queued: true,
     };
 
   } catch (err) {
@@ -117,21 +122,8 @@ export async function controlEngine(
         throw new Error("Engine is not active");
       }
 
-      const controller = engineAbortControllers.get(projectId);
-      if (controller) {
-        controller.abort();
-        engineAbortControllers.delete(projectId);
-      }
-
-      await prisma.task.updateMany({
-        where: { projectId, status: { in: ["running", "pending"] } },
-        data: { status: "cancelled" },
-      });
-
-      await prisma.project.update({
-        where: { id: projectId },
-        data: { engineStatus: "idle", activeAgents: Prisma.DbNull },
-      });
+      // Cancel via BullMQ + AbortController
+      await cancelEngineJob(projectId);
 
       emit(io, projectId, "engine:status_change", { status: "idle" });
       return { engineStatus: "idle", message: "Engine cancelled" };
@@ -165,40 +157,29 @@ export async function controlEngine(
         message: "Task queued for retry",
       });
 
-      // Re-execute via orchestrator if engine is not already running
+      // Re-execute via BullMQ agent queue
       if (project.engineStatus !== "running") {
         await prisma.project.update({
           where: { id: projectId },
           data: { engineStatus: "running" },
         });
         emit(io, projectId, "engine:status_change", { status: "running" });
-
-        const retryStep: PlanStep = {
-          order: task.order,
-          title: task.title,
-          description: task.description || task.title,
-          agentType: task.agentType,
-          dependsOn: [],
-          estimatedDuration: "5min",
-          priority: "medium",
-        };
-
-        const retryController = new AbortController();
-        engineAbortControllers.set(projectId, retryController);
-
-        const orchestrator = new EngineOrchestrator(projectId, io, retryController.signal);
-
-        orchestrator.execute(
-          [retryStep],
-          [{ id: taskId, title: task.title, agentType: task.agentType, status: "pending", order: task.order }]
-        ).catch((err) => {
-          logger.error(err, "Retry execution error");
-        }).finally(() => {
-          engineAbortControllers.delete(projectId);
-        });
       }
 
-      return { engineStatus: "running", message: "Task retry started" };
+      const retryStep: PlanStep = {
+        order: task.order,
+        title: task.title,
+        description: task.description || task.title,
+        agentType: task.agentType,
+        dependsOn: [],
+        estimatedDuration: "5min",
+        priority: "medium",
+      };
+
+      await enqueueAgentTask(projectId, taskId, retryStep, task.inputPrompt || "");
+      logger.info({ projectId, taskId }, "Task retry queued via BullMQ");
+
+      return { engineStatus: "running", message: "Task retry queued" };
     }
 
     default:

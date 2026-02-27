@@ -20,11 +20,13 @@ import { notificationRouter } from "./routes/notifications";
 import { exportImportRouter } from "./routes/export-import";
 import { engineRouter } from "./routes/engine";
 import { skillsRouter } from "./routes/skills";
+import { adminRouter } from "./routes/admin";
 import { authenticate } from "./middleware/auth";
 import { errorHandler } from "./middleware/error-handler";
 import { rateLimit } from "./middleware/rate-limit";
 import { setupSocketHandlers } from "./socket";
 import { skillService } from "./services/skill-service";
+import { setSocketIO, closeQueues } from "./services/queue/job-queue";
 import { logger } from "./lib/logger";
 
 // ── Validate required env vars at startup ───────────────
@@ -54,6 +56,9 @@ const io = new SocketIOServer(httpServer, {
 
 // Make io accessible to routes
 app.set("io", io);
+
+// Set Socket.IO reference for BullMQ workers
+setSocketIO(io);
 
 // ── Security middleware ──────────────────────────────────
 app.use(helmet({
@@ -165,6 +170,7 @@ app.use("/api/projects", authenticate, generalLimiter, exportImportRouter);
 app.use("/api/notifications", authenticate, generalLimiter, notificationRouter);
 app.use("/api/engine", authenticate, agentLimiter, engineRouter);
 app.use("/api/skills", authenticate, generalLimiter, skillsRouter);
+app.use("/api/admin", authenticate, generalLimiter, adminRouter);
 
 // 404 handler for API routes
 app.use("/api/*", (req, res) => {
@@ -190,12 +196,14 @@ httpServer.listen(PORT, () => {
 // ── Graceful shutdown ────────────────────────────────────
 function gracefulShutdown(signal: string) {
   logger.info({ signal }, "Received shutdown signal, closing...");
-  httpServer.close(() => {
+  httpServer.close(async () => {
     logger.info("HTTP server closed");
-    prisma.$disconnect().then(() => {
-      logger.info("Database disconnected");
-      process.exit(0);
+    await closeQueues().catch((err) => {
+      logger.warn({ error: err }, "Error closing BullMQ queues");
     });
+    await prisma.$disconnect();
+    logger.info("All connections closed");
+    process.exit(0);
   });
   // Force exit after 10 seconds
   setTimeout(() => process.exit(1), 10_000).unref();

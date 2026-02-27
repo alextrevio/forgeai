@@ -7,6 +7,7 @@ import { checkCredits } from "../middleware/credits";
 import { logger } from "../lib/logger";
 import { Server as SocketIOServer } from "socket.io";
 import { startEngine, controlEngine } from "../engine/service";
+import { getEngineJobStatus, cancelEngineJob } from "../services/queue/job-queue";
 import { agentRegistry } from "../services/agent-registry";
 import { modelRouter } from "../services/model-router";
 
@@ -62,6 +63,7 @@ engineRouter.post("/start", checkCredits, async (req: AuthRequest, res: Response
       engineStatus: "running",
       planSteps: result.planSteps,
       tasks: result.tasks,
+      queued: result.queued,
     });
   } catch (err) {
     if (err instanceof z.ZodError) {
@@ -328,6 +330,61 @@ engineRouter.get("/tasks/:projectId/:taskId/result", async (req: AuthRequest, re
     });
   } catch (err) {
     logger.error(err, "Get task result error");
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+// GET /jobs/:projectId — Job status in the queue
+// ═══════════════════════════════════════════════════════════
+
+engineRouter.get("/jobs/:projectId", async (req: AuthRequest, res: Response) => {
+  try {
+    const projectId = req.params.projectId as string;
+    const project = await findUserProject(projectId, req.userId);
+    if (!project) {
+      return res.status(404).json({ error: "Project not found" });
+    }
+
+    const jobStatus = await getEngineJobStatus(projectId);
+    if (!jobStatus) {
+      return res.json({ projectId, job: null, message: "No active or recent job found" });
+    }
+
+    return res.json({ projectId, job: jobStatus });
+  } catch (err) {
+    logger.error(err, "Get job status error");
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+// POST /jobs/:projectId/cancel — Cancel a queued/running job
+// ═══════════════════════════════════════════════════════════
+
+engineRouter.post("/jobs/:projectId/cancel", async (req: AuthRequest, res: Response) => {
+  try {
+    const projectId = req.params.projectId as string;
+    const project = await findUserProject(projectId, req.userId);
+    if (!project) {
+      return res.status(404).json({ error: "Project not found" });
+    }
+
+    if (project.engineStatus === "idle" || project.engineStatus === "completed") {
+      return res.status(400).json({ error: "No active job to cancel" });
+    }
+
+    const cancelled = await cancelEngineJob(projectId);
+
+    const io: SocketIOServer = req.app.get("io");
+    io.to(`project:${projectId}`).emit("event", {
+      type: "engine:status_change",
+      data: { status: "idle" },
+    });
+
+    return res.json({ projectId, cancelled, engineStatus: "idle" });
+  } catch (err) {
+    logger.error(err, "Cancel job error");
     return res.status(500).json({ error: "Internal server error" });
   }
 });
