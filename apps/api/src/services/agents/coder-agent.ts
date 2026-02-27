@@ -3,6 +3,7 @@ import type { OrchestratorCallbacks, SandboxInterface } from "@forgeai/agents";
 import type { CodeChange } from "@forgeai/shared";
 import { prisma } from "@forgeai/db";
 import { sandboxManager } from "../../sandbox/manager";
+import { ProjectSandbox } from "../sandbox";
 import { agentRegistry } from "../agent-registry";
 import { BaseAgent, type AgentResult, type AgentContext } from "./base-agent";
 
@@ -32,25 +33,22 @@ export class CoderAgentRunner extends BaseAgent {
     const project = await this.getProject();
     if (!project) throw new Error("Project not found");
 
+    // Use ProjectSandbox for initialization
+    const projectSandbox = new ProjectSandbox(this.ctx.projectId, this.ctx.io);
+
     let sandboxId = project.sandboxId;
     if (!sandboxId) {
       this.emitThinking("Creating sandbox environment...");
+      sandboxId = await projectSandbox.init(project.framework);
 
-      const sandbox = await sandboxManager.createSandbox(this.ctx.projectId, project.framework);
-      sandboxId = sandbox.containerId;
-
-      await prisma.project.update({
-        where: { id: this.ctx.projectId },
-        data: { sandboxId },
-      });
-
-      sandboxManager.onDevServerOutput(this.ctx.projectId, (output: string) => {
+      projectSandbox.onDevServerOutput((output: string) => {
         this.emit("engine:activity", {
           type: "terminal_cmd",
           content: { output },
         });
       });
     } else {
+      projectSandbox.attach(sandboxId);
       sandboxManager.resetTTL(this.ctx.projectId);
       await sandboxManager.ensureSandboxRunning(this.ctx.projectId);
     }
@@ -156,6 +154,7 @@ export class CoderAgentRunner extends BaseAgent {
       },
       onFileChanged: (path) => {
         this.emit("sandbox:file_changed", { path });
+        this.emit("sandbox:file_tree_update", { projectId });
       },
       onTerminalOutput: (output) => {
         this.emitActivity("terminal_cmd", { output: output.slice(0, 1000) });

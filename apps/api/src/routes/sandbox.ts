@@ -85,9 +85,101 @@ sandboxRouter.put("/:id/files/*", async (req: AuthRequest, res: Response) => {
     }
 
     await sandboxManager.writeFile(project.sandboxId, filePath, content);
+
+    // Emit file change via WebSocket for real-time updates
+    const io = req.app.get("io");
+    if (io) {
+      io.to(`project:${id}`).emit("event", {
+        type: "sandbox:file_changed",
+        data: { path: filePath, action: "edit" },
+      });
+    }
+
     return res.json({ success: true });
   } catch (err) {
     console.error("Write file error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Delete file
+sandboxRouter.delete("/:id/files/*", async (req: AuthRequest, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const project = await prisma.project.findFirst({
+      where: { id, userId: req.userId },
+    });
+    if (!project || !project.sandboxId) {
+      return res.status(404).json({ error: "Project or sandbox not found" });
+    }
+
+    const filePath = (req.params[0] as string) || "";
+    if (!isSafePath(filePath)) {
+      return res.status(400).json({ error: "Invalid file path" });
+    }
+
+    await sandboxManager.deleteFile(project.sandboxId, filePath);
+
+    // Emit file tree update via WebSocket
+    const io = req.app.get("io");
+    if (io) {
+      io.to(`project:${id}`).emit("event", {
+        type: "sandbox:file_tree_update",
+        data: { projectId: id },
+      });
+      io.to(`project:${id}`).emit("event", {
+        type: "sandbox:file_changed",
+        data: { path: filePath, action: "delete" },
+      });
+    }
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("Delete file error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Execute command in sandbox terminal
+sandboxRouter.post("/:id/terminal", async (req: AuthRequest, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const project = await prisma.project.findFirst({
+      where: { id, userId: req.userId },
+    });
+    if (!project || !project.sandboxId) {
+      return res.status(404).json({ error: "Project or sandbox not found" });
+    }
+
+    const { command } = req.body;
+    if (!command || typeof command !== "string") {
+      return res.status(400).json({ error: "Command must be a non-empty string" });
+    }
+
+    // Basic safety: block dangerous commands
+    const blocked = ["rm -rf /", "rm -rf /*", "mkfs", "dd if=", ":(){ :|:& };:"];
+    if (blocked.some((b) => command.includes(b))) {
+      return res.status(400).json({ error: "Command blocked for safety" });
+    }
+
+    const result = await sandboxManager.executeCommand(project.sandboxId, command);
+
+    // Emit terminal output via WebSocket
+    const io = req.app.get("io");
+    if (io) {
+      io.to(`project:${id}`).emit("event", {
+        type: "sandbox:terminal_output",
+        data: { output: `$ ${command}\n${result.stdout || result.stderr || ""}` },
+      });
+    }
+
+    return res.json({
+      exitCode: result.exitCode,
+      stdout: result.stdout,
+      stderr: result.stderr,
+    });
+  } catch (err) {
+    console.error("Terminal exec error:", err);
     return res.status(500).json({ error: "Internal server error" });
   }
 });

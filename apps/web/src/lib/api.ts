@@ -251,6 +251,20 @@ class ApiClient {
     return this.request<{ url: string }>(`/api/projects/${projectId}/preview`);
   }
 
+  async deleteFile(projectId: string, path: string) {
+    return this.request<{ success: boolean }>(
+      `/api/projects/${projectId}/files/${path}`,
+      { method: "DELETE" }
+    );
+  }
+
+  async executeTerminalCommand(projectId: string, command: string) {
+    return this.request<{ exitCode: number; stdout: string; stderr: string }>(
+      `/api/projects/${projectId}/terminal`,
+      { method: "POST", body: JSON.stringify({ command }) }
+    );
+  }
+
   // GitHub
   async getGitHubStatus() {
     return this.request<{ connected: boolean; username: string | null }>("/api/github/status");

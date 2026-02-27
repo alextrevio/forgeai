@@ -27,6 +27,7 @@ import { ConsolePanel, useConsoleCapture } from "./console-panel";
 import { CodePanel } from "./code-panel";
 import { ResultsPanel } from "./results-panel";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
 import { WorkspaceHeader } from "./workspace-header";
 
 function safeArray<T>(data: T[]): T[];
@@ -66,6 +67,89 @@ const BUILD_TEXTS = [
   "Puliendo la interfaz...",
   "Ejecutando verificaciones finales...",
 ];
+
+function TerminalTab({ terminalLines, terminalEndRef, projectId }: {
+  terminalLines: string[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  terminalEndRef: any;
+  projectId: string | null;
+}) {
+  const [cmdInput, setCmdInput] = useState("");
+  const [isRunning, setIsRunning] = useState(false);
+  const { addTerminalOutput } = useProjectStore();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleRunCommand = useCallback(async () => {
+    const cmd = cmdInput.trim();
+    if (!cmd || !projectId || isRunning) return;
+    setIsRunning(true);
+    setCmdInput("");
+    addTerminalOutput(`$ ${cmd}`);
+    try {
+      const result = await api.executeTerminalCommand(projectId, cmd);
+      if (result.stdout) addTerminalOutput(result.stdout);
+      if (result.stderr) addTerminalOutput(result.stderr);
+    } catch (err) {
+      addTerminalOutput(`Error: ${err instanceof Error ? err.message : "Command failed"}`);
+    } finally {
+      setIsRunning(false);
+      inputRef.current?.focus();
+    }
+  }, [cmdInput, projectId, isRunning, addTerminalOutput]);
+
+  return (
+    <div className="flex h-full flex-col bg-[#0A0A0A]">
+      <div className="flex-1 overflow-y-auto p-3 font-mono text-[11px]">
+        {terminalLines.length === 0 ? (
+          <div className="flex h-full items-center justify-center">
+            <div className="text-center">
+              <Terminal className="h-8 w-8 text-[#8888a0]/15 mx-auto mb-3" />
+              <p className="text-[#8888a0]/30">Sin output de terminal</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            {terminalLines.map((line, i) => (
+              <div
+                key={i}
+                className={cn(
+                  "py-0.5 whitespace-pre-wrap break-all leading-relaxed",
+                  line.startsWith("$") ? "text-[#22c55e] font-medium" :
+                  line.toLowerCase().includes("error") || line.toLowerCase().includes("fail") ? "text-[#f87171]" :
+                  line.toLowerCase().includes("warn") ? "text-[#fbbf24]" :
+                  line.toLowerCase().includes("success") || line.toLowerCase().includes("done") || line.toLowerCase().includes("ready") ? "text-[#4ade80]" :
+                  line.includes("http://") || line.includes("https://") ? "text-[#60a5fa]" :
+                  "text-[#8888a0]"
+                )}
+              >
+                {line.startsWith("$") ? (
+                  <><span className="text-[#7c3aed]">arya $</span> <span className="text-[#EDEDED]">{line.slice(1).trim()}</span></>
+                ) : line}
+              </div>
+            ))}
+            <div ref={terminalEndRef} />
+          </>
+        )}
+      </div>
+
+      {/* Terminal input */}
+      <div className="border-t border-[#2A2A2A] px-3 py-2 flex items-center gap-2 font-mono text-[11px]">
+        <span className="text-[#7c3aed] shrink-0">arya $</span>
+        <input
+          ref={inputRef}
+          type="text"
+          value={cmdInput}
+          onChange={(e) => setCmdInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") handleRunCommand(); }}
+          placeholder="Enter command..."
+          disabled={!projectId || isRunning}
+          className="flex-1 bg-transparent text-[#EDEDED] outline-none placeholder:text-[#8888a0]/30 disabled:opacity-40"
+        />
+        {isRunning && <Loader2 className="h-3 w-3 text-[#7c3aed] animate-spin shrink-0" />}
+      </div>
+    </div>
+  );
+}
 
 export function ComputerPanel() {
   const {
@@ -416,38 +500,11 @@ export function ComputerPanel() {
 
         {/* === Terminal Tab === */}
         {activeTab === "terminal" && (
-          <div className="h-full overflow-y-auto bg-[#0A0A0A] p-3 font-mono text-[11px]">
-            {terminalLines.length === 0 ? (
-              <div className="flex h-full items-center justify-center">
-                <div className="text-center">
-                  <Terminal className="h-8 w-8 text-[#8888a0]/15 mx-auto mb-3" />
-                  <p className="text-[#8888a0]/30">Sin output de terminal</p>
-                </div>
-              </div>
-            ) : (
-              <>
-                {terminalLines.map((line, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      "py-0.5 whitespace-pre-wrap break-all leading-relaxed",
-                      line.startsWith("$") ? "text-[#22c55e] font-medium" :
-                      line.toLowerCase().includes("error") || line.toLowerCase().includes("fail") ? "text-[#f87171]" :
-                      line.toLowerCase().includes("warn") ? "text-[#fbbf24]" :
-                      line.toLowerCase().includes("success") || line.toLowerCase().includes("done") || line.toLowerCase().includes("ready") ? "text-[#4ade80]" :
-                      line.includes("http://") || line.includes("https://") ? "text-[#60a5fa]" :
-                      "text-[#8888a0]"
-                    )}
-                  >
-                    {line.startsWith("$") ? (
-                      <><span className="text-[#7c3aed]">arya $</span> <span className="text-[#EDEDED]">{line.slice(1).trim()}</span></>
-                    ) : line}
-                  </div>
-                ))}
-                <div ref={terminalEndRef} />
-              </>
-            )}
-          </div>
+          <TerminalTab
+            terminalLines={terminalLines}
+            terminalEndRef={terminalEndRef}
+            projectId={currentProjectId}
+          />
         )}
 
         {/* === Console Tab === */}

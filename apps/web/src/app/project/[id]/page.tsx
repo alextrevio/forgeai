@@ -202,6 +202,11 @@ export default function ProjectPage() {
           s.markFileChanged(event.data.path);
           break;
 
+        case "sandbox:file_tree_update":
+          // Auto-refresh file tree when files change in sandbox
+          api.getFileTree(projectId).then((t) => s.setFileTree(safeArray(t))).catch(() => {});
+          break;
+
         case "agent:terminal_output":
         case "sandbox:terminal_output":
           queueTerminal(event.data.output);

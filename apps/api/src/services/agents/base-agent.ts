@@ -3,6 +3,7 @@ import { prisma, Prisma } from "@forgeai/db";
 import { logger } from "../../lib/logger";
 import { modelRouter } from "../model-router";
 import { sandboxManager } from "../../sandbox/manager";
+import { ProjectSandbox } from "../sandbox";
 
 // ══════════════════════════════════════════════════════════════════
 // SHARED TYPES
@@ -139,6 +140,7 @@ export abstract class BaseAgent {
 
   protected async executeActions(actions: AgentAction[]): Promise<void> {
     const sandboxId = await this.getSandboxId();
+    let fileTreeChanged = false;
 
     for (const action of actions) {
       if (this.ctx.signal.aborted) return;
@@ -149,6 +151,7 @@ export abstract class BaseAgent {
           if (action.path && action.content && sandboxId) {
             await sandboxManager.writeFile(sandboxId, action.path, action.content);
             this.emitFileChange("create", action.path);
+            fileTreeChanged = true;
           }
           break;
 
@@ -179,6 +182,11 @@ export abstract class BaseAgent {
           break;
       }
     }
+
+    // Emit a single file tree update after all actions complete
+    if (fileTreeChanged) {
+      this.emit("sandbox:file_tree_update", { projectId: this.ctx.projectId });
+    }
   }
 
   // ── Shared Utilities ────────────────────────────────────────────
@@ -193,6 +201,22 @@ export abstract class BaseAgent {
 
   protected async getProject() {
     return prisma.project.findUnique({ where: { id: this.ctx.projectId } });
+  }
+
+  /**
+   * Get a ProjectSandbox instance for the current project.
+   * Automatically attaches to existing sandbox if present.
+   */
+  protected async getProjectSandbox(): Promise<ProjectSandbox> {
+    const sandbox = new ProjectSandbox(this.ctx.projectId, this.ctx.io);
+    const project = await prisma.project.findUnique({
+      where: { id: this.ctx.projectId },
+      select: { sandboxId: true },
+    });
+    if (project?.sandboxId) {
+      sandbox.attach(project.sandboxId);
+    }
+    return sandbox;
   }
 
   protected async runCommand(sandboxId: string, command: string): Promise<string> {
