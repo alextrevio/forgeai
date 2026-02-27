@@ -26,6 +26,7 @@ projectRouter.get("/", async (req: AuthRequest, res: Response) => {
         description: true,
         status: true,
         framework: true,
+        engineStatus: true,
         deployUrl: true,
         createdAt: true,
         updatedAt: true,

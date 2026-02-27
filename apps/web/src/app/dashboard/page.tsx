@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuthStore } from "@/stores/auth-store";
+import { useToast } from "@/components/toast";
 import { api } from "@/lib/api";
 
 const QUICK_CHIPS = [
@@ -27,6 +28,7 @@ export default function DashboardPage() {
   const [prompt, setPrompt] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { addToast } = useToast();
 
   useEffect(() => { loadUser(); }, [loadUser]);
 
@@ -57,11 +59,12 @@ export default function DashboardPage() {
       try {
         await api.startEngine(project.id, text);
       } catch {
-        // Engine start may fail if credits exhausted — still navigate
+        addToast("warning", "Engine could not start — you can retry from the project page.");
       }
       router.push(`/project/${project.id}`);
     } catch (err) {
       console.error("Failed to create project:", err);
+      addToast("error", "Failed to create project. Please try again.");
       setIsSubmitting(false);
     }
   };

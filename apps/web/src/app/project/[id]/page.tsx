@@ -352,6 +352,91 @@ export default function ProjectPage() {
         case "snapshot:created":
           s.addSnapshot(event.data.snapshot);
           break;
+
+        // ── Engine events ──────────────────────────────────
+        case "engine:started":
+          s.setAgentRunning(true);
+          s.setAgentThinking("Planning project...");
+          s.addActivity({ type: "thinking", thinkingText: "Engine started — creating plan..." });
+          break;
+
+        case "engine:status_change": {
+          const status = event.data.status as string;
+          if (status === "running") {
+            s.setAgentRunning(true);
+          } else if (status === "completed" || status === "idle" || status === "failed") {
+            s.setAgentRunning(false);
+            s.setAgentThinking(null);
+            s.setActiveAgent(null);
+          } else if (status === "paused") {
+            s.setAgentThinking("Engine paused");
+          }
+          break;
+        }
+
+        case "engine:plan_update":
+          s.setAgentRunning(true);
+          s.addActivity({ type: "plan", planSummary: event.data.analysis, stepCount: Array.isArray(event.data.planSteps) ? event.data.planSteps.length : 0 });
+          break;
+
+        case "engine:task:started":
+          s.setAgentRunning(true);
+          s.setActiveAgent(event.data.agentType || "coder");
+          s.setAgentThinking(`Running: ${event.data.title || event.data.agentType || "task"}...`);
+          s.addActivity({ type: "step_start", stepId: event.data.taskId, stepDescription: event.data.title || event.data.agentType });
+          break;
+
+        case "engine:task:completed":
+          api.getFileTree(projectId).then((t) => s.setFileTree(safeArray(t))).catch(() => {});
+          api.getSnapshots(projectId).then((sn) => s.setSnapshots(safeArray(sn))).catch(() => {});
+          s.addActivity({ type: "step_complete", stepId: event.data.taskId });
+          break;
+
+        case "engine:task:failed":
+          s.addActivity({ type: "step_error", stepId: event.data.taskId, stepDescription: event.data.error });
+          break;
+
+        case "engine:completed":
+          s.setAgentRunning(false);
+          s.setAgentThinking(null);
+          s.setActiveAgent(null);
+          api.getFileTree(projectId).then((t) => s.setFileTree(safeArray(t))).catch(() => {});
+          api.getSnapshots(projectId).then((sn) => s.setSnapshots(safeArray(sn))).catch(() => {});
+          api.getPreviewUrl(projectId).then((p) => s.setPreviewUrl(p.url)).catch(() => {});
+          s.addActivity({ type: "complete", summary: "Engine completed all tasks" });
+          break;
+
+        case "engine:failed":
+          s.setAgentRunning(false);
+          s.setAgentThinking(null);
+          s.setActiveAgent(null);
+          s.addMessage({
+            id: generateId(),
+            projectId,
+            role: "SYSTEM",
+            content: `Engine error: ${event.data.error || "Unknown error"}`,
+            messageType: null, plan: null, codeChanges: null, tokensUsed: null, creditsConsumed: 0, model: null,
+            createdAt: new Date().toISOString(),
+          });
+          s.addActivity({ type: "error", errorMessage: event.data.error });
+          break;
+
+        case "engine:activity": {
+          const actData = event.data;
+          const actType = actData.type as string;
+          const actContent = (actData.content || {}) as Record<string, unknown>;
+          if (actType === "thinking") {
+            s.setAgentThinking((actContent.message as string) || null);
+            s.addActivity({ type: "thinking", thinkingText: actContent.message as string });
+          } else if (actType === "file_change") {
+            s.addActivity({ type: "file_change", filePath: actContent.file as string, fileAction: actContent.action as "create" | "edit" | "delete" });
+          } else if (actType === "terminal_cmd") {
+            s.addActivity({ type: "terminal_cmd", command: actContent.command as string });
+          } else if (actType === "error") {
+            s.addActivity({ type: "error", errorMessage: actContent.message as string });
+          }
+          break;
+        }
       }
       } catch (err) {
         console.error("[Socket] event handler error:", err);

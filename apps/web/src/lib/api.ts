@@ -173,6 +173,13 @@ class ApiClient {
     return this.request<any>(`/api/engine/activity/${projectId}?limit=${limit}`);
   }
 
+  async controlEngine(projectId: string, action: "pause" | "resume" | "cancel" | "retry", taskId?: string) {
+    return this.request<{ engineStatus: string; message: string }>("/api/engine/control", {
+      method: "POST",
+      body: JSON.stringify({ projectId, action, taskId }),
+    });
+  }
+
   async updateProjectSettings(id: string, data: { customInstructions?: string; settings?: any }) {
     return this.request<any>(`/api/projects/${id}/settings`, {
       method: "PATCH",

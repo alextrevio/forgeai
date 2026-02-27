@@ -26,6 +26,7 @@ interface Project {
   name: string;
   status: string;
   framework: string;
+  engineStatus?: string;
   updatedAt: string;
 }
 
@@ -220,12 +221,17 @@ export function Sidebar({ onNewProject }: SidebarProps) {
                 animationDelay: `${index * 30}ms`,
               }}
             >
-              <FileText
-                className={cn(
-                  "h-4 w-4 shrink-0",
-                  activeProjectId === project.id ? "text-[#7c3aed]" : "text-[#555555]"
+              <div className="relative shrink-0">
+                <FileText
+                  className={cn(
+                    "h-4 w-4",
+                    activeProjectId === project.id ? "text-[#7c3aed]" : "text-[#555555]"
+                  )}
+                />
+                {(project.engineStatus === "running" || project.engineStatus === "planning") && (
+                  <div className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-[#22c55e] live-pulse" />
                 )}
-              />
+              </div>
               {!collapsed && (
                 <span
                   className={cn(

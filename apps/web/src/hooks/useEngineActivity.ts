@@ -132,110 +132,103 @@ export function useEngineActivity(projectId: string | null) {
     return () => { cancelled = true; };
   }, [projectId, makeId]);
 
-  // Subscribe to WebSocket events
+  // Subscribe to WebSocket events — single "event" listener
   useEffect(() => {
     if (!projectId) return;
     const socket = getSocket();
 
-    const onEngineStarted = (data: Record<string, unknown>) => {
-      if (data.projectId !== projectId) return;
-      setEngineStatus("planning");
-      addActivity("engine_started", data);
-    };
+    const onEvent = (raw: unknown) => {
+      const event = raw as { type: string; data: Record<string, unknown> };
+      if (!event?.type || !event.type.startsWith("engine:")) return;
 
-    const onEngineCompleted = (data: Record<string, unknown>) => {
-      if (data.projectId !== projectId) return;
-      setEngineStatus("completed");
-      addActivity("engine_completed", data);
-    };
+      const data = event.data || {};
 
-    const onEngineFailed = (data: Record<string, unknown>) => {
-      if (data.projectId !== projectId) return;
-      setEngineStatus("failed");
-      addActivity("engine_failed", data);
-    };
+      switch (event.type) {
+        case "engine:started":
+          setEngineStatus("planning");
+          addActivity("engine_started", data);
+          break;
 
-    const onStatusChange = (data: Record<string, unknown>) => {
-      if (data.projectId !== projectId) return;
-      setEngineStatus((data.status as EngineStatus) || "idle");
-    };
+        case "engine:completed":
+          setEngineStatus("completed");
+          addActivity("engine_completed", data);
+          break;
 
-    const onPlanUpdate = (data: Record<string, unknown>) => {
-      if (data.projectId !== projectId) return;
-      const steps = data.steps as Array<Record<string, unknown>> | undefined;
-      if (steps) {
-        setPlanSteps(steps.map((s) => ({
-          title: (s.title as string) || "",
-          description: (s.description as string) || "",
-          agentType: (s.agentType as string) || "coder",
-          status: "pending",
-          taskId: s.taskId as string | undefined,
-        })));
-        setProgress({ completed: 0, total: steps.length, percentage: 0 });
+        case "engine:failed":
+          setEngineStatus("failed");
+          addActivity("engine_failed", data);
+          break;
+
+        case "engine:status_change":
+          setEngineStatus((data.status as EngineStatus) || "idle");
+          break;
+
+        case "engine:plan_update": {
+          // Backend sends { planSteps, tasks, analysis }
+          // Map planSteps with taskIds from tasks array
+          const steps = data.planSteps as Array<Record<string, unknown>> | undefined;
+          const tasks = data.tasks as Array<Record<string, unknown>> | undefined;
+          if (steps) {
+            setPlanSteps(steps.map((s, idx) => ({
+              title: (s.title as string) || "",
+              description: (s.description as string) || "",
+              agentType: (s.agentType as string) || "coder",
+              status: "pending" as const,
+              taskId: tasks?.[idx]?.id as string | undefined,
+            })));
+            setProgress({ completed: 0, total: steps.length, percentage: 0 });
+          }
+          break;
+        }
+
+        case "engine:task:started": {
+          const taskId = data.taskId as string;
+          setPlanSteps((prev) => prev.map((s) =>
+            s.taskId === taskId ? { ...s, status: "running" as const } : s
+          ));
+          setEngineStatus("running");
+          addActivity("task_started", data, taskId, data.agentType as string);
+          break;
+        }
+
+        case "engine:task:completed": {
+          const taskId = data.taskId as string;
+          setPlanSteps((prev) => {
+            const updated = prev.map((s) =>
+              s.taskId === taskId ? { ...s, status: "completed" as const } : s
+            );
+            const completed = updated.filter((s) => s.status === "completed").length;
+            setProgress({ completed, total: updated.length, percentage: updated.length > 0 ? Math.round((completed / updated.length) * 100) : 0 });
+            return updated;
+          });
+          addActivity("task_completed", data, taskId);
+          break;
+        }
+
+        case "engine:task:failed": {
+          const taskId = data.taskId as string;
+          setPlanSteps((prev) => prev.map((s) =>
+            s.taskId === taskId ? { ...s, status: "failed" as const } : s
+          ));
+          addActivity("task_failed", data, taskId);
+          break;
+        }
+
+        case "engine:activity": {
+          const type = data.type as EngineActivityType;
+          const taskId = data.taskId as string | undefined;
+          const agentType = data.agentType as string | undefined;
+          const content = (data.content as Record<string, unknown>) || {};
+          addActivity(type, content, taskId, agentType || (content.agentType as string));
+          break;
+        }
       }
     };
 
-    const onTaskStarted = (data: Record<string, unknown>) => {
-      if (data.projectId !== projectId) return;
-      const taskId = data.taskId as string;
-      setPlanSteps((prev) => prev.map((s) =>
-        s.taskId === taskId ? { ...s, status: "running" as const } : s
-      ));
-      setEngineStatus("running");
-      addActivity("task_started", data, taskId, data.agentType as string);
-    };
-
-    const onTaskCompleted = (data: Record<string, unknown>) => {
-      if (data.projectId !== projectId) return;
-      const taskId = data.taskId as string;
-      setPlanSteps((prev) => {
-        const updated = prev.map((s) =>
-          s.taskId === taskId ? { ...s, status: "completed" as const } : s
-        );
-        const completed = updated.filter((s) => s.status === "completed").length;
-        setProgress({ completed, total: updated.length, percentage: updated.length > 0 ? Math.round((completed / updated.length) * 100) : 0 });
-        return updated;
-      });
-      addActivity("task_completed", data, taskId);
-    };
-
-    const onTaskFailed = (data: Record<string, unknown>) => {
-      if (data.projectId !== projectId) return;
-      const taskId = data.taskId as string;
-      setPlanSteps((prev) => prev.map((s) =>
-        s.taskId === taskId ? { ...s, status: "failed" as const } : s
-      ));
-      addActivity("task_failed", data, taskId);
-    };
-
-    const onActivity = (data: Record<string, unknown>) => {
-      const type = data.type as EngineActivityType;
-      const taskId = data.taskId as string | undefined;
-      const agentType = data.agentType as string | undefined;
-      const content = (data.content as Record<string, unknown>) || {};
-      addActivity(type, content, taskId, agentType || (content.agentType as string));
-    };
-
-    socket.on("engine:started", onEngineStarted);
-    socket.on("engine:completed", onEngineCompleted);
-    socket.on("engine:failed", onEngineFailed);
-    socket.on("engine:status_change", onStatusChange);
-    socket.on("engine:plan_update", onPlanUpdate);
-    socket.on("engine:task:started", onTaskStarted);
-    socket.on("engine:task:completed", onTaskCompleted);
-    socket.on("engine:task:failed", onTaskFailed);
-    socket.on("engine:activity", onActivity);
+    socket.on("event", onEvent);
 
     return () => {
-      socket.off("engine:started", onEngineStarted);
-      socket.off("engine:completed", onEngineCompleted);
-      socket.off("engine:failed", onEngineFailed);
-      socket.off("engine:status_change", onStatusChange);
-      socket.off("engine:plan_update", onPlanUpdate);
-      socket.off("engine:task:started", onTaskStarted);
-      socket.off("engine:task:completed", onTaskCompleted);
-      socket.off("engine:task:failed", onTaskFailed);
-      socket.off("engine:activity", onActivity);
+      socket.off("event", onEvent);
     };
   }, [projectId, addActivity]);
 

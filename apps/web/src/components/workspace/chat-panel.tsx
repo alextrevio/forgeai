@@ -24,7 +24,6 @@ import {
 import { useProjectStore } from "@/stores/project-store";
 import { useEngineActivity } from "@/hooks/useEngineActivity";
 import { api } from "@/lib/api";
-import { getSocket } from "@/lib/socket";
 import { cn, generateId } from "@/lib/utils";
 import { RichMessage } from "./rich-message";
 import { SuggestionChips } from "./suggestion-chips";
@@ -229,23 +228,30 @@ export function ChatPanel() {
     });
     setAgentRunning(true);
 
-    // Start the engine if it's not already running
-    if (!engine.isRunning) {
+    if (engine.isRunning) {
+      // Engine already running — send as follow-up message
       try {
-        await api.startEngine(currentProjectId, content);
-      } catch (engineErr) {
-        console.error("[ChatPanel] engine start failed, falling back to chat:", engineErr);
-        // Fall through to regular message send
+        await api.sendMessage(currentProjectId, content);
+      } catch (apiErr) {
+        console.error("[ChatPanel] follow-up sendMessage failed:", apiErr);
+        setAgentRunning(false);
+      } finally {
+        setIsSending(false);
       }
+      return;
     }
 
+    // Try to start the engine first
     try {
-      const socket = getSocket();
-      socket.emit("message:send", { projectId: currentProjectId, content });
-    } catch (socketErr) {
-      console.error("[ChatPanel] socket.emit failed:", socketErr);
+      await api.startEngine(currentProjectId, content);
+      // Engine started — it handles everything via WebSocket events
+      setIsSending(false);
+      return;
+    } catch (engineErr) {
+      console.error("[ChatPanel] engine start failed, falling back to chat:", engineErr);
     }
 
+    // Fallback: engine failed to start, use regular message flow
     try {
       await api.sendMessage(currentProjectId, content);
     } catch (apiErr) {
