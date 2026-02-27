@@ -2,6 +2,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 class ApiClient {
   private baseUrl: string;
+  private refreshPromise: Promise<boolean> | null = null;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
@@ -56,7 +57,14 @@ class ApiClient {
           headers,
         });
         if (!retryResponse.ok) {
-          throw new ApiError(retryResponse.status, await retryResponse.text());
+          const retryBody = await retryResponse.text();
+          let retryMessage = retryBody;
+          try {
+            const parsed = JSON.parse(retryBody);
+            if (parsed?.error?.message) retryMessage = parsed.error.message;
+            else if (parsed?.message) retryMessage = parsed.message;
+          } catch {}
+          throw new ApiError(retryResponse.status, retryMessage);
         }
         return retryResponse.json();
       }
@@ -71,13 +79,40 @@ class ApiClient {
 
     if (!response.ok) {
       const body = await response.text();
-      throw new ApiError(response.status, body);
+      // Parse structured error responses to get the human-readable message
+      let message = body;
+      try {
+        const parsed = JSON.parse(body);
+        if (parsed?.error?.message) {
+          message = parsed.error.message;
+        } else if (parsed?.message) {
+          message = parsed.message;
+        }
+      } catch {
+        // body is not JSON, use as-is
+      }
+      throw new ApiError(response.status, message);
     }
 
     return response.json();
   }
 
   private async refreshToken(): Promise<boolean> {
+    // Mutex: if a refresh is already in-flight, wait for it instead of sending a second request.
+    // This prevents concurrent 401s from both rotating the token and triggering reuse detection.
+    if (this.refreshPromise) {
+      return this.refreshPromise;
+    }
+
+    this.refreshPromise = this.doRefresh();
+    try {
+      return await this.refreshPromise;
+    } finally {
+      this.refreshPromise = null;
+    }
+  }
+
+  private async doRefresh(): Promise<boolean> {
     const refreshToken = localStorage.getItem("refreshToken");
     if (!refreshToken) return false;
 
@@ -463,6 +498,21 @@ class ApiClient {
   }
 
   logout() {
+    const token = this.getToken();
+    const refreshToken = localStorage.getItem("refreshToken");
+
+    // Invalidate refresh token on server (fire-and-forget)
+    if (token && refreshToken) {
+      fetch(`${this.baseUrl}/api/auth/logout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ refreshToken }),
+      }).catch(() => {});
+    }
+
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     if (typeof window !== "undefined") {

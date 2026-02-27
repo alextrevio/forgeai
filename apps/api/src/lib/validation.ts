@@ -46,7 +46,11 @@ export const updateSettingsSchema = z.object({
     anthropicApiKey: z.string().optional(),
     openaiApiKey: z.string().optional(),
     name: z.string().optional(),
-  }),
+    // Onboarding fields
+    projectTypes: z.array(z.string()).optional(),
+    preferredTemplate: z.string().optional(),
+    onboarded: z.boolean().optional(),
+  }).passthrough(), // Allow additional fields without failing validation
 });
 
 // ── API Key schemas ──────────────────────────────────────

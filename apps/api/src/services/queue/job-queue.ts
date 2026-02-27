@@ -8,10 +8,27 @@ import { engineAbortControllers } from "../../engine/service";
 import type { PlanStep } from "../agents/base-agent";
 
 // ── Redis connection ────────────────────────────────────────────
-const connection = {
-  host: process.env.REDIS_HOST || "localhost",
-  port: parseInt(process.env.REDIS_PORT || "6379", 10),
-};
+function parseRedisConnection() {
+  const redisUrl = process.env.REDIS_URL;
+  if (redisUrl) {
+    try {
+      const parsed = new URL(redisUrl);
+      return {
+        host: parsed.hostname,
+        port: parseInt(parsed.port || "6379", 10),
+        ...(parsed.password ? { password: parsed.password } : {}),
+      };
+    } catch {
+      logger.warn({ redisUrl }, "Failed to parse REDIS_URL, falling back to host/port env vars");
+    }
+  }
+  return {
+    host: process.env.REDIS_HOST || "localhost",
+    port: parseInt(process.env.REDIS_PORT || "6379", 10),
+  };
+}
+
+const connection = parseRedisConnection();
 
 // ── Queues ──────────────────────────────────────────────────────
 export const engineQueue = new Queue("engine-tasks", {

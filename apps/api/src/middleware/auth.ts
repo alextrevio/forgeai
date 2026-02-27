@@ -20,8 +20,8 @@ export async function authenticate(req: AuthRequest, res: Response, next: NextFu
 
   const token = authHeader.slice(7);
 
-  // API Key auth — keys start with "fai_"
-  if (token.startsWith("fai_")) {
+  // API Key auth — keys start with "arya_key_"
+  if (token.startsWith("arya_key_")) {
     try {
       const keyHash = hashKey(token);
       const apiKey = await prisma.apiKey.findUnique({
@@ -31,6 +31,14 @@ export async function authenticate(req: AuthRequest, res: Response, next: NextFu
 
       if (!apiKey) {
         return res.status(401).json({ error: { code: "AUTH_INVALID", message: "Invalid API key" } });
+      }
+
+      if (!apiKey.isActive) {
+        return res.status(401).json({ error: { code: "AUTH_INVALID", message: "API key is deactivated" } });
+      }
+
+      if (apiKey.expiresAt && apiKey.expiresAt < new Date()) {
+        return res.status(401).json({ error: { code: "AUTH_INVALID", message: "API key has expired" } });
       }
 
       // Update last used timestamp (fire-and-forget)

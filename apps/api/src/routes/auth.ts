@@ -170,11 +170,19 @@ authRouter.patch("/me/settings", authenticate, validateBody(updateSettingsSchema
   try {
     const { settings } = req.body;
 
+    // Merge with existing settings instead of replacing
+    const existing = await prisma.user.findUnique({
+      where: { id: req.userId },
+      select: { settings: true },
+    });
+    const existingSettings = (existing?.settings as Record<string, unknown>) || {};
+    const merged = { ...existingSettings, ...settings };
+
     const user = await prisma.user.update({
       where: { id: req.userId },
       data: {
-        settings: settings as any,
-        name: settings.name || undefined,
+        settings: merged as any,
+        ...(settings.name ? { name: settings.name } : {}),
       },
       select: {
         id: true,
