@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Panel, PanelGroup, PanelResizeHandle, type ImperativePanelGroupHandle } from "react-resizable-panels";
-import { Activity } from "lucide-react";
+import { Activity, Clock, X } from "lucide-react";
 import { ChatPanel } from "./chat-panel";
 import { ComputerPanel } from "./computer-panel";
 import { ActivityFeed } from "./activity-feed";
@@ -29,8 +29,29 @@ export function WorkspaceLayout() {
     activityItems,
   } = useProjectStore();
 
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const engineStartRef = useRef<number | null>(null);
+
   const engine = useEngineActivity(currentProjectId);
   const activityCount = safeArray(activityItems).length + engine.activities.length;
+
+  const anyRunningEarly = isAgentRunning || engine.isRunning;
+
+  // Track elapsed time when engine is running
+  useEffect(() => {
+    if (anyRunningEarly) {
+      if (!engineStartRef.current) engineStartRef.current = Date.now();
+      setBannerDismissed(false);
+      const tick = setInterval(() => {
+        setElapsedSeconds(Math.floor((Date.now() - (engineStartRef.current || Date.now())) / 1000));
+      }, 1000);
+      return () => clearInterval(tick);
+    } else {
+      engineStartRef.current = null;
+      setElapsedSeconds(0);
+    }
+  }, [anyRunningEarly]);
 
   // Auto-show activity panel when engine starts
   const prevRunning = useRef(false);
@@ -117,6 +138,28 @@ export function WorkspaceLayout() {
               animation: engineProgress.total === 0 ? "topProgress 2s ease-in-out infinite" : undefined,
             }}
           />
+        </div>
+      )}
+
+      {/* Background execution banner */}
+      {anyRunning && !bannerDismissed && (
+        <div className="flex items-center gap-3 bg-[#7c3aed]/10 border-b border-[#7c3aed]/20 px-4 py-2 shrink-0">
+          <div className="h-2 w-2 rounded-full bg-[#7c3aed] animate-pulse shrink-0" />
+          <p className="text-xs text-[#a78bfa] flex-1">
+            Arya esta trabajando en tu proyecto. Puedes cerrar esta pestana y te notificaremos cuando termine.
+          </p>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Clock className="h-3 w-3 text-[#8888a0]" />
+            <span className="text-xs text-[#8888a0] tabular-nums font-mono">
+              {Math.floor(elapsedSeconds / 60)}:{(elapsedSeconds % 60).toString().padStart(2, "0")}
+            </span>
+          </div>
+          <button
+            onClick={() => setBannerDismissed(true)}
+            className="rounded p-0.5 text-[#8888a0] hover:text-[#EDEDED] hover:bg-[#1A1A1A] transition-colors shrink-0"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
         </div>
       )}
 

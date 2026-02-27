@@ -27,6 +27,7 @@ import { rateLimit } from "./middleware/rate-limit";
 import { setupSocketHandlers } from "./socket";
 import { skillService } from "./services/skill-service";
 import { setSocketIO, closeQueues } from "./services/queue/job-queue";
+import { notificationService } from "./services/notifications";
 import { logger } from "./lib/logger";
 
 // ── Validate required env vars at startup ───────────────
@@ -57,8 +58,9 @@ const io = new SocketIOServer(httpServer, {
 // Make io accessible to routes
 app.set("io", io);
 
-// Set Socket.IO reference for BullMQ workers
+// Set Socket.IO reference for BullMQ workers and notifications
 setSocketIO(io);
+notificationService.setIO(io);
 
 // ── Security middleware ──────────────────────────────────
 app.use(helmet({

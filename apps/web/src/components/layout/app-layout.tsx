@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { Sidebar, SIDEBAR_STORAGE_KEY } from "@/components/sidebar/sidebar";
+import { useNotificationStore } from "@/stores/notification-store";
+import { getSocket } from "@/lib/socket";
 import { cn } from "@/lib/utils";
 
 interface AppLayoutProps {
@@ -12,6 +14,19 @@ interface AppLayoutProps {
 export function AppLayout({ children, onNewProject }: AppLayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const addNotification = useNotificationStore((s) => s.addNotification);
+
+  // Listen for real-time notifications via WebSocket
+  useEffect(() => {
+    const socket = getSocket();
+    const handler = (notification: any) => {
+      if (notification?.id && notification?.title) {
+        addNotification(notification);
+      }
+    };
+    socket.on("notification", handler);
+    return () => { socket.off("notification", handler); };
+  }, [addNotification]);
 
   // Sync collapsed state from localStorage (sidebar writes it)
   useEffect(() => {

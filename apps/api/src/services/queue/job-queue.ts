@@ -1,8 +1,9 @@
-import { Queue, Worker, Job, QueueEvents } from "bullmq";
+import { Queue, Worker, Job } from "bullmq";
 import { Server as SocketIOServer } from "socket.io";
 import { prisma, Prisma } from "@forgeai/db";
 import { logger } from "../../lib/logger";
 import { EngineOrchestrator } from "../orchestrator";
+import { notificationService } from "../notifications";
 import { engineAbortControllers } from "../../engine/service";
 import type { PlanStep } from "../agents/base-agent";
 
@@ -130,18 +131,29 @@ export const agentWorker = new Worker(
 // ═══════════════════════════════════════════════════════════════════
 
 engineWorker.on("completed", (job) => {
-  logger.info({ jobId: job?.id, data: job?.returnvalue }, "Engine job completed");
+  const projectId = job?.data?.projectId;
+  const failedCount = job?.returnvalue?.failedCount ?? 0;
+  logger.info({ jobId: job?.id, projectId }, "Engine job completed");
+
+  if (projectId) {
+    notificationService.onEngineComplete(projectId, "completed", failedCount).catch(() => {});
+  }
 });
 
 engineWorker.on("failed", (job, err) => {
   const projectId = job?.data?.projectId;
   logger.error({ jobId: job?.id, projectId, error: err.message }, "Engine job failed");
 
-  if (projectId && ioInstance) {
-    ioInstance.to(`project:${projectId}`).emit("event", {
-      type: "engine:failed",
-      data: { projectId, error: err.message },
-    });
+  if (projectId) {
+    // Notify user
+    notificationService.onEngineComplete(projectId, "failed").catch(() => {});
+
+    if (ioInstance) {
+      ioInstance.to(`project:${projectId}`).emit("event", {
+        type: "engine:failed",
+        data: { projectId, error: err.message },
+      });
+    }
 
     // Ensure project status reflects failure
     prisma.project.update({
@@ -152,12 +164,21 @@ engineWorker.on("failed", (job, err) => {
 });
 
 agentWorker.on("completed", (job) => {
-  logger.info({ jobId: job?.id, data: job?.returnvalue }, "Agent job completed");
+  const { projectId, step } = job?.data || {};
+  logger.info({ jobId: job?.id, projectId }, "Agent job completed");
+
+  if (projectId && step?.title) {
+    notificationService.onTaskComplete(projectId, step.title, "completed").catch(() => {});
+  }
 });
 
 agentWorker.on("failed", (job, err) => {
-  const { projectId, taskId } = job?.data || {};
+  const { projectId, taskId, step } = job?.data || {};
   logger.error({ jobId: job?.id, projectId, taskId, error: err.message }, "Agent job failed");
+
+  if (projectId && step?.title) {
+    notificationService.onTaskComplete(projectId, step.title, "failed").catch(() => {});
+  }
 
   if (projectId && taskId && ioInstance) {
     ioInstance.to(`project:${projectId}`).emit("event", {

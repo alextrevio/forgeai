@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Bell, CheckCheck, Rocket, AlertCircle, Users, CreditCard } from "lucide-react";
+import { Bell, CheckCheck, Rocket, AlertCircle, Users, CreditCard, CheckCircle2, XCircle, Zap } from "lucide-react";
 import { useNotificationStore } from "@/stores/notification-store";
 import { cn, formatDate } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -19,6 +19,10 @@ const typeIcons: Record<string, React.ReactNode> = {
   deploy_failed: <AlertCircle className="h-4 w-4 text-[#ef4444]" />,
   project_shared: <Users className="h-4 w-4 text-[#3b82f6]" />,
   credits_low: <CreditCard className="h-4 w-4 text-[#f59e0b]" />,
+  engine_complete: <CheckCircle2 className="h-4 w-4 text-[#22c55e]" />,
+  engine_failed: <XCircle className="h-4 w-4 text-[#ef4444]" />,
+  task_complete: <Zap className="h-4 w-4 text-[#22c55e]" />,
+  task_failed: <AlertCircle className="h-4 w-4 text-[#ef4444]" />,
 };
 
 export function NotificationBell() {

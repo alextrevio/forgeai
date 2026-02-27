@@ -74,7 +74,7 @@ export function Sidebar({ onNewProject }: SidebarProps) {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Fetch projects
+  // Fetch projects (with periodic refresh for active progress)
   useEffect(() => {
     const fetchProjects = async () => {
       try {
@@ -85,6 +85,9 @@ export function Sidebar({ onNewProject }: SidebarProps) {
       }
     };
     fetchProjects();
+    // Poll every 10s so running project progress stays fresh
+    const interval = setInterval(fetchProjects, 10_000);
+    return () => clearInterval(interval);
   }, []);
 
   // Close context menu on click outside
@@ -268,6 +271,48 @@ export function Sidebar({ onNewProject }: SidebarProps) {
           )}
         </div>
       </div>
+
+      {/* Active projects — progress section */}
+      {!collapsed && (() => {
+        const running = projects.filter(
+          (p) => p.engineStatus === "running" || p.engineStatus === "planning"
+        );
+        if (running.length === 0) return null;
+        return (
+          <div className="border-t border-[#1E1E1E] px-3 py-2 shrink-0">
+            <p className="text-xs uppercase tracking-wider text-[#555555] px-3 mb-2">
+              En progreso ({running.length})
+            </p>
+            <div className="space-y-2">
+              {running.map((project) => (
+                <button
+                  key={project.id}
+                  onClick={() => router.push(`/project/${project.id}`)}
+                  className="flex w-full flex-col gap-1 rounded-md px-3 py-2 hover:bg-[#1A1A1A] transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-[#22c55e] live-pulse shrink-0" />
+                    <span className="text-xs text-[#EDEDED] truncate flex-1 text-left">
+                      {project.name}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 pl-4">
+                    <div className="flex-1 h-1 rounded-full bg-[#2A2A2A] overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-[#7c3aed] to-[#a78bfa] transition-all duration-500"
+                        style={{ width: project.engineStatus === "planning" ? "15%" : "50%" }}
+                      />
+                    </div>
+                    <span className="text-[9px] text-[#8888a0] tabular-nums shrink-0">
+                      {project.engineStatus === "planning" ? "plan" : "exec"}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Bottom nav */}
       <div className="border-t border-[#1E1E1E] px-3 py-2 space-y-0.5 shrink-0">
