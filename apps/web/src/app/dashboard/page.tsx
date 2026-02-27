@@ -58,8 +58,13 @@ export default function DashboardPage() {
       // Start the engine
       try {
         await api.startEngine(project.id, text);
-      } catch {
-        addToast("warning", "Engine could not start — you can retry from the project page.");
+      } catch (engineErr: any) {
+        const msg = engineErr?.message || "";
+        if (msg.includes("credit balance") || engineErr?.status === 402) {
+          addToast("error", "AI provider has no credits. Check your Anthropic API key billing at console.anthropic.com.");
+        } else {
+          addToast("warning", "Engine could not start — you can retry from the project page.");
+        }
       }
       router.push(`/project/${project.id}`);
     } catch (err) {

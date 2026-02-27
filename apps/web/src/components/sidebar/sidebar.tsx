@@ -91,8 +91,8 @@ export function Sidebar({ onNewProject }: SidebarProps) {
       }
     };
     fetchProjects();
-    // Poll every 10s so running project progress stays fresh
-    const interval = setInterval(fetchProjects, 10_000);
+    // Poll every 30s so running project progress stays fresh
+    const interval = setInterval(fetchProjects, 30_000);
     return () => clearInterval(interval);
   }, []);
 

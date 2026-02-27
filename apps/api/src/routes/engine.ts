@@ -88,7 +88,18 @@ engineRouter.post("/start", checkCredits, async (req: AuthRequest, res: Response
       return res.status(400).json({ error: "Invalid input", details: err.errors });
     }
     logger.error(err, "Engine start error");
-    return res.status(500).json({ error: "Internal server error" });
+    // Extract human-readable message from Anthropic SDK errors
+    const rawMessage = err instanceof Error ? err.message : "Internal server error";
+    let userMessage = rawMessage;
+    // Anthropic SDK errors embed JSON in the message: "400 {...}"
+    const jsonMatch = rawMessage.match(/\{.*"message"\s*:\s*"([^"]+)"/);
+    if (jsonMatch?.[1]) {
+      userMessage = jsonMatch[1];
+    }
+    const isProviderError = userMessage.includes("credit balance") || userMessage.includes("API key") || userMessage.includes("authentication") || rawMessage.includes("invalid_request");
+    return res.status(isProviderError ? 402 : 500).json({
+      error: isProviderError ? userMessage : "Internal server error",
+    });
   }
 });
 

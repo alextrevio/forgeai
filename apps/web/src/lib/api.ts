@@ -61,7 +61,8 @@ class ApiClient {
           let retryMessage = retryBody;
           try {
             const parsed = JSON.parse(retryBody);
-            if (parsed?.error?.message) retryMessage = parsed.error.message;
+            if (typeof parsed?.error === "string") retryMessage = parsed.error;
+            else if (parsed?.error?.message) retryMessage = parsed.error.message;
             else if (parsed?.message) retryMessage = parsed.message;
           } catch {}
           throw new ApiError(retryResponse.status, retryMessage);
@@ -82,7 +83,9 @@ class ApiClient {
       let message = body;
       try {
         const parsed = JSON.parse(body);
-        if (parsed?.error?.message) {
+        if (typeof parsed?.error === "string") {
+          message = parsed.error;
+        } else if (parsed?.error?.message) {
           message = parsed.error.message;
         } else if (parsed?.message) {
           message = parsed.message;
