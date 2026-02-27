@@ -93,6 +93,9 @@ interface ProjectState {
   // Snapshots
   snapshots: SnapshotInfo[];
 
+  // Preview
+  previewAutoSwitch: boolean;
+
   // Activity feed
   activityItems: ActivityItem[];
   activityExpanded: boolean;
@@ -124,6 +127,7 @@ interface ProjectState {
   setSnapshots: (snapshots: SnapshotInfo[]) => void;
   addConsoleEntry: (entry: ConsoleEntry) => void;
   clearConsoleEntries: () => void;
+  setPreviewAutoSwitch: (autoSwitch: boolean) => void;
   addActivity: (item: Omit<ActivityItem, "id" | "timestamp">) => void;
   clearActivity: () => void;
   setActivityExpanded: (expanded: boolean) => void;
@@ -148,6 +152,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   lastReviewReport: null,
   consoleEntries: [],
   snapshots: [],
+  previewAutoSwitch: false,
   activityItems: [],
   activityExpanded: false,
 
@@ -166,6 +171,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       lastReviewReport: null,
       consoleEntries: [],
       snapshots: [],
+      previewAutoSwitch: false,
       activityItems: [],
     }),
 
@@ -189,6 +195,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       lastReviewReport: null,
       consoleEntries: [],
       snapshots: [],
+      previewAutoSwitch: false,
       activityItems: [],
       activityExpanded: false,
     }),
@@ -300,6 +307,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     })),
 
   clearConsoleEntries: () => set({ consoleEntries: [] }),
+
+  setPreviewAutoSwitch: (autoSwitch) => set({ previewAutoSwitch: autoSwitch }),
 
   addActivity: (item) =>
     set((state) => ({

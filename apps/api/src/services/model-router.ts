@@ -1,5 +1,6 @@
 import { callLLM, callLLMForJSON, LLM_CONFIGS } from "@forgeai/agents";
 import type { LLMConfig } from "@forgeai/agents";
+import { Sentry } from "../lib/sentry";
 import { logger } from "../lib/logger";
 import { usageTracker } from "./usage-tracker";
 
@@ -114,8 +115,15 @@ export class ModelRouter {
 
     logger.info({ agentType, model }, "ModelRouter: calling LLM");
 
-    const text = await callLLM(agentType, systemPrompt, messages, signal);
-    return { text, model };
+    try {
+      const text = await callLLM(agentType, systemPrompt, messages, signal);
+      return { text, model };
+    } catch (err) {
+      Sentry.captureException(err, {
+        tags: { component: 'model_router', agent_type: agentType, model },
+      });
+      throw err;
+    }
   }
 
   /**
@@ -132,8 +140,15 @@ export class ModelRouter {
 
     logger.info({ agentType, model }, "ModelRouter: calling LLM for JSON");
 
-    const result = await callLLMForJSON<T>(agentType, systemPrompt, messages, signal);
-    return { ...result, model };
+    try {
+      const result = await callLLMForJSON<T>(agentType, systemPrompt, messages, signal);
+      return { ...result, model };
+    } catch (err) {
+      Sentry.captureException(err, {
+        tags: { component: 'model_router', agent_type: agentType, model, format: 'json' },
+      });
+      throw err;
+    }
   }
 
   /**
@@ -151,8 +166,15 @@ export class ModelRouter {
 
     logger.info({ agentType, model, override: !!overrideModel }, "ModelRouter: calling LLM with override");
 
-    const result = await callLLMForJSON<T>(agentType, systemPrompt, messages, signal);
-    return { ...result, model };
+    try {
+      const result = await callLLMForJSON<T>(agentType, systemPrompt, messages, signal);
+      return { ...result, model };
+    } catch (err) {
+      Sentry.captureException(err, {
+        tags: { component: 'model_router', agent_type: agentType, model, override: String(!!overrideModel) },
+      });
+      throw err;
+    }
   }
 
   /**

@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { Sentry } from "../lib/sentry";
 import { logger } from "../lib/logger";
 
 export interface AppError extends Error {
@@ -33,6 +34,9 @@ export function errorHandler(err: AppError, req: Request, res: Response, _next: 
 
   if (statusCode >= 500) {
     logger.error({ err, path: req.path, method: req.method }, `[${code}] ${err.message}`);
+    Sentry.captureException(err, {
+      tags: { error_code: code, path: req.path, method: req.method },
+    });
   } else {
     logger.warn({ code, path: req.path, method: req.method }, err.message);
   }

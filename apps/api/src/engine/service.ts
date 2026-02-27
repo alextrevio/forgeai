@@ -1,5 +1,6 @@
 import { Server as SocketIOServer } from "socket.io";
 import { prisma, Prisma } from "@forgeai/db";
+import { Sentry } from "../lib/sentry";
 import { logger } from "../lib/logger";
 import { EngineOrchestrator } from "../services/orchestrator";
 import { enqueueEngineExecution, enqueueAgentTask, cancelEngineJob } from "../services/queue/job-queue";
@@ -61,6 +62,11 @@ export async function startEngine(
   } catch (err) {
     engineAbortControllers.delete(projectId);
     const message = err instanceof Error ? err.message : String(err);
+
+    Sentry.captureException(err, {
+      tags: { component: 'engine', action: 'start', project_id: projectId },
+      contexts: { engine: { projectId, phase: 'planning_or_queue' } },
+    });
 
     await prisma.project.update({
       where: { id: projectId },

@@ -5,6 +5,8 @@ import { createHash, randomBytes } from "crypto";
 import { prisma } from "@forgeai/db";
 import { authenticate, AuthRequest } from "../middleware/auth";
 import { registerSchema, loginSchema, updateSettingsSchema, createApiKeySchema, validateBody } from "../lib/validation";
+import { Sentry } from "../lib/sentry";
+import { trackServerEvent } from "../lib/posthog";
 import { logger } from "../lib/logger";
 
 export const authRouter: import("express").Router = Router();
@@ -56,6 +58,7 @@ authRouter.post("/register", validateBody(registerSchema), async (req: Request, 
 
     const tokens = await createTokenPair(user.id);
     logger.info({ userId: user.id }, "User registered");
+    trackServerEvent(user.id, 'user_registered', { method: 'email', plan: user.plan });
 
     return res.status(201).json({
       user: { id: user.id, email: user.email, name: user.name, plan: user.plan },
@@ -79,11 +82,17 @@ authRouter.post("/login", validateBody(loginSchema), async (req: Request, res: R
 
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
+      Sentry.captureMessage('Failed login attempt', {
+        level: 'warning',
+        tags: { auth_event: 'login_failed' },
+        extra: { email, reason: 'invalid_password' },
+      });
       return res.status(401).json({ error: { code: "AUTH_INVALID", message: "Invalid credentials" } });
     }
 
     const tokens = await createTokenPair(user.id);
     logger.info({ userId: user.id }, "User logged in");
+    trackServerEvent(user.id, 'user_logged_in', { method: 'email' });
 
     return res.json({
       user: { id: user.id, email: user.email, name: user.name, plan: user.plan },

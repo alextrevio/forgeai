@@ -1,6 +1,8 @@
 import { Queue, Worker, Job } from "bullmq";
 import { Server as SocketIOServer } from "socket.io";
 import { prisma, Prisma } from "@forgeai/db";
+import { Sentry } from "../../lib/sentry";
+import { trackServerEvent } from "../../lib/posthog";
 import { logger } from "../../lib/logger";
 import { EngineOrchestrator } from "../orchestrator";
 import { notificationService } from "../notifications";
@@ -154,6 +156,20 @@ engineWorker.on("completed", (job) => {
 
   if (projectId) {
     notificationService.onEngineComplete(projectId, "completed", failedCount).catch(() => {});
+    // Track engine completion (fire-and-forget)
+    prisma.project.findUnique({ where: { id: projectId }, select: { userId: true } })
+      .then((p) => {
+        if (p?.userId) {
+          const taskCount = job?.data?.tasks?.length ?? 0;
+          trackServerEvent(p.userId, 'engine_completed', {
+            projectId,
+            task_count: taskCount,
+            failed_count: failedCount,
+            duration_ms: job?.finishedOn && job?.processedOn ? job.finishedOn - job.processedOn : undefined,
+          });
+        }
+      })
+      .catch(() => {});
   }
 });
 
@@ -161,7 +177,24 @@ engineWorker.on("failed", (job, err) => {
   const projectId = job?.data?.projectId;
   logger.error({ jobId: job?.id, projectId, error: err.message }, "Engine job failed");
 
+  Sentry.captureException(err, {
+    tags: { component: 'bullmq', queue: 'engine-tasks', project_id: projectId || 'unknown' },
+    extra: { jobId: job?.id, jobData: job?.data },
+  });
+
   if (projectId) {
+    // Track engine failure (fire-and-forget)
+    prisma.project.findUnique({ where: { id: projectId }, select: { userId: true } })
+      .then((p) => {
+        if (p?.userId) {
+          trackServerEvent(p.userId, 'engine_failed', {
+            projectId,
+            error_type: err.name,
+            error_message: err.message.slice(0, 200),
+          });
+        }
+      })
+      .catch(() => {});
     // Notify user
     notificationService.onEngineComplete(projectId, "failed").catch(() => {});
 
@@ -192,6 +225,16 @@ agentWorker.on("completed", (job) => {
 agentWorker.on("failed", (job, err) => {
   const { projectId, taskId, step } = job?.data || {};
   logger.error({ jobId: job?.id, projectId, taskId, error: err.message }, "Agent job failed");
+
+  Sentry.captureException(err, {
+    tags: {
+      component: 'bullmq',
+      queue: 'agent-tasks',
+      project_id: projectId || 'unknown',
+      agent_type: step?.agentType || 'unknown',
+    },
+    extra: { jobId: job?.id, taskId, stepTitle: step?.title },
+  });
 
   if (projectId && step?.title) {
     notificationService.onTaskComplete(projectId, step.title, "failed").catch(() => {});

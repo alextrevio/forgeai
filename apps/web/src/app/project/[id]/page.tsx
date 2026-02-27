@@ -350,6 +350,28 @@ export default function ProjectPage() {
           }, 500);
           break;
 
+        case "preview:ready":
+          // Server confirmed ready — set preview URL
+          if (event.data.url) {
+            s.setPreviewUrl(event.data.url as string);
+          } else {
+            api.getPreviewUrl(projectId).then((p) => s.setPreviewUrl(p.url)).catch(() => {});
+          }
+          break;
+
+        case "preview:refresh":
+          // Debounced file-change refresh — reload iframe without clearing URL
+          // The frontend ComputerPanel listens for previewUrl changes
+          // Force a re-render by briefly nulling and restoring
+          {
+            const currentUrl = s.previewUrl;
+            if (currentUrl) {
+              s.setPreviewUrl(null);
+              setTimeout(() => s.setPreviewUrl(currentUrl), 100);
+            }
+          }
+          break;
+
         case "sandbox:status":
           s.setSandboxStatus(event.data.status);
           break;
@@ -408,6 +430,8 @@ export default function ProjectPage() {
           api.getFileTree(projectId).then((t) => s.setFileTree(safeArray(t))).catch(() => {});
           api.getSnapshots(projectId).then((sn) => s.setSnapshots(safeArray(sn))).catch(() => {});
           api.getPreviewUrl(projectId).then((p) => s.setPreviewUrl(p.url)).catch(() => {});
+          // Signal ComputerPanel to auto-switch to Preview tab
+          s.setPreviewAutoSwitch(true);
           s.addActivity({ type: "complete", summary: "Engine completed all tasks" });
           break;
 

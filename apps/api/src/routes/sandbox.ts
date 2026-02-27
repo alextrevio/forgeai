@@ -4,6 +4,7 @@ import http from "http";
 import { prisma } from "@forgeai/db";
 import { AuthRequest } from "../middleware/auth";
 import { sandboxManager } from "../sandbox/manager";
+import { previewManager } from "../services/preview-server";
 
 // Max file content size: 5MB
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -184,7 +185,7 @@ sandboxRouter.post("/:id/terminal", async (req: AuthRequest, res: Response) => {
   }
 });
 
-// Get preview URL — returns the proxy URL (reachable from browser)
+// Get preview URL with status — returns the proxy URL and health info
 sandboxRouter.get("/:id/preview", async (req: AuthRequest, res: Response) => {
   try {
     const id = req.params.id as string;
@@ -195,11 +196,42 @@ sandboxRouter.get("/:id/preview", async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: "Project or sandbox not found" });
     }
 
-    // Return a browser-reachable proxy URL instead of localhost:port
     const url = `/api/projects/${id}/preview-proxy/`;
-    return res.json({ url });
+    const previewInfo = previewManager.getPreviewInfo(id);
+
+    return res.json({
+      url,
+      status: previewInfo?.status ?? "unknown",
+      framework: previewInfo?.framework ?? "unknown",
+      readyAt: previewInfo?.readyAt?.toISOString() ?? null,
+      lastRefreshAt: previewInfo?.lastRefreshAt?.toISOString() ?? null,
+    });
   } catch (err) {
     console.error("Get preview error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Refresh preview — triggers a reload event for connected clients
+sandboxRouter.post("/:id/preview/refresh", async (req: AuthRequest, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const project = await prisma.project.findFirst({
+      where: { id, userId: req.userId },
+    });
+    if (!project || !project.sandboxId) {
+      return res.status(404).json({ error: "Project or sandbox not found" });
+    }
+
+    // Ensure sandbox is running
+    await sandboxManager.ensureSandboxRunning(id);
+
+    // Emit refresh to all connected clients
+    previewManager.emitRefresh(id);
+
+    return res.json({ success: true, refreshedAt: new Date().toISOString() });
+  } catch (err) {
+    console.error("Preview refresh error:", err);
     return res.status(500).json({ error: "Internal server error" });
   }
 });

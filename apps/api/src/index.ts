@@ -1,3 +1,8 @@
+import { initSentry, Sentry } from "./lib/sentry";
+import { shutdownPostHog } from "./lib/posthog";
+
+// Initialize Sentry BEFORE anything else
+initSentry();
 
 import express from "express";
 import cors from "cors";
@@ -32,6 +37,7 @@ import { setupSocketHandlers } from "./socket";
 import { skillService } from "./services/skill-service";
 import { setSocketIO, closeQueues } from "./services/queue/job-queue";
 import { notificationService } from "./services/notifications";
+import { previewManager } from "./services/preview-server";
 import { logger } from "./lib/logger";
 
 // ── Validate required env vars at startup ───────────────
@@ -62,9 +68,10 @@ const io = new SocketIOServer(httpServer, {
 // Make io accessible to routes
 app.set("io", io);
 
-// Set Socket.IO reference for BullMQ workers and notifications
+// Set Socket.IO reference for BullMQ workers, notifications, and preview
 setSocketIO(io);
 notificationService.setIO(io);
+previewManager.setIO(io);
 
 // ── Security middleware ──────────────────────────────────
 app.use(helmet({
@@ -189,6 +196,11 @@ app.use("/api/*", (req, res) => {
   res.status(404).json({ error: { code: "NOT_FOUND", message: `Route not found: ${req.method} ${req.path}` } });
 });
 
+// Sentry error handler (must be before custom error handler)
+if (process.env.SENTRY_DSN) {
+  Sentry.setupExpressErrorHandler(app);
+}
+
 // Global error handler (must be last middleware)
 app.use(errorHandler);
 
@@ -213,6 +225,9 @@ function gracefulShutdown(signal: string) {
     await closeQueues().catch((err) => {
       logger.warn({ error: err }, "Error closing BullMQ queues");
     });
+    // Flush pending Sentry events before shutdown
+    await Sentry.close(2000).catch(() => {});
+    await shutdownPostHog().catch(() => {});
     await prisma.$disconnect();
     logger.info("All connections closed");
     process.exit(0);

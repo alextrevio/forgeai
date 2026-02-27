@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma, Prisma } from "@forgeai/db";
 import { AuthRequest } from "../middleware/auth";
 import { checkCredits } from "../middleware/credits";
+import { trackServerEvent } from "../lib/posthog";
 import { logger } from "../lib/logger";
 import { Server as SocketIOServer } from "socket.io";
 import { startEngine, controlEngine } from "../engine/service";
@@ -75,6 +76,13 @@ engineRouter.post("/start", checkCredits, async (req: AuthRequest, res: Response
     io.to(`project:${project.id}`).emit("event", {
       type: "engine:started_by",
       data: { userId: req.userId, projectId: project.id },
+    });
+
+    trackServerEvent(req.userId!, 'engine_started', {
+      projectId: project.id,
+      prompt_length: body.prompt.length,
+      task_count: result.tasks.length,
+      complexity: result.complexity,
     });
 
     return res.status(201).json({

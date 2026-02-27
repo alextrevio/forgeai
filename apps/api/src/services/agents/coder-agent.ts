@@ -4,6 +4,7 @@ import type { CodeChange } from "@forgeai/shared";
 import { prisma } from "@forgeai/db";
 import { sandboxManager } from "../../sandbox/manager";
 import { ProjectSandbox } from "../sandbox";
+import { previewManager } from "../preview-server";
 import { agentRegistry } from "../agent-registry";
 import { BaseAgent, type AgentResult, type AgentContext } from "./base-agent";
 
@@ -47,10 +48,18 @@ export class CoderAgentRunner extends BaseAgent {
           content: { output },
         });
       });
+
+      // Initialize preview tracking with health monitoring
+      await previewManager.initPreview(this.ctx.projectId, sandboxId);
     } else {
       projectSandbox.attach(sandboxId);
       sandboxManager.resetTTL(this.ctx.projectId);
       await sandboxManager.ensureSandboxRunning(this.ctx.projectId);
+
+      // Ensure preview tracking exists for existing sandbox
+      if (!previewManager.getPreviewInfo(this.ctx.projectId)) {
+        await previewManager.initPreview(this.ctx.projectId, sandboxId);
+      }
     }
 
     const sandboxInterface = this.buildSandboxInterface(sandboxId);
@@ -155,6 +164,8 @@ export class CoderAgentRunner extends BaseAgent {
       onFileChanged: (path) => {
         this.emit("sandbox:file_changed", { path });
         this.emit("sandbox:file_tree_update", { projectId });
+        // Debounced preview refresh on file changes
+        previewManager.scheduleRefresh(projectId);
       },
       onTerminalOutput: (output) => {
         this.emitActivity("terminal_cmd", { output: output.slice(0, 1000) });
@@ -168,7 +179,10 @@ export class CoderAgentRunner extends BaseAgent {
           data: { outputResult: { summary } },
         });
       },
-      onPreviewReload: () => this.emit("preview:reload", {}),
+      onPreviewReload: () => {
+        this.emit("preview:reload", {});
+        previewManager.emitRefresh(projectId);
+      },
       onDesignerStart: () => this.emit("engine:activity", { type: "agent_spawn", taskId, content: { agentType: "designer" } }),
       onDesignerComplete: () => this.emit("engine:activity", { type: "agent_complete", taskId, content: { agentType: "designer" } }),
       onDebuggerStart: () => this.emit("engine:activity", { type: "agent_spawn", taskId, content: { agentType: "debugger" } }),

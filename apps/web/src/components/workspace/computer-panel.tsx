@@ -165,6 +165,8 @@ export function ComputerPanel() {
     activeFilePath,
     terminalOutput,
     currentProjectId,
+    previewAutoSwitch,
+    setPreviewAutoSwitch,
   } = useProjectStore();
 
   const engine = useEngineActivity(currentProjectId);
@@ -184,6 +186,14 @@ export function ComputerPanel() {
   useConsoleCapture(addConsoleEntry);
 
   useEffect(() => { if (previewUrl) setUrlInput(previewUrl); }, [previewUrl]);
+
+  // Auto-switch to Preview tab when engine completes
+  useEffect(() => {
+    if (previewAutoSwitch && previewUrl) {
+      setActiveTab("preview");
+      setPreviewAutoSwitch(false);
+    }
+  }, [previewAutoSwitch, previewUrl, setPreviewAutoSwitch]);
 
   useEffect(() => {
     if (!isAgentRunning) return;
@@ -353,11 +363,17 @@ export function ComputerPanel() {
       {/* ─── Browser chrome URL bar (Preview tab only) ─── */}
       {activeTab === "preview" && (
         <div className="flex items-center gap-2.5 border-b border-[#2A2A2A] bg-[#0A0A0A] px-3 py-1.5">
-          {/* Traffic lights */}
+          {/* Traffic lights with live status */}
           <div className="flex items-center gap-1.5 shrink-0">
             <div className="h-[10px] w-[10px] rounded-full bg-[#ef4444]/60" />
-            <div className="h-[10px] w-[10px] rounded-full bg-[#f59e0b]/60" />
-            <div className="h-[10px] w-[10px] rounded-full bg-[#22c55e]/60" />
+            <div className={cn(
+              "h-[10px] w-[10px] rounded-full",
+              isAgentRunning ? "bg-[#f59e0b] animate-pulse" : "bg-[#f59e0b]/60"
+            )} />
+            <div className={cn(
+              "h-[10px] w-[10px] rounded-full",
+              previewUrl && !iframeError ? "bg-[#22c55e]" : "bg-[#22c55e]/60"
+            )} />
           </div>
 
           {/* URL bar */}

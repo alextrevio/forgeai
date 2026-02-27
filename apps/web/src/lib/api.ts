@@ -1,3 +1,6 @@
+import * as Sentry from "@sentry/nextjs";
+import { posthog } from "@/lib/posthog";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 class ApiClient {
@@ -43,6 +46,9 @@ class ApiClient {
       if (err.name === "AbortError") {
         throw new ApiError(408, "Request timed out");
       }
+      Sentry.captureException(err, {
+        tags: { component: "api_client", path },
+      });
       throw err;
     }
     clearTimeout(timeout);
@@ -93,7 +99,13 @@ class ApiClient {
       } catch {
         // body is not JSON, use as-is
       }
-      throw new ApiError(response.status, message);
+      const apiError = new ApiError(response.status, message);
+      if (response.status >= 500) {
+        Sentry.captureException(apiError, {
+          tags: { component: "api_client", path, status: String(response.status) },
+        });
+      }
+      throw apiError;
     }
 
     return response.json();
@@ -176,10 +188,12 @@ class ApiClient {
   }
 
   async createProject(name: string, framework?: string, description?: string, template?: string) {
-    return this.request<any>("/api/projects", {
+    const data = await this.request<any>("/api/projects", {
       method: "POST",
       body: JSON.stringify({ name, framework, description, template }),
     });
+    posthog.capture('project_created', { source: template ? 'template' : 'dashboard', framework });
+    return data;
   }
 
   async getProject(id: string) {
@@ -187,19 +201,25 @@ class ApiClient {
   }
 
   async deleteProject(id: string) {
-    return this.request<any>(`/api/projects/${id}`, { method: "DELETE" });
+    const data = await this.request<any>(`/api/projects/${id}`, { method: "DELETE" });
+    posthog.capture('project_deleted', { projectId: id });
+    return data;
   }
 
   async deployProject(id: string) {
-    return this.request<any>(`/api/projects/${id}/deploy`, { method: "POST" });
+    const data = await this.request<any>(`/api/projects/${id}/deploy`, { method: "POST" });
+    posthog.capture('project_deployed', { projectId: id });
+    return data;
   }
 
   // Engine
   async startEngine(projectId: string, prompt: string) {
-    return this.request<any>("/api/engine/start", {
+    const data = await this.request<any>("/api/engine/start", {
       method: "POST",
       body: JSON.stringify({ projectId, prompt }),
     });
+    posthog.capture('engine_started', { projectId, prompt_length: prompt.length });
+    return data;
   }
 
   async getEngineStatus(projectId: string) {
@@ -211,10 +231,12 @@ class ApiClient {
   }
 
   async controlEngine(projectId: string, action: "pause" | "resume" | "cancel" | "retry", taskId?: string) {
-    return this.request<{ engineStatus: string; message: string }>("/api/engine/control", {
+    const data = await this.request<{ engineStatus: string; message: string }>("/api/engine/control", {
       method: "POST",
       body: JSON.stringify({ projectId, action, taskId }),
     });
+    posthog.capture('engine_control', { projectId, action });
+    return data;
   }
 
   async getTaskResult(projectId: string, taskId: string) {
@@ -235,10 +257,12 @@ class ApiClient {
   }
 
   async sendMessage(projectId: string, content: string) {
-    return this.request<any>(`/api/projects/${projectId}/messages`, {
+    const data = await this.request<any>(`/api/projects/${projectId}/messages`, {
       method: "POST",
       body: JSON.stringify({ content }),
     });
+    posthog.capture('chat_message_sent', { projectId, message_length: content.length });
+    return data;
   }
 
   async stopAgent(projectId: string) {
@@ -285,7 +309,24 @@ class ApiClient {
   }
 
   async getPreviewUrl(projectId: string) {
-    return this.request<{ url: string }>(`/api/projects/${projectId}/preview`);
+    const data = await this.request<{
+      url: string;
+      status?: string;
+      framework?: string;
+      readyAt?: string | null;
+      lastRefreshAt?: string | null;
+    }>(`/api/projects/${projectId}/preview`);
+    posthog.capture('preview_opened', { projectId });
+    return data;
+  }
+
+  async refreshPreview(projectId: string) {
+    const data = await this.request<{ success: boolean; refreshedAt: string }>(
+      `/api/projects/${projectId}/preview/refresh`,
+      { method: "POST" }
+    );
+    posthog.capture('preview_refreshed', { projectId });
+    return data;
   }
 
   async deleteFile(projectId: string, path: string) {
@@ -296,10 +337,12 @@ class ApiClient {
   }
 
   async executeTerminalCommand(projectId: string, command: string) {
-    return this.request<{ exitCode: number; stdout: string; stderr: string }>(
+    const data = await this.request<{ exitCode: number; stdout: string; stderr: string }>(
       `/api/projects/${projectId}/terminal`,
       { method: "POST", body: JSON.stringify({ command }) }
     );
+    posthog.capture('terminal_command_executed', { projectId });
+    return data;
   }
 
   // GitHub
@@ -321,10 +364,12 @@ class ApiClient {
   }
 
   async exportToGitHub(projectId: string) {
-    return this.request<{ success: boolean; repoUrl: string; repoFullName: string }>(
+    const data = await this.request<{ success: boolean; repoUrl: string; repoFullName: string }>(
       `/api/github/${projectId}/export`,
       { method: "POST" }
     );
+    posthog.capture('github_exported', { projectId });
+    return data;
   }
 
   async pushToGitHub(projectId: string, message?: string) {
@@ -384,10 +429,12 @@ class ApiClient {
   }
 
   async upgradePlan(plan: string) {
-    return this.request<any>("/api/billing/upgrade", {
+    const data = await this.request<any>("/api/billing/upgrade", {
       method: "POST",
       body: JSON.stringify({ plan }),
     });
+    posthog.capture('plan_upgraded', { plan });
+    return data;
   }
 
   // Usage tracking
@@ -427,10 +474,12 @@ class ApiClient {
 
   // Sharing
   async shareProject(projectId: string, email: string, role: "viewer" | "editor") {
-    return this.request<any>(`/api/projects/${projectId}/share`, {
+    const data = await this.request<any>(`/api/projects/${projectId}/share`, {
       method: "POST",
       body: JSON.stringify({ email, role }),
     });
+    posthog.capture('project_shared', { projectId, role });
+    return data;
   }
 
   async getProjectMembers(projectId: string) {
@@ -444,9 +493,11 @@ class ApiClient {
   }
 
   async forkProject(projectId: string) {
-    return this.request<any>(`/api/projects/${projectId}/fork`, {
+    const data = await this.request<any>(`/api/projects/${projectId}/fork`, {
       method: "POST",
     });
+    posthog.capture('project_forked', { projectId });
+    return data;
   }
 
   // Export / Import
@@ -546,10 +597,12 @@ class ApiClient {
   }
 
   async createTeam(name: string, slug: string) {
-    return this.request<any>("/api/teams", {
+    const data = await this.request<any>("/api/teams", {
       method: "POST",
       body: JSON.stringify({ name, slug }),
     });
+    posthog.capture('team_created');
+    return data;
   }
 
   async getTeam(id: string) {
@@ -557,10 +610,12 @@ class ApiClient {
   }
 
   async inviteTeamMember(teamId: string, email: string, role: string = "member") {
-    return this.request<any>(`/api/teams/${teamId}/invite`, {
+    const data = await this.request<any>(`/api/teams/${teamId}/invite`, {
       method: "POST",
       body: JSON.stringify({ email, role }),
     });
+    posthog.capture('team_member_invited', { role });
+    return data;
   }
 
   async updateTeamMemberRole(teamId: string, userId: string, role: string) {
@@ -599,10 +654,12 @@ class ApiClient {
   }
 
   async createApiKey(name: string, scopes?: string[], expiresInDays?: number) {
-    return this.request<{ key: string; id: string; prefix: string; name: string; scopes: string[]; expiresAt: string | null }>(
+    const data = await this.request<{ key: string; id: string; prefix: string; name: string; scopes: string[]; expiresAt: string | null }>(
       "/api/auth/api-keys",
       { method: "POST", body: JSON.stringify({ name, scopes, expiresInDays }) }
     );
+    posthog.capture('api_key_created');
+    return data;
   }
 
   async updateApiKey(keyId: string, data: { isActive?: boolean }) {
@@ -624,10 +681,12 @@ class ApiClient {
   }
 
   async createWebhook(url: string, events?: string[]) {
-    return this.request<{ id: string; url: string; events: string[]; secret: string; isActive: boolean }>(
+    const data = await this.request<{ id: string; url: string; events: string[]; secret: string; isActive: boolean }>(
       "/api/auth/webhooks",
       { method: "POST", body: JSON.stringify({ url, events }) }
     );
+    posthog.capture('webhook_created');
+    return data;
   }
 
   async updateWebhook(webhookId: string, data: { url?: string; events?: string[]; isActive?: boolean }) {

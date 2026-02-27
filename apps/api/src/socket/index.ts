@@ -1,5 +1,6 @@
 import { Server as SocketIOServer, Socket } from "socket.io";
 import jwt from "jsonwebtoken";
+import { Sentry } from "../lib/sentry";
 import { logger } from "../lib/logger";
 
 // Max concurrent connections per user
@@ -154,6 +155,9 @@ export function setupSocketHandlers(io: SocketIOServer) {
     // Handle errors
     socket.on("error", (err) => {
       logger.error({ userId, error: err.message }, "Socket error");
+      Sentry.captureException(err, {
+        tags: { component: 'websocket', user_id: userId },
+      });
     });
 
     socket.on("disconnect", (reason) => {

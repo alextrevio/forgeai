@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { createHash } from "crypto";
 import { prisma } from "@forgeai/db";
+import { Sentry } from "../lib/sentry";
 
 export interface AuthRequest extends Request {
   userId?: string;
@@ -46,6 +47,8 @@ export async function authenticate(req: AuthRequest, res: Response, next: NextFu
 
       req.userId = apiKey.user.id;
       req.userPlan = apiKey.user.plan;
+      Sentry.setUser({ id: apiKey.user.id });
+      Sentry.setTag('auth_method', 'api_key');
       return next();
     } catch {
       return res.status(401).json({ error: { code: "AUTH_INVALID", message: "Invalid API key" } });
@@ -56,6 +59,8 @@ export async function authenticate(req: AuthRequest, res: Response, next: NextFu
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
     req.userId = payload.userId;
+    Sentry.setUser({ id: payload.userId });
+    Sentry.setTag('auth_method', 'jwt');
 
     // Attach plan for rate limiting (non-blocking)
     prisma.user.findUnique({ where: { id: payload.userId }, select: { plan: true } })

@@ -1,5 +1,6 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import {
   Loader2,
@@ -236,6 +237,7 @@ export function ChatPanel() {
         await api.sendMessage(currentProjectId, content);
       } catch (apiErr) {
         console.error("[ChatPanel] follow-up sendMessage failed:", apiErr);
+        Sentry.captureException(apiErr, { tags: { component: "chat_panel", action: "follow_up_message" } });
         setAgentRunning(false);
       } finally {
         setIsSending(false);
@@ -251,6 +253,7 @@ export function ChatPanel() {
       return;
     } catch (engineErr) {
       console.error("[ChatPanel] engine start failed, falling back to chat:", engineErr);
+      Sentry.captureException(engineErr, { tags: { component: "chat_panel", action: "engine_start" } });
     }
 
     // Fallback: engine failed to start, use regular message flow
@@ -258,6 +261,7 @@ export function ChatPanel() {
       await api.sendMessage(currentProjectId, content);
     } catch (apiErr) {
       console.error("[ChatPanel] api.sendMessage FAILED:", apiErr);
+      Sentry.captureException(apiErr, { tags: { component: "chat_panel", action: "send_message" } });
       setAgentRunning(false);
     } finally {
       setIsSending(false);

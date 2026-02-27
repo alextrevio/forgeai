@@ -1,4 +1,5 @@
 import { io, Socket } from "socket.io-client";
+import * as Sentry from "@sentry/nextjs";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -21,6 +22,12 @@ export function getSocket(): Socket {
       if (socket) {
         socket.auth = { token: freshToken };
       }
+    });
+
+    socket.on("connect_error", (err) => {
+      Sentry.captureException(err, {
+        tags: { component: "websocket", event: "connect_error" },
+      });
     });
   }
 
