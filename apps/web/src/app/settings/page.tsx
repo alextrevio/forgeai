@@ -45,6 +45,10 @@ export default function SettingsPage() {
   const [openaiKey, setOpenaiKey] = useState("");
   const [showAnthropicKey, setShowAnthropicKey] = useState(false);
   const [showOpenaiKey, setShowOpenaiKey] = useState(false);
+  const [monthlyBudget, setMonthlyBudget] = useState(10);
+  const [budgetSaving, setBudgetSaving] = useState(false);
+  const [budgetSaved, setBudgetSaved] = useState(false);
+  const [usageSummary, setUsageSummary] = useState<{ totalSpent: number; monthlyBudget: number; plan: string } | null>(null);
 
   useEffect(() => { loadUser(); }, [loadUser]);
 
@@ -60,6 +64,29 @@ export default function SettingsPage() {
       setAutoSave((settings as Record<string, boolean>)?.autoSave !== false);
     }
   }, [user, authLoading, isAuthenticated, router]);
+
+  // Fetch usage data for billing tab
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    (async () => {
+      try {
+        const data = await api.getUsageSummary();
+        setUsageSummary({ totalSpent: data.totalSpent ?? 0, monthlyBudget: data.monthlyBudget ?? 10, plan: data.plan ?? "FREE" });
+        setMonthlyBudget(data.monthlyBudget ?? 10);
+      } catch { /* ignore */ }
+    })();
+  }, [isAuthenticated]);
+
+  const handleSaveBudget = async () => {
+    setBudgetSaving(true);
+    try {
+      await api.updateBudget(monthlyBudget);
+      setBudgetSaved(true);
+      setTimeout(() => setBudgetSaved(false), 2000);
+      if (usageSummary) setUsageSummary({ ...usageSummary, monthlyBudget });
+    } catch (err) { console.error("Save budget failed:", err); }
+    finally { setBudgetSaving(false); }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -222,31 +249,139 @@ export default function SettingsPage() {
               <div className="space-y-6 animate-fade-in">
                 <div>
                   <h2 className="text-lg font-semibold text-[#EDEDED] mb-1">Facturación</h2>
-                  <p className="text-sm text-[#8888a0]">Gestiona tu plan y uso</p>
+                  <p className="text-sm text-[#8888a0]">Gestiona tu plan, presupuesto y uso</p>
                 </div>
+
+                {/* Current plan */}
                 <div className="rounded-xl border border-[#2A2A2A] bg-[#111111] p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <p className="text-sm text-[#8888a0]">Plan actual</p>
-                      <p className="text-xl font-bold text-[#EDEDED]">{user?.plan || "FREE"}</p>
+                      <p className="text-xl font-bold text-[#EDEDED]">{usageSummary?.plan || user?.plan || "FREE"}</p>
                     </div>
                     <span className={cn("rounded-full px-3 py-1 text-xs font-medium",
-                      user?.plan === "PRO" ? "bg-[#7c3aed]/10 text-[#7c3aed]" : user?.plan === "BUSINESS" ? "bg-[#f59e0b]/10 text-[#f59e0b]" : "bg-[#2A2A2A] text-[#8888a0]"
-                    )}>{user?.plan || "FREE"}</span>
+                      (usageSummary?.plan || user?.plan) === "PRO" ? "bg-[#7c3aed]/10 text-[#7c3aed]" :
+                      (usageSummary?.plan || user?.plan) === "BUSINESS" ? "bg-[#f59e0b]/10 text-[#f59e0b]" :
+                      (usageSummary?.plan || user?.plan) === "ENTERPRISE" ? "bg-[#22c55e]/10 text-[#22c55e]" :
+                      "bg-[#2A2A2A] text-[#8888a0]"
+                    )}>{usageSummary?.plan || user?.plan || "FREE"}</span>
                   </div>
-                  <div className="space-y-2 mb-4">
+
+                  {/* Plan selection */}
+                  <div className="grid grid-cols-4 gap-2 mb-4">
+                    {(["FREE", "PRO", "BUSINESS", "ENTERPRISE"] as const).map((plan) => {
+                      const prices: Record<string, string> = { FREE: "$0", PRO: "$20", BUSINESS: "$50", ENTERPRISE: "$200" };
+                      const limits: Record<string, string> = { FREE: "$10/mes", PRO: "$50/mes", BUSINESS: "$200/mes", ENTERPRISE: "Ilimitado" };
+                      const isCurrent = (usageSummary?.plan || user?.plan || "FREE") === plan;
+                      return (
+                        <button key={plan}
+                          onClick={() => !isCurrent && router.push("/dashboard/usage")}
+                          className={cn("rounded-lg border p-3 text-center transition-colors",
+                            isCurrent ? "border-[#7c3aed] bg-[#7c3aed]/10" : "border-[#2A2A2A] hover:border-[#7c3aed]/50"
+                          )}>
+                          <p className="text-xs font-bold text-[#EDEDED]">{plan}</p>
+                          <p className="text-[10px] text-[#8888a0] mt-0.5">{prices[plan]}/mes</p>
+                          <p className="text-[10px] text-[#7c3aed] mt-0.5">{limits[plan]}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button onClick={() => router.push("/dashboard/usage")}
+                    className="w-full rounded-lg bg-[#7c3aed] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#6d28d9] transition-colors shadow-lg shadow-[#7c3aed]/20">
+                    Ver planes y mejorar
+                  </button>
+                </div>
+
+                {/* Spending cap */}
+                <div className="rounded-xl border border-[#2A2A2A] bg-[#111111] p-6">
+                  <h3 className="text-sm font-semibold text-[#EDEDED] mb-1">Spending cap mensual</h3>
+                  <p className="text-xs text-[#8888a0] mb-4">
+                    Establece un límite de gasto mensual. Arya dejará de procesar cuando se alcance.
+                  </p>
+
+                  {/* Current usage bar */}
+                  {usageSummary && (
+                    <div className="space-y-2 mb-4">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-[#8888a0]">Gasto este mes</span>
+                        <span className="text-[#EDEDED]">
+                          ${usageSummary.totalSpent.toFixed(2)} / ${usageSummary.monthlyBudget.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="h-2 rounded-full bg-[#2A2A2A] overflow-hidden">
+                        <div
+                          className={cn("h-full rounded-full transition-all",
+                            usageSummary.totalSpent / usageSummary.monthlyBudget > 0.9
+                              ? "bg-[#ef4444]"
+                              : usageSummary.totalSpent / usageSummary.monthlyBudget > 0.7
+                                ? "bg-[#f59e0b]"
+                                : "bg-[#7c3aed]"
+                          )}
+                          style={{ width: `${Math.min(100, (usageSummary.totalSpent / usageSummary.monthlyBudget) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Budget input */}
+                  <div className="flex items-end gap-3">
+                    <div className="flex-1 max-w-xs">
+                      <label className="block text-xs text-[#8888a0] mb-1.5">Límite mensual (USD)</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#8888a0]">$</span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={100000}
+                          step={5}
+                          value={monthlyBudget}
+                          onChange={(e) => setMonthlyBudget(Number(e.target.value))}
+                          className="w-full rounded-lg border border-[#2A2A2A] bg-[#0A0A0A] pl-7 pr-4 py-2.5 text-sm text-[#EDEDED] outline-none focus:border-[#7c3aed]"
+                        />
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleSaveBudget}
+                      disabled={budgetSaving}
+                      className="flex items-center gap-1.5 rounded-lg bg-[#7c3aed] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#6d28d9] transition-colors disabled:opacity-50"
+                    >
+                      {budgetSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : budgetSaved ? <Check className="h-3.5 w-3.5" /> : <Save className="h-3.5 w-3.5" />}
+                      {budgetSaved ? "Guardado" : "Guardar"}
+                    </button>
+                  </div>
+
+                  {/* Quick presets */}
+                  <div className="flex gap-2 mt-3">
+                    {[5, 10, 25, 50, 100].map((preset) => (
+                      <button
+                        key={preset}
+                        onClick={() => setMonthlyBudget(preset)}
+                        className={cn("rounded-md border px-3 py-1 text-xs transition-colors",
+                          monthlyBudget === preset
+                            ? "border-[#7c3aed] bg-[#7c3aed]/10 text-[#7c3aed]"
+                            : "border-[#2A2A2A] text-[#8888a0] hover:border-[#7c3aed]/50"
+                        )}
+                      >
+                        ${preset}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Credits usage (legacy display) */}
+                <div className="rounded-xl border border-[#2A2A2A] bg-[#111111] p-6">
+                  <h3 className="text-sm font-semibold text-[#EDEDED] mb-1">Créditos</h3>
+                  <p className="text-xs text-[#8888a0] mb-4">Créditos incluidos con tu plan</p>
+                  <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-[#8888a0]">Créditos usados</span>
+                      <span className="text-[#8888a0]">Usados</span>
                       <span className="text-[#EDEDED]">{user?.creditsUsed ?? 0} / {user?.creditsLimit ?? 50}</span>
                     </div>
                     <div className="h-2 rounded-full bg-[#2A2A2A] overflow-hidden">
                       <div className="h-full rounded-full bg-[#7c3aed] transition-all" style={{ width: `${Math.min(100, ((user?.creditsUsed ?? 0) / (user?.creditsLimit ?? 50)) * 100)}%` }} />
                     </div>
                   </div>
-                  <button onClick={() => router.push("/dashboard/usage")}
-                    className="w-full rounded-lg bg-[#7c3aed] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#6d28d9] transition-colors shadow-lg shadow-[#7c3aed]/20">
-                    Mejorar plan
-                  </button>
                 </div>
               </div>
             )}

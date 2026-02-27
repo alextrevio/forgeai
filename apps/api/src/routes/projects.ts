@@ -3,6 +3,8 @@ import type { Router as RouterType } from "express";
 import { z } from "zod";
 import { prisma } from "@forgeai/db";
 import { AuthRequest } from "../middleware/auth";
+import { canAccessProject, hasTeamRole } from "../services/team-permissions";
+import { auditLogService } from "../services/audit-log";
 
 export const projectRouter: RouterType = Router();
 
@@ -14,11 +16,26 @@ const createProjectSchema = z.object({
   customInstructions: z.string().optional(),
 });
 
-// List user projects
+// List user projects (owned, team, or shared)
 projectRouter.get("/", async (req: AuthRequest, res: Response) => {
   try {
+    const userId = req.userId!;
+
+    // Get user's team IDs
+    const teamMemberships = await prisma.teamMember.findMany({
+      where: { userId },
+      select: { teamId: true },
+    });
+    const teamIds = teamMemberships.map((m) => m.teamId);
+
     const projects = await prisma.project.findMany({
-      where: { userId: req.userId },
+      where: {
+        OR: [
+          { userId },
+          ...(teamIds.length > 0 ? [{ teamId: { in: teamIds } }] : []),
+          { members: { some: { userId } } },
+        ],
+      },
       orderBy: { updatedAt: "desc" },
       select: {
         id: true,
@@ -28,6 +45,9 @@ projectRouter.get("/", async (req: AuthRequest, res: Response) => {
         framework: true,
         engineStatus: true,
         deployUrl: true,
+        userId: true,
+        teamId: true,
+        team: { select: { id: true, name: true, slug: true } },
         createdAt: true,
         updatedAt: true,
       },
@@ -67,9 +87,13 @@ projectRouter.post("/", async (req: AuthRequest, res: Response) => {
 projectRouter.get("/:id", async (req: AuthRequest, res: Response) => {
   try {
     const id = req.params.id as string;
-    const project = await prisma.project.findFirst({
-      where: { id, userId: req.userId },
+    if (!(await canAccessProject(id, req.userId!))) {
+      return res.status(404).json({ error: "Project not found" });
+    }
+    const project = await prisma.project.findUnique({
+      where: { id },
       include: {
+        team: { select: { id: true, name: true, slug: true } },
         _count: { select: { messages: true, snapshots: true } },
       },
     });
@@ -179,6 +203,51 @@ projectRouter.post("/:id/deploy", async (req: AuthRequest, res: Response) => {
     return res.json({ status: "deploying" });
   } catch (err) {
     console.error("Deploy error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Assign project to a team
+projectRouter.put("/:id/team", async (req: AuthRequest, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const userId = req.userId!;
+    const { teamId } = req.body as { teamId: string | null };
+
+    // Must be project owner
+    const project = await prisma.project.findFirst({
+      where: { id, userId },
+    });
+    if (!project) {
+      return res.status(404).json({ error: "Project not found or not owner" });
+    }
+
+    // If assigning to a team, verify user is admin+ in that team
+    if (teamId) {
+      if (!(await hasTeamRole(teamId, userId, "admin"))) {
+        return res.status(403).json({ error: "Must be admin or owner of the target team" });
+      }
+    }
+
+    const updated = await prisma.project.update({
+      where: { id },
+      data: { teamId: teamId ?? null },
+      include: { team: { select: { id: true, name: true, slug: true } } },
+    });
+
+    auditLogService.log({
+      teamId: teamId ?? undefined,
+      userId,
+      action: teamId ? "project.assign_team" : "project.remove_team",
+      resource: "project",
+      resourceId: id,
+      details: { teamId },
+      ip: req.ip as string | undefined,
+    });
+
+    return res.json(updated);
+  } catch (err) {
+    console.error("Assign project to team error:", err);
     return res.status(500).json({ error: "Internal server error" });
   }
 });

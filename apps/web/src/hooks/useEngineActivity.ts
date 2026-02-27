@@ -39,6 +39,7 @@ export type EngineActivityType =
   | "task_result"
   | "error"
   | "engine_started"
+  | "engine_started_by"
   | "engine_completed"
   | "engine_failed"
   | "task_started"
@@ -69,6 +70,9 @@ export function useEngineActivity(projectId: string | null) {
   const [progress, setProgress] = useState<EngineProgress>({ completed: 0, total: 0, percentage: 0 });
   const [complexity, setComplexity] = useState<string>("");
   const [estimatedTime, setEstimatedTime] = useState<string>("");
+  const [totalTokensUsed, setTotalTokensUsed] = useState<number>(0);
+  const [estimatedCost, setEstimatedCost] = useState<number>(0);
+  const [startedByUserId, setStartedByUserId] = useState<string | null>(null);
   const idCounter = useRef(0);
 
   const makeId = useCallback(() => {
@@ -109,6 +113,13 @@ export function useEngineActivity(projectId: string | null) {
 
         if (status.progress) {
           setProgress(status.progress);
+        }
+
+        if (typeof status.totalTokensUsed === "number") {
+          setTotalTokensUsed(status.totalTokensUsed);
+        }
+        if (typeof status.estimatedCost === "number") {
+          setEstimatedCost(status.estimatedCost);
         }
       } catch {
         // Project may not have engine data yet
@@ -163,8 +174,15 @@ export function useEngineActivity(projectId: string | null) {
           addActivity("engine_started", data);
           break;
 
+        case "engine:started_by":
+          setStartedByUserId((data.userId as string) || null);
+          addActivity("engine_started_by", data);
+          break;
+
         case "engine:completed":
           setEngineStatus("completed");
+          if (typeof data.totalTokensUsed === "number") setTotalTokensUsed(data.totalTokensUsed as number);
+          if (typeof data.estimatedCost === "number") setEstimatedCost(data.estimatedCost as number);
           addActivity("engine_completed", data);
           break;
 
@@ -215,6 +233,7 @@ export function useEngineActivity(projectId: string | null) {
           const taskId = data.taskId as string;
           const taskDurationMs = data.durationMs as number | undefined;
           const taskResultSummary = data.resultSummary as ResultSummary | undefined;
+          const taskTokensUsed = data.tokensUsed as number | undefined;
           setPlanSteps((prev) => {
             const updated = prev.map((s) =>
               s.taskId === taskId
@@ -230,6 +249,9 @@ export function useEngineActivity(projectId: string | null) {
             setProgress({ completed, total: updated.length, percentage: updated.length > 0 ? Math.round((completed / updated.length) * 100) : 0 });
             return updated;
           });
+          if (taskTokensUsed) {
+            setTotalTokensUsed((prev) => prev + taskTokensUsed);
+          }
           addActivity("task_completed", { ...data, resultSummary: taskResultSummary }, taskId);
           break;
         }
@@ -263,7 +285,7 @@ export function useEngineActivity(projectId: string | null) {
 
   const isRunning = engineStatus === "running" || engineStatus === "planning";
 
-  return { activities, planSteps, progress, engineStatus, isRunning, complexity, estimatedTime };
+  return { activities, planSteps, progress, engineStatus, isRunning, complexity, estimatedTime, totalTokensUsed, estimatedCost, startedByUserId };
 }
 
 // ── Helpers ─────────────────────────────────────────────────────

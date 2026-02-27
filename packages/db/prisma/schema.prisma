@@ -34,6 +34,13 @@ enum MemberRole {
   editor
 }
 
+enum TeamRole {
+  owner
+  admin
+  member
+  viewer
+}
+
 model User {
   id              String          @id @default(cuid())
   email           String          @unique
@@ -42,6 +49,8 @@ model User {
   plan            Plan            @default(FREE)
   creditsUsed     Int             @default(0)
   creditsLimit    Int             @default(50)
+  monthlyBudget   Float           @default(10.0) // USD spending cap
+  totalSpent      Float           @default(0)    // USD spent this period
   githubToken     String?
   githubUsername   String?
   supabaseUrl     String?
@@ -53,6 +62,9 @@ model User {
   refreshTokens   RefreshToken[]
   apiKeys         ApiKey[]
   skills          Skill[]
+  usageRecords    UsageRecord[]
+  ownedTeams      Team[]          @relation("OwnedTeams")
+  teamMemberships TeamMember[]
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 }
@@ -87,6 +99,9 @@ model Project {
   estimatedCost      Float         @default(0)
   activeAgents       Json?         // Agentes actualmente activos: [{ type: "coder", taskId: "..." }]
 
+  teamId             String?
+  team               Team?         @relation(fields: [teamId], references: [id], onDelete: SetNull)
+
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
@@ -94,6 +109,7 @@ model Project {
   activityLogs       ActivityLog[]
 
   @@index([userId])
+  @@index([teamId])
 }
 
 model ProjectMember {
@@ -263,4 +279,78 @@ model ActivityLog {
 
   @@index([projectId, timestamp])
   @@index([taskId])
+}
+
+// ─── Team Workspaces ────────────────────────────────────────────────────────
+
+model Team {
+  id        String       @id @default(cuid())
+  name      String
+  slug      String       @unique
+  ownerId   String
+  owner     User         @relation("OwnedTeams", fields: [ownerId], references: [id], onDelete: Cascade)
+  members   TeamMember[]
+  projects  Project[]
+  auditLogs AuditLog[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([ownerId])
+}
+
+model TeamMember {
+  id       String   @id @default(cuid())
+  teamId   String
+  team     Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role     TeamRole @default(member)
+  joinedAt DateTime @default(now())
+
+  @@unique([teamId, userId])
+  @@index([teamId])
+  @@index([userId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  teamId     String?
+  team       Team?    @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  userId     String
+  action     String
+  resource   String
+  resourceId String?
+  details    Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@index([teamId, createdAt])
+  @@index([userId, createdAt])
+}
+
+// ─── Usage Tracking: Token costs & spending caps ────────────────────────────
+
+model UsageRecord {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId     String?
+  taskId        String?
+
+  provider      String   // anthropic, openai, google
+  model         String   // claude-sonnet-4-5-20250929, gpt-4o, etc
+
+  inputTokens   Int
+  outputTokens  Int
+  totalTokens   Int
+
+  costUsd       Float    // Calculated cost in USD
+
+  agentType     String?  // coder, research, planner, etc
+  action        String   // chat, engine_plan, engine_task
+
+  createdAt     DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([projectId])
 }

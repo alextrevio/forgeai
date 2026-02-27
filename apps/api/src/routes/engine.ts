@@ -10,15 +10,17 @@ import { startEngine, controlEngine } from "../engine/service";
 import { getEngineJobStatus, cancelEngineJob } from "../services/queue/job-queue";
 import { agentRegistry } from "../services/agent-registry";
 import { modelRouter } from "../services/model-router";
+import { canAccessProject } from "../services/team-permissions";
+import { auditLogService } from "../services/audit-log";
 
 export const engineRouter: RouterType = Router();
 
 // ── Helpers ──────────────────────────────────────────────
 
 async function findUserProject(projectId: string, userId: string | undefined) {
-  return prisma.project.findFirst({
-    where: { id: projectId, userId },
-  });
+  if (!userId) return null;
+  if (!(await canAccessProject(projectId, userId))) return null;
+  return prisma.project.findUnique({ where: { id: projectId } });
 }
 
 // ── Validation Schemas ───────────────────────────────────
@@ -58,6 +60,22 @@ engineRouter.post("/start", checkCredits, async (req: AuthRequest, res: Response
 
     const io: SocketIOServer = req.app.get("io");
     const result = await startEngine(project.id, body.prompt, io);
+
+    auditLogService.log({
+      teamId: project.teamId ?? undefined,
+      userId: req.userId!,
+      action: "engine.start",
+      resource: "project",
+      resourceId: project.id,
+      details: { prompt: body.prompt.slice(0, 200) },
+      ip: req.ip as string | undefined,
+    });
+
+    // Emit who started the engine run
+    io.to(`project:${project.id}`).emit("event", {
+      type: "engine:started_by",
+      data: { userId: req.userId, projectId: project.id },
+    });
 
     return res.status(201).json({
       engineStatus: "running",

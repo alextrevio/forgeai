@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Panel, PanelGroup, PanelResizeHandle, type ImperativePanelGroupHandle } from "react-resizable-panels";
-import { Activity, Clock, X } from "lucide-react";
+import { Activity, Clock, Coins, X } from "lucide-react";
 import { ChatPanel } from "./chat-panel";
 import { ComputerPanel } from "./computer-panel";
 import { ActivityFeed } from "./activity-feed";
@@ -303,6 +303,26 @@ export function WorkspaceLayout() {
             </span>
           )}
         </div>
+
+        {/* Token counter + cost */}
+        {engine.totalTokensUsed > 0 && (
+          <div className="flex items-center gap-2 shrink-0 border-l border-[#2A2A2A] pl-3 ml-1">
+            <Coins className="h-3.5 w-3.5 text-[#f59e0b]" />
+            <span className="text-[11px] text-[#8888a0] tabular-nums">
+              {engine.totalTokensUsed >= 1000
+                ? `${(engine.totalTokensUsed / 1000).toFixed(1)}k`
+                : engine.totalTokensUsed}{" "}
+              tokens
+            </span>
+            {engine.estimatedCost > 0 && (
+              <span className="text-[11px] text-[#f59e0b] tabular-nums font-medium">
+                ~${engine.estimatedCost < 0.01
+                  ? engine.estimatedCost.toFixed(4)
+                  : engine.estimatedCost.toFixed(2)}
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

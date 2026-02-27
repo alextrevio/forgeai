@@ -16,8 +16,10 @@ import {
   Copy,
   Trash2,
   LogOut,
+  Users,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/auth-store";
+import { useTeamStore } from "@/stores/team-store";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +31,9 @@ interface Project {
   engineStatus?: string;
   activeAgents?: Array<{ type: string; taskId?: string }>;
   updatedAt: string;
+  teamId?: string;
+  userId?: string;
+  team?: { id: string; name: string; slug: string };
 }
 
 const planColors: Record<string, string> = {
@@ -48,6 +53,7 @@ export function Sidebar({ onNewProject }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
+  const { teams, activeTeamId, setActiveTeam, fetchTeams } = useTeamStore();
 
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -89,6 +95,11 @@ export function Sidebar({ onNewProject }: SidebarProps) {
     const interval = setInterval(fetchProjects, 10_000);
     return () => clearInterval(interval);
   }, []);
+
+  // Fetch teams on mount
+  useEffect(() => {
+    fetchTeams();
+  }, [fetchTeams]);
 
   // Close context menu on click outside
   useEffect(() => {
@@ -152,6 +163,11 @@ export function Sidebar({ onNewProject }: SidebarProps) {
   const isSettingsActive = pathname === "/settings";
   const isUsageActive = pathname?.includes("/usage");
 
+  // Filter projects by active team
+  const filteredProjects = activeTeamId
+    ? projects.filter((p) => p.teamId === activeTeamId)
+    : projects.filter((p) => !p.teamId || p.userId === user?.id);
+
   const firstName = user?.name?.split(" ")[0] || user?.email?.split("@")[0] || "User";
   const userInitial = (user?.name || user?.email || "U").charAt(0).toUpperCase();
 
@@ -208,7 +224,7 @@ export function Sidebar({ onNewProject }: SidebarProps) {
           </p>
         )}
         <div className="space-y-0.5">
-          {projects.slice(0, 20).map((project, index) => (
+          {filteredProjects.slice(0, 20).map((project, index) => (
             <button
               key={project.id}
               onClick={() => router.push(`/project/${project.id}`)}
@@ -264,13 +280,59 @@ export function Sidebar({ onNewProject }: SidebarProps) {
               )}
             </button>
           ))}
-          {projects.length === 0 && !collapsed && (
+          {filteredProjects.length === 0 && !collapsed && (
             <p className="px-3 py-4 text-xs text-[#555555] text-center">
               No hay proyectos aún
             </p>
           )}
         </div>
       </div>
+
+      {/* Teams section */}
+      {!collapsed && teams.length > 0 && (
+        <div className="border-t border-[#1E1E1E] px-3 py-2 shrink-0">
+          <p className="text-xs uppercase tracking-wider text-[#555555] px-3 mb-2">
+            Equipos
+          </p>
+          <div className="space-y-0.5">
+            <button
+              onClick={() => setActiveTeam(null)}
+              className={cn(
+                "flex w-full items-center gap-2.5 rounded-md px-3 py-1.5 text-sm transition-colors duration-150",
+                !activeTeamId
+                  ? "bg-[#1A1A1A] text-[#EDEDED]"
+                  : "text-[#8888a0] hover:bg-[#1A1A1A] hover:text-[#EDEDED]"
+              )}
+            >
+              <FileText className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate flex-1 text-left">Personal</span>
+            </button>
+            {teams.map((team) => {
+              const teamProjectCount = projects.filter((p) => p.teamId === team.id).length;
+              return (
+                <button
+                  key={team.id}
+                  onClick={() => setActiveTeam(team.id)}
+                  className={cn(
+                    "flex w-full items-center gap-2.5 rounded-md px-3 py-1.5 text-sm transition-colors duration-150",
+                    activeTeamId === team.id
+                      ? "bg-[#1A1A1A] text-[#EDEDED]"
+                      : "text-[#8888a0] hover:bg-[#1A1A1A] hover:text-[#EDEDED]"
+                  )}
+                >
+                  <Users className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate flex-1 text-left">{team.name}</span>
+                  {teamProjectCount > 0 && (
+                    <span className="text-[10px] text-[#555555] tabular-nums shrink-0">
+                      {teamProjectCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Active projects — progress section */}
       {!collapsed && (() => {

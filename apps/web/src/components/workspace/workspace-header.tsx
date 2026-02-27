@@ -28,6 +28,7 @@ import { useProjectStore } from "@/stores/project-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { useEngineActivity } from "@/hooks/useEngineActivity";
 import { EngineStatusIndicator } from "./engine-status-indicator";
+import { PresenceIndicators } from "./presence-indicators";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -222,6 +223,9 @@ export function WorkspaceHeader() {
     <>
       {/* Inline action buttons — rendered inside the computer panel header */}
       <div className="flex items-center gap-1">
+        {/* Presence indicators */}
+        <PresenceIndicators projectId={currentProjectId} />
+
         {/* Engine status */}
         <EngineStatusIndicator
           engineStatus={engine.engineStatus}

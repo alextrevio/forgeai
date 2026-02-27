@@ -353,6 +353,31 @@ class ApiClient {
     });
   }
 
+  // Usage tracking
+  async getUsageSummary() {
+    return this.request<any>("/api/usage");
+  }
+
+  async getUsageRecords(opts?: { limit?: number; offset?: number; projectId?: string }) {
+    const params = new URLSearchParams();
+    if (opts?.limit) params.set("limit", String(opts.limit));
+    if (opts?.offset) params.set("offset", String(opts.offset));
+    if (opts?.projectId) params.set("projectId", opts.projectId);
+    const qs = params.toString();
+    return this.request<any>(`/api/usage/records${qs ? `?${qs}` : ""}`);
+  }
+
+  async getProjectUsage(projectId: string) {
+    return this.request<any>(`/api/usage/by-project/${projectId}`);
+  }
+
+  async updateBudget(monthlyBudget: number) {
+    return this.request<any>("/api/usage/budget", {
+      method: "PUT",
+      body: JSON.stringify({ monthlyBudget }),
+    });
+  }
+
   // Templates
   async getTemplates() {
     const data = await this.request<any>("/api/templates");
@@ -459,6 +484,59 @@ class ApiClient {
 
   async getSkill(slug: string) {
     return this.request<{ skill: any }>(`/api/skills/${slug}`);
+  }
+
+  // ── Teams ──────────────────────────────────────────────────
+
+  async listTeams() {
+    const data = await this.request<any>("/api/teams");
+    return ensureArray(data);
+  }
+
+  async createTeam(name: string, slug: string) {
+    return this.request<any>("/api/teams", {
+      method: "POST",
+      body: JSON.stringify({ name, slug }),
+    });
+  }
+
+  async getTeam(id: string) {
+    return this.request<any>(`/api/teams/${id}`);
+  }
+
+  async inviteTeamMember(teamId: string, email: string, role: string = "member") {
+    return this.request<any>(`/api/teams/${teamId}/invite`, {
+      method: "POST",
+      body: JSON.stringify({ email, role }),
+    });
+  }
+
+  async updateTeamMemberRole(teamId: string, userId: string, role: string) {
+    return this.request<any>(`/api/teams/${teamId}/members/${userId}`, {
+      method: "PUT",
+      body: JSON.stringify({ role }),
+    });
+  }
+
+  async removeTeamMember(teamId: string, userId: string) {
+    return this.request<any>(`/api/teams/${teamId}/members/${userId}`, {
+      method: "DELETE",
+    });
+  }
+
+  async assignProjectToTeam(projectId: string, teamId: string | null) {
+    return this.request<any>(`/api/projects/${projectId}/team`, {
+      method: "PUT",
+      body: JSON.stringify({ teamId }),
+    });
+  }
+
+  async getTeamAuditLog(teamId: string, limit?: number, before?: string) {
+    const params = new URLSearchParams();
+    if (limit) params.set("limit", String(limit));
+    if (before) params.set("before", before);
+    const qs = params.toString();
+    return this.request<any>(`/api/teams/${teamId}/audit${qs ? `?${qs}` : ""}`);
   }
 }
 

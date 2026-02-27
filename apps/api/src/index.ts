@@ -21,6 +21,8 @@ import { exportImportRouter } from "./routes/export-import";
 import { engineRouter } from "./routes/engine";
 import { skillsRouter } from "./routes/skills";
 import { adminRouter } from "./routes/admin";
+import { usageRouter } from "./routes/usage";
+import { teamRouter } from "./routes/teams";
 import { authenticate } from "./middleware/auth";
 import { errorHandler } from "./middleware/error-handler";
 import { rateLimit } from "./middleware/rate-limit";
@@ -173,6 +175,8 @@ app.use("/api/notifications", authenticate, generalLimiter, notificationRouter);
 app.use("/api/engine", authenticate, agentLimiter, engineRouter);
 app.use("/api/skills", authenticate, generalLimiter, skillsRouter);
 app.use("/api/admin", authenticate, generalLimiter, adminRouter);
+app.use("/api/usage", authenticate, generalLimiter, usageRouter);
+app.use("/api/teams", authenticate, generalLimiter, teamRouter);
 
 // 404 handler for API routes
 app.use("/api/*", (req, res) => {

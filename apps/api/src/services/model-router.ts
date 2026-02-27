@@ -1,6 +1,7 @@
 import { callLLM, callLLMForJSON, LLM_CONFIGS } from "@forgeai/agents";
 import type { LLMConfig } from "@forgeai/agents";
 import { logger } from "../lib/logger";
+import { usageTracker } from "./usage-tracker";
 
 // ══════════════════════════════════════════════════════════════════
 // MODEL CONFIGURATION PER AGENT TYPE
@@ -152,6 +153,77 @@ export class ModelRouter {
 
     const result = await callLLMForJSON<T>(agentType, systemPrompt, messages, signal);
     return { ...result, model };
+  }
+
+  /**
+   * Call the LLM and track usage (tokens + cost).
+   * This is the preferred method when user/project context is available.
+   */
+  async callModelTracked(
+    agentType: string,
+    systemPrompt: string,
+    messages: Array<{ role: "user" | "assistant"; content: string }>,
+    ctx: { userId: string; projectId?: string; taskId?: string; action: string },
+    signal?: AbortSignal
+  ): Promise<{ text: string; model: string }> {
+    const config = this.getModelConfig(agentType);
+    const result = await this.callModel(agentType, systemPrompt, messages, signal);
+
+    // Estimate tokens from input/output text
+    const inputText = systemPrompt + messages.map((m) => m.content).join("");
+    const inputTokens = usageTracker.estimateTokens(inputText);
+    const outputTokens = usageTracker.estimateTokens(result.text);
+
+    // Track usage (fire-and-forget, don't block response)
+    usageTracker.trackUsage({
+      userId: ctx.userId,
+      projectId: ctx.projectId,
+      taskId: ctx.taskId,
+      provider: config.provider,
+      model: result.model,
+      inputTokens,
+      outputTokens,
+      agentType,
+      action: ctx.action,
+    }).catch((err) => {
+      logger.warn({ err: err.message, agentType, userId: ctx.userId }, "Usage tracking failed");
+    });
+
+    return result;
+  }
+
+  /**
+   * Call the LLM for JSON and track usage.
+   */
+  async callModelForJSONTracked<T = unknown>(
+    agentType: string,
+    systemPrompt: string,
+    messages: Array<{ role: "user" | "assistant"; content: string }>,
+    ctx: { userId: string; projectId?: string; taskId?: string; action: string },
+    signal?: AbortSignal
+  ): Promise<{ text: string; parsed: T | null; parseError?: string; model: string }> {
+    const config = this.getModelConfig(agentType);
+    const result = await this.callModelForJSON<T>(agentType, systemPrompt, messages, signal);
+
+    const inputText = systemPrompt + messages.map((m) => m.content).join("");
+    const inputTokens = usageTracker.estimateTokens(inputText);
+    const outputTokens = usageTracker.estimateTokens(result.text);
+
+    usageTracker.trackUsage({
+      userId: ctx.userId,
+      projectId: ctx.projectId,
+      taskId: ctx.taskId,
+      provider: config.provider,
+      model: result.model,
+      inputTokens,
+      outputTokens,
+      agentType,
+      action: ctx.action,
+    }).catch((err) => {
+      logger.warn({ err: err.message, agentType, userId: ctx.userId }, "Usage tracking failed");
+    });
+
+    return result;
   }
 
   /**
