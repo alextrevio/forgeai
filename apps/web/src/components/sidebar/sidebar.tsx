@@ -27,6 +27,7 @@ interface Project {
   status: string;
   framework: string;
   engineStatus?: string;
+  activeAgents?: Array<{ type: string; taskId?: string }>;
   updatedAt: string;
 }
 
@@ -233,14 +234,30 @@ export function Sidebar({ onNewProject }: SidebarProps) {
                 )}
               </div>
               {!collapsed && (
-                <span
-                  className={cn(
-                    "truncate text-left",
-                    activeProjectId === project.id ? "text-[#EDEDED]" : "text-[#8888a0]"
+                <div className="flex-1 min-w-0">
+                  <span
+                    className={cn(
+                      "block truncate text-left",
+                      activeProjectId === project.id ? "text-[#EDEDED]" : "text-[#8888a0]"
+                    )}
+                  >
+                    {project.name}
+                  </span>
+                  {(project.engineStatus === "running" || project.engineStatus === "planning") &&
+                    project.activeAgents &&
+                    Array.isArray(project.activeAgents) &&
+                    project.activeAgents.length > 0 && (
+                    <span className="text-[9px] text-[#22c55e] font-medium">
+                      {project.activeAgents.length} agente{project.activeAgents.length !== 1 ? "s" : ""}
+                    </span>
                   )}
-                >
-                  {project.name}
-                </span>
+                  {(project.engineStatus === "running" || project.engineStatus === "planning") &&
+                    (!project.activeAgents || !Array.isArray(project.activeAgents) || project.activeAgents.length === 0) && (
+                    <span className="text-[9px] text-[#22c55e] font-medium">
+                      en ejecución
+                    </span>
+                  )}
+                </div>
               )}
             </button>
           ))}

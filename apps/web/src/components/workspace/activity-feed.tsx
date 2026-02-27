@@ -16,9 +16,9 @@ import {
   Brain,
   Sparkles,
   Activity,
-  Bot,
   Clock,
   AlertTriangle,
+  Zap,
 } from "lucide-react";
 import {
   useEngineActivity,
@@ -26,6 +26,7 @@ import {
   type EnginePlanStep,
 } from "@/hooks/useEngineActivity";
 import { useProjectStore } from "@/stores/project-store";
+import { AgentBadge, AgentAvatar, getAgentStyle } from "./agent-badge";
 import { cn } from "@/lib/utils";
 
 // ─── Relative time ───────────────────────────────────────────────
@@ -47,7 +48,7 @@ function formatDuration(ms: number): string {
 }
 
 const AGENT_LABELS: Record<string, string> = {
-  planner: "Planner Agent",
+  planner: "Orchestrator",
   coder: "Coder Agent",
   designer: "Designer Agent",
   debugger: "Debugger Agent",
@@ -204,9 +205,7 @@ function PlanStepRow({
             {step.title}
           </p>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-[10px] text-[#555555]">
-              {AGENT_LABELS[step.agentType] || step.agentType}
-            </span>
+            <AgentBadge agentType={step.agentType} size="sm" showLabel />
             <span className="text-[10px] text-[#555555]">·</span>
             <span
               className={cn(
@@ -389,14 +388,14 @@ function ThinkingRow({ activity }: { activity: EngineActivity }) {
 
 function AgentEventRow({ activity }: { activity: EngineActivity }) {
   const agentType = (activity.content.agentType as string) || activity.agentType || "";
-  const label = AGENT_LABELS[agentType] || agentType;
+  const style = getAgentStyle(agentType);
 
   if (activity.type === "agent_spawn") {
     return (
       <div className="flex items-center gap-2.5 px-4 py-2 animate-fade-in-up">
-        <Bot className="h-4 w-4 text-[#7c3aed]" />
+        <AgentAvatar agentType={agentType} size="sm" />
         <span className="text-[11px] text-[#8888a0]">
-          <span className="text-[#EDEDED] font-medium">{label}</span> iniciado
+          <span className="font-medium" style={{ color: style.color }}>{style.label}</span> iniciado
         </span>
         <span className="text-[10px] text-[#444444] ml-auto">{relativeTime(activity.timestamp)}</span>
       </div>
@@ -404,15 +403,30 @@ function AgentEventRow({ activity }: { activity: EngineActivity }) {
   }
 
   if (activity.type === "agent_complete") {
-    const buildTime = activity.content.buildTime as number | undefined;
+    const durationMs = activity.content.durationMs as number | undefined;
     return (
       <div className="flex items-center gap-2.5 px-4 py-2 animate-fade-in-up">
-        <CheckCircle2 className="h-4 w-4 text-[#22c55e]" />
+        <AgentAvatar agentType={agentType} size="sm" />
         <span className="text-[11px] text-[#8888a0]">
-          <span className="text-[#22c55e] font-medium">{label}</span> completó
-          {buildTime ? ` en ${formatDuration(buildTime)}` : ""}
+          <span className="text-[#22c55e] font-medium">{style.label}</span> completó
+          {durationMs ? ` en ${formatDuration(durationMs)}` : ""}
         </span>
         <span className="text-[10px] text-[#444444] ml-auto">{relativeTime(activity.timestamp)}</span>
+      </div>
+    );
+  }
+
+  // Agent message
+  if (activity.type === "agent_message") {
+    const message = (activity.content.message as string) || "";
+    return (
+      <div className="flex items-start gap-2.5 px-4 py-2 animate-fade-in-up">
+        <AgentAvatar agentType={agentType} size="sm" />
+        <div className="flex-1 min-w-0">
+          <span className="text-[10px] font-medium" style={{ color: style.color }}>{style.label}</span>
+          <p className="text-[11px] text-[#EDEDED] mt-0.5">{message}</p>
+        </div>
+        <span className="text-[10px] text-[#444444] shrink-0">{relativeTime(activity.timestamp)}</span>
       </div>
     );
   }
@@ -558,6 +572,40 @@ export function ActivityFeed({ onClose }: { onClose: () => void }) {
             )}
           </div>
         )}
+
+        {/* Parallel agents indicator */}
+        {(() => {
+          const runningSteps = planSteps.filter((s) => s.status === "running");
+          if (runningSteps.length > 1) {
+            return (
+              <div className="mx-4 mb-2 p-2.5 rounded-lg bg-[#f59e0b]/5 border border-[#f59e0b]/10 animate-fade-in">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Zap className="h-3 w-3 text-[#f59e0b]" />
+                  <span className="text-[10px] font-medium text-[#f59e0b]">
+                    {runningSteps.length} agentes trabajando en paralelo
+                  </span>
+                </div>
+                <div className="space-y-0.5 ml-1">
+                  {runningSteps.map((step, i) => {
+                    const agentStyle = getAgentStyle(step.agentType);
+                    const isLast = i === runningSteps.length - 1;
+                    return (
+                      <div key={step.taskId || i} className="flex items-center gap-2">
+                        <span className="text-[10px] text-[#4a4a5e]">{isLast ? "└─" : "├─"}</span>
+                        <span className="text-[11px]">{agentStyle.icon}</span>
+                        <span className="text-[10px] font-medium" style={{ color: agentStyle.color }}>
+                          {agentStyle.label}:
+                        </span>
+                        <span className="text-[10px] text-[#8888a0] truncate">{step.title}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          }
+          return null;
+        })()}
 
         {/* Plan steps timeline */}
         {planSteps.length > 0 && (

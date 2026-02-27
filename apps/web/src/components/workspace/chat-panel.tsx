@@ -28,6 +28,8 @@ import { cn, generateId } from "@/lib/utils";
 import { RichMessage } from "./rich-message";
 import { SuggestionChips } from "./suggestion-chips";
 import { PlanOverview } from "./plan-overview";
+import { AgentsPanel } from "./agents-panel";
+import { AgentAvatar, getAgentStyle } from "./agent-badge";
 
 function safeArray<T>(data: T[]): T[];
 function safeArray<T>(data: null | undefined): T[];
@@ -363,11 +365,21 @@ export function ChatPanel() {
 
       {/* Plan Overview — shown when engine has steps */}
       {engine.planSteps.length > 0 && (
-        <PlanOverview
-          planSteps={engine.planSteps}
-          progress={engine.progress}
-          isRunning={engine.isRunning}
-        />
+        <>
+          <PlanOverview
+            planSteps={engine.planSteps}
+            progress={engine.progress}
+            isRunning={engine.isRunning}
+            complexity={engine.complexity}
+            estimatedTime={engine.estimatedTime}
+          />
+          {/* Active agents panel */}
+          {engine.isRunning && (
+            <div className="mx-4 mt-2">
+              <AgentsPanel planSteps={engine.planSteps} isRunning={engine.isRunning} />
+            </div>
+          )}
+        </>
       )}
 
       {/* Messages / Empty State */}
@@ -498,6 +510,32 @@ export function ChatPanel() {
             </div>
           );
         })}
+
+        {/* Agent messages from engine */}
+        {engine.activities
+          .filter((a) => a.type === "agent_message" && a.content.message)
+          .map((a) => {
+            const agentType = a.agentType || "planner";
+            const style = getAgentStyle(agentType);
+            const message = a.content.message as string;
+            return (
+              <div key={a.id} className="msg-enter">
+                <div className="flex gap-3 py-1">
+                  <AgentAvatar agentType={agentType} size="md" className="mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[12px] font-bold" style={{ color: style.color }}>
+                        {style.icon} {style.label}
+                      </span>
+                    </div>
+                    <div className="text-[13px] text-[#EDEDED] leading-relaxed whitespace-pre-wrap">
+                      {message}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
 
         {/* Plan steps */}
         {planSteps.length > 0 && (

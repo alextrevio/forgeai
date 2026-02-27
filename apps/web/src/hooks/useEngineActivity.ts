@@ -15,6 +15,10 @@ export interface EnginePlanStep {
   status: "pending" | "running" | "completed" | "failed";
   taskId?: string;
   durationMs?: number;
+  dependsOn?: number[];
+  order?: number;
+  priority?: string;
+  estimatedDuration?: string;
 }
 
 export type EngineActivityType =
@@ -55,6 +59,8 @@ export function useEngineActivity(projectId: string | null) {
   const [planSteps, setPlanSteps] = useState<EnginePlanStep[]>([]);
   const [engineStatus, setEngineStatus] = useState<EngineStatus>("idle");
   const [progress, setProgress] = useState<EngineProgress>({ completed: 0, total: 0, percentage: 0 });
+  const [complexity, setComplexity] = useState<string>("");
+  const [estimatedTime, setEstimatedTime] = useState<string>("");
   const idCounter = useRef(0);
 
   const makeId = useCallback(() => {
@@ -164,7 +170,7 @@ export function useEngineActivity(projectId: string | null) {
           break;
 
         case "engine:plan_update": {
-          // Backend sends { planSteps, tasks, analysis }
+          // Backend sends { planSteps, tasks, analysis, complexity, estimatedTime }
           // Map planSteps with taskIds from tasks array
           const steps = data.planSteps as Array<Record<string, unknown>> | undefined;
           const tasks = data.tasks as Array<Record<string, unknown>> | undefined;
@@ -175,9 +181,15 @@ export function useEngineActivity(projectId: string | null) {
               agentType: (s.agentType as string) || "coder",
               status: "pending" as const,
               taskId: tasks?.[idx]?.id as string | undefined,
+              dependsOn: (s.dependsOn as number[]) || [],
+              order: (s.order as number) || idx + 1,
+              priority: (s.priority as string) || "medium",
+              estimatedDuration: (s.estimatedDuration as string) || "",
             })));
             setProgress({ completed: 0, total: steps.length, percentage: 0 });
           }
+          if (data.complexity) setComplexity(data.complexity as string);
+          if (data.estimatedTime) setEstimatedTime(data.estimatedTime as string);
           break;
         }
 
@@ -234,7 +246,7 @@ export function useEngineActivity(projectId: string | null) {
 
   const isRunning = engineStatus === "running" || engineStatus === "planning";
 
-  return { activities, planSteps, progress, engineStatus, isRunning };
+  return { activities, planSteps, progress, engineStatus, isRunning, complexity, estimatedTime };
 }
 
 // ── Helpers ─────────────────────────────────────────────────────
