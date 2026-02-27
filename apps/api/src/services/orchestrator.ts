@@ -3,6 +3,7 @@ import { prisma, Prisma } from "@forgeai/db";
 import { logger } from "../lib/logger";
 import { modelRouter } from "./model-router";
 import { AgentFactory } from "./agents/agent-factory";
+import { skillService } from "./skill-service";
 import type { AgentContext, PlanStep } from "./agents/base-agent";
 
 // ══════════════════════════════════════════════════════════════════
@@ -426,6 +427,20 @@ export class EngineOrchestrator {
     }
     if (project?.sandboxId) {
       input += `\n[Proyecto existente con sandbox activo — puede ser una iteración]`;
+    }
+
+    // Find and include relevant skills as context for the planner
+    try {
+      const relevantSkills = await skillService.findRelevantSkills(prompt, 2);
+      if (relevantSkills.length > 0) {
+        input += "\n\n[SKILLS DISPONIBLES — usa estas instrucciones detalladas para planificar los pasos de los agentes]:";
+        for (const skill of relevantSkills) {
+          input += `\n\n--- Skill: ${skill.name} (agente: ${skill.agentType}, categoría: ${skill.category}) ---\n${skill.content}`;
+        }
+        input += "\n\n[FIN DE SKILLS — incorpora las instrucciones de los skills relevantes en las descripciones de los pasos del plan]";
+      }
+    } catch (err) {
+      logger.warn({ error: err }, "Orchestrator: failed to load relevant skills");
     }
 
     return input;

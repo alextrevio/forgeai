@@ -430,6 +430,22 @@ class ApiClient {
       window.location.href = "/login";
     }
   }
+
+  // ── Skills ──────────────────────────────────────────────────
+
+  async getSkills(filters?: { category?: string; agentType?: string; tag?: string; search?: string }) {
+    const params = new URLSearchParams();
+    if (filters?.category) params.set("category", filters.category);
+    if (filters?.agentType) params.set("agentType", filters.agentType);
+    if (filters?.tag) params.set("tag", filters.tag);
+    if (filters?.search) params.set("search", filters.search);
+    const qs = params.toString();
+    return this.request<{ skills: any[] }>(`/api/skills${qs ? `?${qs}` : ""}`);
+  }
+
+  async getSkill(slug: string) {
+    return this.request<{ skill: any }>(`/api/skills/${slug}`);
+  }
 }
 
 /** Safely extract an array from an API response that might be a wrapper object */

@@ -52,6 +52,7 @@ model User {
   notifications   Notification[]
   refreshTokens   RefreshToken[]
   apiKeys         ApiKey[]
+  skills          Skill[]
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 }
@@ -176,6 +177,37 @@ model ApiKey {
 
   @@index([userId])
   @@index([keyHash])
+}
+
+// ─── Arya Skills: Natural-language instructions for agents ───────────────────
+
+model Skill {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  description   String
+  content       String   @db.Text
+
+  agentType     String   // coder, research, designer, analyst, writer, deploy, qa
+  category      String   // web, mobile, api, data, content, deploy
+  tags          String[]
+
+  toolsRequired String[]
+
+  isBuiltin     Boolean  @default(false)
+  isPublic      Boolean  @default(true)
+  authorId      String?
+  author        User?    @relation(fields: [authorId], references: [id])
+
+  installCount  Int      @default(0)
+  rating        Float    @default(0)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([category])
+  @@index([agentType])
+  @@index([isPublic, isBuiltin])
 }
 
 // ─── Arya Engine: Autonomous Agent Orchestration ─────────────────────────────

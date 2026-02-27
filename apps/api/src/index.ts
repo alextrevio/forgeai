@@ -19,10 +19,12 @@ import { sharingRouter } from "./routes/sharing";
 import { notificationRouter } from "./routes/notifications";
 import { exportImportRouter } from "./routes/export-import";
 import { engineRouter } from "./routes/engine";
+import { skillsRouter } from "./routes/skills";
 import { authenticate } from "./middleware/auth";
 import { errorHandler } from "./middleware/error-handler";
 import { rateLimit } from "./middleware/rate-limit";
 import { setupSocketHandlers } from "./socket";
+import { skillService } from "./services/skill-service";
 import { logger } from "./lib/logger";
 
 // ── Validate required env vars at startup ───────────────
@@ -162,6 +164,7 @@ app.use("/api/projects", authenticate, generalLimiter, sharingRouter);
 app.use("/api/projects", authenticate, generalLimiter, exportImportRouter);
 app.use("/api/notifications", authenticate, generalLimiter, notificationRouter);
 app.use("/api/engine", authenticate, agentLimiter, engineRouter);
+app.use("/api/skills", authenticate, generalLimiter, skillsRouter);
 
 // 404 handler for API routes
 app.use("/api/*", (req, res) => {
@@ -177,6 +180,11 @@ setupSocketHandlers(io);
 const PORT = parseInt(process.env.PORT || "8000", 10);
 httpServer.listen(PORT, () => {
   logger.info({ port: PORT, env: process.env.NODE_ENV || "development" }, "ForgeAI API running");
+
+  // Seed builtin skills in background (fire-and-forget)
+  skillService.seedBuiltins().catch((err) => {
+    logger.warn({ error: err }, "Failed to seed builtin skills");
+  });
 });
 
 // ── Graceful shutdown ────────────────────────────────────

@@ -14,12 +14,12 @@ import { useToast } from "@/components/toast";
 import { api } from "@/lib/api";
 
 const QUICK_CHIPS = [
-  { emoji: "\uD83D\uDED2", label: "E-commerce" },
-  { emoji: "\uD83D\uDCCA", label: "Dashboard" },
-  { emoji: "\uD83C\uDFA8", label: "Portfolio" },
-  { emoji: "\uD83D\uDCF1", label: "Mobile app" },
-  { emoji: "\uD83D\uDD0D", label: "Investigar" },
-  { emoji: "\uD83D\uDCC4", label: "Reporte" },
+  { emoji: "\uD83D\uDED2", label: "E-commerce", skillSlug: "ecommerce", prompt: "Crear una tienda online con catálogo de productos, carrito de compras y checkout" },
+  { emoji: "\uD83D\uDCCA", label: "Dashboard", skillSlug: "dashboard", prompt: "Crear un dashboard de analytics con métricas KPI, gráficos y tablas de datos" },
+  { emoji: "\uD83C\uDFA8", label: "Portfolio", skillSlug: "landing-page", prompt: "Crear un portfolio personal profesional con secciones de proyectos, about y contacto" },
+  { emoji: "\uD83D\uDCF1", label: "React App", skillSlug: "react-app", prompt: "Crear una aplicación React moderna con routing, componentes reutilizables y dark mode" },
+  { emoji: "\uD83D\uDD0D", label: "Blog", skillSlug: "blog", prompt: "Crear un blog con soporte de markdown, categorías, búsqueda y diseño editorial" },
+  { emoji: "\u{1F680}", label: "REST API", skillSlug: "express-api", prompt: "Crear una REST API con Express, autenticación JWT, validación y base de datos" },
 ];
 
 export default function DashboardPage() {
@@ -77,8 +77,7 @@ export default function DashboardPage() {
   };
 
   const handleChipClick = (chip: typeof QUICK_CHIPS[number]) => {
-    const text = `${chip.emoji} ${chip.label}`;
-    setPrompt((prev) => (prev ? prev + " " + text : text));
+    setPrompt(chip.prompt);
     textareaRef.current?.focus();
   };
 
