@@ -7,6 +7,8 @@ import { checkCredits } from "../middleware/credits";
 import { logger } from "../lib/logger";
 import { Server as SocketIOServer } from "socket.io";
 import { startEngine, controlEngine } from "../engine/service";
+import { agentRegistry } from "../services/agent-registry";
+import { modelRouter } from "../services/model-router";
 
 export const engineRouter: RouterType = Router();
 
@@ -277,6 +279,36 @@ engineRouter.get("/tasks/:projectId/:taskId", async (req: AuthRequest, res: Resp
     return res.json(task);
   } catch (err) {
     logger.error(err, "Get task error");
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+// GET /agents — List available agents with their configs
+// ═══════════════════════════════════════════════════════════
+
+engineRouter.get("/agents", async (_req: AuthRequest, res: Response) => {
+  try {
+    const agents = agentRegistry.getAllAgents().map((agent) => {
+      const modelConfig = modelRouter.getModelConfig(agent.type);
+      return {
+        type: agent.type,
+        name: agent.name,
+        description: agent.description,
+        icon: agent.icon,
+        capabilities: agent.capabilities,
+        model: {
+          provider: modelConfig.provider,
+          model: modelConfig.model,
+          maxTokens: modelConfig.maxTokens,
+          temperature: modelConfig.temperature,
+        },
+      };
+    });
+
+    return res.json({ agents });
+  } catch (err) {
+    logger.error(err, "List agents error");
     return res.status(500).json({ error: "Internal server error" });
   }
 });

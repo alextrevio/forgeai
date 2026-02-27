@@ -11,7 +11,7 @@ export type { ReviewReport, ReviewIssue } from "./reviewer";
 export { DeployerAgent } from "./deployer";
 export type { DeployResult } from "./deployer";
 export { AGENT_PROMPTS } from "./prompts";
-export { callLLM, callLLMForJSON, streamLLM, isDemoMode } from "./llm";
+export { callLLM, callLLMForJSON, streamLLM, isDemoMode, LLM_CONFIGS } from "./llm";
 export type { LLMConfig } from "./llm";
 export { extractJSON } from "./json-utils";
 export type { ExtractionResult } from "./json-utils";

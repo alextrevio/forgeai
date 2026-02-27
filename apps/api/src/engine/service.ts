@@ -3,12 +3,12 @@ import { prisma, Prisma } from "@forgeai/db";
 import {
   Orchestrator,
   PlannerAgent,
-  callLLMForJSON,
 } from "@forgeai/agents";
 import type { OrchestratorCallbacks, SandboxInterface } from "@forgeai/agents";
 import type { AgentPlan, AgentStep, CodeChange } from "@forgeai/shared";
 import { sandboxManager } from "../sandbox/manager";
 import { logger } from "../lib/logger";
+import { modelRouter } from "../services/model-router";
 
 // ══════════════════════════════════════════════════════════════════
 // AGENT SYSTEM PROMPTS
@@ -342,8 +342,8 @@ export async function startEngine(
       message: "Analyzing request and creating execution plan...",
     });
 
-    // Call LLM to generate plan
-    const { parsed, parseError } = await callLLMForJSON<PlannerResult>(
+    // Call LLM to generate plan via ModelRouter
+    const { parsed, parseError } = await modelRouter.callModelForJSON<PlannerResult>(
       "planner",
       ENGINE_PLANNER_PROMPT,
       [{ role: "user", content: prompt }],
@@ -584,10 +584,11 @@ async function executeTask(
   const startTime = Date.now();
 
   try {
-    // Mark task as running
+    // Mark task as running and record the model used
+    const taskModel = modelRouter.getModelName(step.agentType);
     await prisma.task.update({
       where: { id: taskId },
-      data: { status: "running", startedAt: new Date() },
+      data: { status: "running", startedAt: new Date(), modelUsed: taskModel },
     });
 
     emit(io, projectId, "engine:task:started", {
@@ -841,7 +842,7 @@ async function executeResearchTask(
 
   const userMessage = `Tarea: ${step.description}\n\nSolicitud original del usuario: ${originalPrompt}${dependencyContext}`;
 
-  const { parsed, text, parseError } = await callLLMForJSON<ResearchResult>(
+  const { parsed, text, parseError, model } = await modelRouter.callModelForJSON<ResearchResult>(
     "research",
     RESEARCH_AGENT_PROMPT,
     [{ role: "user", content: userMessage }],
@@ -875,13 +876,13 @@ async function executeResearchTask(
     // Store full result for downstream tasks
     await prisma.task.update({
       where: { id: taskId },
-      data: { outputResult: parsed as unknown as Prisma.InputJsonValue },
+      data: { outputResult: parsed as unknown as Prisma.InputJsonValue, modelUsed: model },
     });
   } else {
     logger.warn({ parseError }, "Research agent: failed to parse JSON, storing raw text");
     await prisma.task.update({
       where: { id: taskId },
-      data: { outputResult: { summary: text || "Research completed", raw: true } },
+      data: { outputResult: { summary: text || "Research completed", raw: true }, modelUsed: model },
     });
 
     emitActivity(io, projectId, "agent_message", {
@@ -909,7 +910,7 @@ async function executeAnalystTask(
 
   const userMessage = `Tarea: ${step.description}\n\nSolicitud original del usuario: ${originalPrompt}${dependencyContext}`;
 
-  const { parsed, text, parseError } = await callLLMForJSON<AnalystResult>(
+  const { parsed, text, parseError, model } = await modelRouter.callModelForJSON<AnalystResult>(
     "analyst",
     ANALYST_AGENT_PROMPT,
     [{ role: "user", content: userMessage }],
@@ -934,13 +935,13 @@ async function executeAnalystTask(
 
     await prisma.task.update({
       where: { id: taskId },
-      data: { outputResult: parsed as unknown as Prisma.InputJsonValue },
+      data: { outputResult: parsed as unknown as Prisma.InputJsonValue, modelUsed: model },
     });
   } else {
     logger.warn({ parseError }, "Analyst agent: failed to parse JSON");
     await prisma.task.update({
       where: { id: taskId },
-      data: { outputResult: { summary: text || "Analysis completed", raw: true } },
+      data: { outputResult: { summary: text || "Analysis completed", raw: true }, modelUsed: model },
     });
 
     emitActivity(io, projectId, "agent_message", {
@@ -968,7 +969,7 @@ async function executeWriterTask(
 
   const userMessage = `Tarea: ${step.description}\n\nSolicitud original del usuario: ${originalPrompt}${dependencyContext}`;
 
-  const { parsed, text, parseError } = await callLLMForJSON<WriterResult>(
+  const { parsed, text, parseError, model } = await modelRouter.callModelForJSON<WriterResult>(
     "writer",
     WRITER_AGENT_PROMPT,
     [{ role: "user", content: userMessage }],
@@ -1012,13 +1013,13 @@ async function executeWriterTask(
 
     await prisma.task.update({
       where: { id: taskId },
-      data: { outputResult: parsed as unknown as Prisma.InputJsonValue },
+      data: { outputResult: parsed as unknown as Prisma.InputJsonValue, modelUsed: model },
     });
   } else {
     logger.warn({ parseError }, "Writer agent: failed to parse JSON");
     await prisma.task.update({
       where: { id: taskId },
-      data: { outputResult: { summary: text || "Content created", raw: true } },
+      data: { outputResult: { summary: text || "Content created", raw: true }, modelUsed: model },
     });
 
     emitActivity(io, projectId, "agent_message", {
@@ -1062,7 +1063,7 @@ async function executeDeployTask(
 
   const userMessage = `Tarea: ${step.description}\n\nSolicitud original: ${originalPrompt}\n\nProyecto:\n${projectInfo}${dependencyContext}`;
 
-  const { parsed, text, parseError } = await callLLMForJSON<DeployResult>(
+  const { parsed, text, parseError, model } = await modelRouter.callModelForJSON<DeployResult>(
     "deploy",
     DEPLOY_AGENT_PROMPT,
     [{ role: "user", content: userMessage }],
@@ -1119,13 +1120,13 @@ async function executeDeployTask(
 
     await prisma.task.update({
       where: { id: taskId },
-      data: { outputResult: parsed as unknown as Prisma.InputJsonValue },
+      data: { outputResult: parsed as unknown as Prisma.InputJsonValue, modelUsed: model },
     });
   } else {
     logger.warn({ parseError }, "Deploy agent: using raw output");
     await prisma.task.update({
       where: { id: taskId },
-      data: { outputResult: { summary: text || "Deploy analysis completed", raw: true } },
+      data: { outputResult: { summary: text || "Deploy analysis completed", raw: true }, modelUsed: model },
     });
 
     emitActivity(io, projectId, "agent_message", {
