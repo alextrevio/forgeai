@@ -332,7 +332,7 @@ export class EngineOrchestrator {
       };
 
       const agent = AgentFactory.create(step.agentType, agentCtx);
-      await agent.execute();
+      const agentResult = await agent.execute();
 
       // Mark completed
       const durationMs = Date.now() - startTime;
@@ -341,11 +341,18 @@ export class EngineOrchestrator {
         data: { status: "completed", completedAt: new Date(), durationMs },
       });
 
-      this.emit("engine:task:completed", { projectId: this.projectId, taskId });
+      // Include resultSummary in completion event for the frontend
+      this.emit("engine:task:completed", {
+        projectId: this.projectId,
+        taskId,
+        durationMs,
+        resultSummary: agentResult.resultSummary || null,
+      });
 
       await this.logActivity("agent_complete", {
         taskTitle: step.title,
         durationMs,
+        resultSummary: agentResult.resultSummary || null,
       }, { taskId, agentType: step.agentType });
 
     } catch (err) {

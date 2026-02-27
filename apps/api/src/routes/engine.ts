@@ -284,6 +284,55 @@ engineRouter.get("/tasks/:projectId/:taskId", async (req: AuthRequest, res: Resp
 });
 
 // ═══════════════════════════════════════════════════════════
+// GET /tasks/:projectId/:taskId/result — Task result data
+// ═══════════════════════════════════════════════════════════
+
+engineRouter.get("/tasks/:projectId/:taskId/result", async (req: AuthRequest, res: Response) => {
+  try {
+    const projectId = req.params.projectId as string;
+    const taskId = req.params.taskId as string;
+    const project = await findUserProject(projectId, req.userId);
+    if (!project) {
+      return res.status(404).json({ error: "Project not found" });
+    }
+
+    const task = await prisma.task.findFirst({
+      where: { id: taskId, projectId: project.id },
+      select: {
+        id: true,
+        agentType: true,
+        title: true,
+        description: true,
+        status: true,
+        order: true,
+        outputResult: true,
+        modelUsed: true,
+        tokensUsed: true,
+        durationMs: true,
+        startedAt: true,
+        completedAt: true,
+        errorMessage: true,
+      },
+    });
+
+    if (!task) {
+      return res.status(404).json({ error: "Task not found" });
+    }
+
+    const outputResult = task.outputResult as Record<string, unknown> | null;
+    const resultSummary = outputResult?.resultSummary || null;
+
+    return res.json({
+      ...task,
+      resultSummary,
+    });
+  } catch (err) {
+    logger.error(err, "Get task result error");
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
 // GET /agents — List available agents with their configs
 // ═══════════════════════════════════════════════════════════
 

@@ -404,14 +404,43 @@ function AgentEventRow({ activity }: { activity: EngineActivity }) {
 
   if (activity.type === "agent_complete") {
     const durationMs = activity.content.durationMs as number | undefined;
+    const resultSummary = activity.content.resultSummary as { oneLiner?: string; metrics?: Array<{ label: string; value: string | number }> } | undefined;
+    const [showResult, setShowResult] = useState(false);
+
     return (
-      <div className="flex items-center gap-2.5 px-4 py-2 animate-fade-in-up">
-        <AgentAvatar agentType={agentType} size="sm" />
-        <span className="text-[11px] text-[#8888a0]">
-          <span className="text-[#22c55e] font-medium">{style.label}</span> completó
-          {durationMs ? ` en ${formatDuration(durationMs)}` : ""}
-        </span>
-        <span className="text-[10px] text-[#444444] ml-auto">{relativeTime(activity.timestamp)}</span>
+      <div className="animate-fade-in-up">
+        <button
+          onClick={() => resultSummary && setShowResult(!showResult)}
+          className={cn(
+            "flex items-start gap-2.5 w-full text-left px-4 py-2 rounded-lg transition-colors",
+            resultSummary ? "hover:bg-[#22c55e]/5 cursor-pointer" : "cursor-default"
+          )}
+        >
+          <AgentAvatar agentType={agentType} size="sm" />
+          <div className="flex-1 min-w-0">
+            <span className="text-[11px] text-[#8888a0]">
+              <span className="text-[#22c55e] font-medium">{style.label}</span> completó
+              {durationMs ? ` en ${formatDuration(durationMs)}` : ""}
+            </span>
+            {/* Inline metrics */}
+            {resultSummary?.metrics && resultSummary.metrics.length > 0 && (
+              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                {resultSummary.metrics.map((m, i) => (
+                  <span key={i} className="text-[9px] text-[#8888a0] bg-[#1E1E1E] rounded-full px-1.5 py-0.5">
+                    {m.value} {m.label}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+          <span className="text-[10px] text-[#444444] shrink-0">{relativeTime(activity.timestamp)}</span>
+        </button>
+        {/* Expanded result */}
+        {showResult && resultSummary?.oneLiner && (
+          <div className="mx-4 mb-2 rounded-lg bg-[#22c55e]/5 border border-[#22c55e]/10 p-3 animate-fade-in">
+            <p className="text-[11px] text-[#EDEDED]">{resultSummary.oneLiner}</p>
+          </div>
+        )}
       </div>
     );
   }

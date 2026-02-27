@@ -1,5 +1,5 @@
 import { agentRegistry } from "../agent-registry";
-import { BaseAgent, type AgentResult, type AgentAction } from "./base-agent";
+import { BaseAgent, type AgentResult, type AgentAction, type ResultSummary } from "./base-agent";
 
 // ══════════════════════════════════════════════════════════════════
 // QA AGENT — Testing, code review, security audit
@@ -83,11 +83,24 @@ export class QAAgentRunner extends BaseAgent {
         return { type: "message" as const, text: JSON.stringify(a) };
       });
 
+      const issuesCount = (data.review?.issues || []).length;
+      const score = data.review?.score;
+      const resultSummary: ResultSummary = {
+        oneLiner: data.review?.summary || thinking,
+        metrics: [
+          ...(score !== undefined ? [{ label: "score", value: `${score}/100` }] : []),
+          ...(issuesCount > 0 ? [{ label: "issues", value: issuesCount }] : []),
+          ...(actions.length > 0 ? [{ label: "fixes aplicados", value: actions.length }] : []),
+        ],
+        type: "qa",
+      };
+
       return {
         thinking,
         actions,
         status: data.status || "completed",
         outputData: data as unknown as Record<string, unknown>,
+        resultSummary,
       };
     }
 

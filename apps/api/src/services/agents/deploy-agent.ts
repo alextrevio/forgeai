@@ -1,7 +1,7 @@
 import { sandboxManager } from "../../sandbox/manager";
 import { logger } from "../../lib/logger";
 import { agentRegistry } from "../agent-registry";
-import { BaseAgent, type AgentResult } from "./base-agent";
+import { BaseAgent, type AgentResult, type ResultSummary } from "./base-agent";
 
 // ══════════════════════════════════════════════════════════════════
 // DEPLOY AGENT — Deployment configuration and execution
@@ -88,10 +88,25 @@ export class DeployAgentRunner extends BaseAgent {
         }
       }
 
+      const stepsCount = (data.steps || []).length;
+      const configFiles = (data.steps || []).reduce((acc, s) => acc + (s.configFiles || []).length, 0);
+      const commands = (data.steps || []).reduce((acc, s) => acc + (s.commands || []).length, 0);
+      const resultSummary: ResultSummary = {
+        oneLiner: summary,
+        metrics: [
+          ...(data.platform ? [{ label: "plataforma", value: data.platform }] : []),
+          ...(configFiles > 0 ? [{ label: "archivos config", value: configFiles }] : []),
+          ...(commands > 0 ? [{ label: "comandos ejecutados", value: commands }] : []),
+          ...(data.deployInfo?.url ? [{ label: "URL", value: data.deployInfo.url }] : []),
+        ],
+        type: "deploy",
+      };
+
       return {
         thinking: data.thinking || summary,
         status: data.status || "completed",
         outputData: data as unknown as Record<string, unknown>,
+        resultSummary,
       };
     }
 

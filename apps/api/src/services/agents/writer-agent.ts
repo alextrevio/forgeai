@@ -1,7 +1,7 @@
 import { sandboxManager } from "../../sandbox/manager";
 import { logger } from "../../lib/logger";
 import { agentRegistry } from "../agent-registry";
-import { BaseAgent, type AgentResult } from "./base-agent";
+import { BaseAgent, type AgentResult, type ResultSummary } from "./base-agent";
 
 // ══════════════════════════════════════════════════════════════════
 // WRITER AGENT — Content creation with file writing
@@ -55,10 +55,23 @@ export class WriterAgentRunner extends BaseAgent {
         this.emitMessage(`${item.title} (${item.type}): ${item.body.slice(0, 200)}...`);
       }
 
+      const filesWritten = contentItems.filter((i) => i.targetFile).length;
+      const wordCount = data.metadata?.wordCount || 0;
+      const resultSummary: ResultSummary = {
+        oneLiner: summary,
+        metrics: [
+          ...(filesWritten > 0 ? [{ label: "archivos escritos", value: filesWritten }] : []),
+          ...(wordCount > 0 ? [{ label: "palabras", value: wordCount }] : []),
+          ...(data.metadata?.tone ? [{ label: "tono", value: data.metadata.tone }] : []),
+        ],
+        type: "content",
+      };
+
       return {
         thinking: data.thinking || summary,
         status: data.status || "completed",
         outputData: data as unknown as Record<string, unknown>,
+        resultSummary,
       };
     }
 

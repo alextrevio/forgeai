@@ -191,18 +191,26 @@ function StepRow({ step }: { step: EnginePlanStep }) {
         <Circle className="h-4 w-4 text-[#4a4a5e] shrink-0" />
       )}
 
-      {/* Title */}
-      <span
-        className={cn(
-          "flex-1 min-w-0 truncate",
-          isRunning ? "text-[13px] font-medium text-[#EDEDED]" :
-          isDone ? "text-[12px] text-[#8888a0]" :
-          isFailed ? "text-[12px] text-[#ef4444]" :
-          "text-[12px] text-[#555555]"
+      {/* Title + result summary */}
+      <div className="flex-1 min-w-0">
+        <span
+          className={cn(
+            "block truncate",
+            isRunning ? "text-[13px] font-medium text-[#EDEDED]" :
+            isDone ? "text-[12px] text-[#8888a0]" :
+            isFailed ? "text-[12px] text-[#ef4444]" :
+            "text-[12px] text-[#555555]"
+          )}
+        >
+          {step.title}
+        </span>
+        {/* Mini result summary for completed steps */}
+        {isDone && step.resultSummary?.oneLiner && (
+          <span className="text-[10px] text-[#22c55e]/70 truncate block">
+            {step.resultSummary.oneLiner}
+          </span>
         )}
-      >
-        {step.title}
-      </span>
+      </div>
 
       {/* Agent badge */}
       <AgentBadge agentType={step.agentType} size="sm" />

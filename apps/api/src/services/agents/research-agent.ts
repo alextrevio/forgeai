@@ -1,5 +1,5 @@
 import { agentRegistry } from "../agent-registry";
-import { BaseAgent, type AgentResult } from "./base-agent";
+import { BaseAgent, type AgentResult, type ResultSummary } from "./base-agent";
 
 // ══════════════════════════════════════════════════════════════════
 // RESEARCH AGENT — Investigation and structured reports
@@ -52,10 +52,23 @@ export class ResearchAgentRunner extends BaseAgent {
         this.emitMessage(`Recomendaciones: ${data.recommendations.join("; ")}`);
       }
 
+      const findingsCount = (data.findings || []).length;
+      const recsCount = (data.recommendations || []).length;
+      const resultSummary: ResultSummary = {
+        oneLiner: data.summary || `Investigación completada — ${findingsCount} hallazgo(s)`,
+        metrics: [
+          ...(findingsCount > 0 ? [{ label: "hallazgos", value: findingsCount }] : []),
+          ...(recsCount > 0 ? [{ label: "recomendaciones", value: recsCount }] : []),
+          ...(data.risks?.length ? [{ label: "riesgos", value: data.risks.length }] : []),
+        ],
+        type: "research",
+      };
+
       return {
         thinking: data.thinking || data.summary || "Research completed",
         status: data.status || "completed",
         outputData: data as unknown as Record<string, unknown>,
+        resultSummary,
       };
     }
 

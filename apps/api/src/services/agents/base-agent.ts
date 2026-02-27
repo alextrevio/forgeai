@@ -25,6 +25,25 @@ export interface AgentResult {
   actions?: AgentAction[];
   status: string;
   outputData?: Record<string, unknown>;
+  /** Structured summary for display in frontend */
+  resultSummary?: ResultSummary;
+}
+
+export interface ResultSummary {
+  /** One-line human-readable summary */
+  oneLiner: string;
+  /** Key metrics: "5 findings", "3 files created", etc. */
+  metrics?: Array<{ label: string; value: string | number }>;
+  /** Type of result for frontend rendering */
+  type: "research" | "code" | "design" | "analysis" | "content" | "deploy" | "qa" | "generic";
+}
+
+export interface DependencyResult {
+  taskId: string;
+  agentType: string;
+  title: string;
+  outputData: Record<string, unknown>;
+  resultSummary?: ResultSummary;
 }
 
 export interface PlanStep {
@@ -199,15 +218,68 @@ export abstract class BaseAgent {
     }
   }
 
-  protected async getPreviousTaskResults(): Promise<string> {
+  /**
+   * Returns the raw dependency context string passed by the orchestrator.
+   */
+  protected getDependencyContextRaw(): string {
+    return this.ctx.dependencyContext;
+  }
+
+  /**
+   * Parses structured dependency results from the dependency context.
+   * The orchestrator stores JSON blocks in a known format.
+   */
+  protected parseDependencyResults(): DependencyResult[] {
+    if (!this.ctx.dependencyContext) return [];
+
+    const results: DependencyResult[] = [];
+    // The orchestrator wraps each result with markers
+    const blocks = this.ctx.dependencyContext.split(/---\s*Resultado de "/).slice(1);
+
+    for (const block of blocks) {
+      try {
+        const titleMatch = block.match(/^(.+?)"\s*\((\w+)\)\s*---\n([\s\S]*)/);
+        if (!titleMatch) continue;
+
+        const [, title, agentType, jsonStr] = titleMatch;
+        const outputData = JSON.parse(jsonStr.trim());
+        results.push({
+          taskId: "",
+          agentType: agentType.trim(),
+          title: title.trim(),
+          outputData,
+          resultSummary: outputData.resultSummary,
+        });
+      } catch {
+        // Skip malformed blocks
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Builds a formatted context string from previous agent results,
+   * suitable for including in LLM prompts.
+   */
+  protected buildDependencyPromptSection(): string {
+    if (!this.ctx.dependencyContext) return "";
     return this.ctx.dependencyContext;
   }
 
   protected buildUserMessage(): string {
     let msg = `Tarea: ${this.ctx.step.description}\n\nSolicitud original del usuario: ${this.ctx.originalPrompt}`;
+
+    // Include step-specific input context from the planner
+    if (this.ctx.step.inputContext) {
+      msg += `\n\nContexto requerido: ${this.ctx.step.inputContext}`;
+    }
+
+    // Append dependency results
     if (this.ctx.dependencyContext) {
       msg += this.ctx.dependencyContext;
     }
+
     return msg;
   }
 
@@ -227,6 +299,12 @@ export abstract class BaseAgent {
 
   protected async storeOutput(result: AgentResult, model: string): Promise<void> {
     const outputData = result.outputData || { thinking: result.thinking, status: result.status };
+
+    // Attach resultSummary into the stored output for later retrieval
+    if (result.resultSummary) {
+      (outputData as Record<string, unknown>).resultSummary = result.resultSummary;
+    }
+
     await prisma.task.update({
       where: { id: this.ctx.taskId },
       data: {
@@ -234,6 +312,15 @@ export abstract class BaseAgent {
         modelUsed: model,
       },
     });
+
+    // Emit result summary via WebSocket so frontend can show it immediately
+    if (result.resultSummary) {
+      this.emitActivity("task_result", {
+        summary: result.resultSummary.oneLiner,
+        metrics: result.resultSummary.metrics || [],
+        type: result.resultSummary.type,
+      });
+    }
   }
 
   // ── WebSocket / Activity Emitters ───────────────────────────────

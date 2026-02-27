@@ -1,5 +1,5 @@
 import { agentRegistry } from "../agent-registry";
-import { BaseAgent, type AgentResult } from "./base-agent";
+import { BaseAgent, type AgentResult, type ResultSummary } from "./base-agent";
 
 // ══════════════════════════════════════════════════════════════════
 // ANALYST AGENT — Data analysis and insights
@@ -45,10 +45,23 @@ export class AnalystAgentRunner extends BaseAgent {
         this.emitMessage(`[${impact}] ${insight.insight}`);
       }
 
+      const insightsCount = (data.insights || []).length;
+      const metricsCount = (data.metrics || []).length;
+      const resultSummary: ResultSummary = {
+        oneLiner: summary,
+        metrics: [
+          ...(insightsCount > 0 ? [{ label: "insights", value: insightsCount }] : []),
+          ...(metricsCount > 0 ? [{ label: "métricas", value: metricsCount }] : []),
+          ...(data.visualizations?.length ? [{ label: "visualizaciones", value: data.visualizations.length }] : []),
+        ],
+        type: "analysis",
+      };
+
       return {
         thinking: data.thinking || summary,
         status: data.status || "completed",
         outputData: data as unknown as Record<string, unknown>,
+        resultSummary,
       };
     }
 

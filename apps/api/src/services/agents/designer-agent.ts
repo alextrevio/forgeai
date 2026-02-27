@@ -1,5 +1,5 @@
 import { agentRegistry } from "../agent-registry";
-import { BaseAgent, type AgentResult, type AgentAction } from "./base-agent";
+import { BaseAgent, type AgentResult, type AgentAction, type ResultSummary } from "./base-agent";
 
 // ══════════════════════════════════════════════════════════════════
 // DESIGNER AGENT — UI/UX design, CSS/Tailwind code generation
@@ -69,11 +69,23 @@ export class DesignerAgentRunner extends BaseAgent {
           content: a.content,
         }));
 
+      const decisionsCount = (data.designDecisions || []).length;
+      const filesCount = actions.length;
+      const resultSummary: ResultSummary = {
+        oneLiner: thinking,
+        metrics: [
+          ...(decisionsCount > 0 ? [{ label: "decisiones de diseño", value: decisionsCount }] : []),
+          ...(filesCount > 0 ? [{ label: "archivos creados", value: filesCount }] : []),
+        ],
+        type: "design",
+      };
+
       return {
         thinking,
         actions,
         status: data.status || "completed",
         outputData: data as unknown as Record<string, unknown>,
+        resultSummary,
       };
     }
 

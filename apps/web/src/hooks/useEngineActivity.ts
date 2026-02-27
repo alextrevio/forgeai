@@ -8,6 +8,12 @@ import { api } from "@/lib/api";
 
 export type EngineStatus = "idle" | "planning" | "running" | "paused" | "completed" | "failed";
 
+export interface ResultSummary {
+  oneLiner: string;
+  metrics?: Array<{ label: string; value: string | number }>;
+  type: string;
+}
+
 export interface EnginePlanStep {
   title: string;
   description: string;
@@ -19,6 +25,7 @@ export interface EnginePlanStep {
   order?: number;
   priority?: string;
   estimatedDuration?: string;
+  resultSummary?: ResultSummary;
 }
 
 export type EngineActivityType =
@@ -29,6 +36,7 @@ export type EngineActivityType =
   | "agent_spawn"
   | "agent_complete"
   | "agent_message"
+  | "task_result"
   | "error"
   | "engine_started"
   | "engine_completed"
@@ -205,15 +213,24 @@ export function useEngineActivity(projectId: string | null) {
 
         case "engine:task:completed": {
           const taskId = data.taskId as string;
+          const taskDurationMs = data.durationMs as number | undefined;
+          const taskResultSummary = data.resultSummary as ResultSummary | undefined;
           setPlanSteps((prev) => {
             const updated = prev.map((s) =>
-              s.taskId === taskId ? { ...s, status: "completed" as const } : s
+              s.taskId === taskId
+                ? {
+                    ...s,
+                    status: "completed" as const,
+                    durationMs: taskDurationMs || s.durationMs,
+                    resultSummary: taskResultSummary || s.resultSummary,
+                  }
+                : s
             );
             const completed = updated.filter((s) => s.status === "completed").length;
             setProgress({ completed, total: updated.length, percentage: updated.length > 0 ? Math.round((completed / updated.length) * 100) : 0 });
             return updated;
           });
-          addActivity("task_completed", data, taskId);
+          addActivity("task_completed", { ...data, resultSummary: taskResultSummary }, taskId);
           break;
         }
 

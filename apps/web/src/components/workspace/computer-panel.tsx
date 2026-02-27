@@ -19,10 +19,13 @@ import {
   Check,
   AlertCircle,
   Link,
+  BarChart3,
 } from "lucide-react";
 import { useProjectStore } from "@/stores/project-store";
+import { useEngineActivity } from "@/hooks/useEngineActivity";
 import { ConsolePanel, useConsoleCapture } from "./console-panel";
 import { CodePanel } from "./code-panel";
+import { ResultsPanel } from "./results-panel";
 import { cn } from "@/lib/utils";
 import { WorkspaceHeader } from "./workspace-header";
 
@@ -34,7 +37,7 @@ function safeArray(data: any): any[] {
   return [];
 }
 
-type ComputerTab = "preview" | "code" | "terminal" | "console";
+type ComputerTab = "preview" | "code" | "terminal" | "console" | "results";
 type DeviceMode = "desktop" | "tablet" | "mobile";
 
 const DEVICE_SIZES: Record<DeviceMode, { width: string; label: string }> = {
@@ -48,6 +51,7 @@ const TABS: { id: ComputerTab; label: string; icon: React.ReactNode }[] = [
   { id: "code", label: "Code", icon: <Code2 className="h-3.5 w-3.5" /> },
   { id: "terminal", label: "Terminal", icon: <Terminal className="h-3.5 w-3.5" /> },
   { id: "console", label: "Console", icon: <MessageSquare className="h-3.5 w-3.5" /> },
+  { id: "results", label: "Results", icon: <BarChart3 className="h-3.5 w-3.5" /> },
 ];
 
 const IFRAME_LOAD_TIMEOUT = 15000;
@@ -76,7 +80,10 @@ export function ComputerPanel() {
     activeAgent,
     activeFilePath,
     terminalOutput,
+    currentProjectId,
   } = useProjectStore();
+
+  const engine = useEngineActivity(currentProjectId);
 
   const [activeTab, setActiveTab] = useState<ComputerTab>("preview");
   const [deviceMode, setDeviceMode] = useState<DeviceMode>("desktop");
@@ -218,6 +225,11 @@ export function ComputerPanel() {
               {tab.id === "console" && consoleCount > 0 && activeTab !== "console" && (
                 <span className="ml-1 rounded-full bg-[#7c3aed]/15 px-1.5 py-0.5 text-[9px] text-[#a78bfa]">
                   {consoleCount > 99 ? "99+" : consoleCount}
+                </span>
+              )}
+              {tab.id === "results" && engine.planSteps.filter((s) => s.status === "completed").length > 0 && activeTab !== "results" && (
+                <span className="ml-1 rounded-full bg-[#22c55e]/15 px-1.5 py-0.5 text-[9px] text-[#4ade80]">
+                  {engine.planSteps.filter((s) => s.status === "completed").length}
                 </span>
               )}
               {/* Animated underline */}
@@ -441,6 +453,11 @@ export function ComputerPanel() {
         {/* === Console Tab === */}
         {activeTab === "console" && (
           <ConsolePanel entries={consoleEntries} onClear={clearConsoleEntries} />
+        )}
+
+        {/* === Results Tab === */}
+        {activeTab === "results" && (
+          <ResultsPanel planSteps={engine.planSteps} />
         )}
       </div>
     </div>

@@ -1,5 +1,5 @@
 export { BaseAgent } from "./base-agent";
-export type { AgentAction, AgentResult, PlanStep, AgentContext } from "./base-agent";
+export type { AgentAction, AgentResult, PlanStep, AgentContext, ResultSummary, DependencyResult } from "./base-agent";
 export { AgentFactory } from "./agent-factory";
 export { CoderAgentRunner } from "./coder-agent";
 export { ResearchAgentRunner } from "./research-agent";

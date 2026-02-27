@@ -180,6 +180,10 @@ class ApiClient {
     });
   }
 
+  async getTaskResult(projectId: string, taskId: string) {
+    return this.request<any>(`/api/engine/tasks/${projectId}/${taskId}/result`);
+  }
+
   async updateProjectSettings(id: string, data: { customInstructions?: string; settings?: any }) {
     return this.request<any>(`/api/projects/${id}/settings`, {
       method: "PATCH",
