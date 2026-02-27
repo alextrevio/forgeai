@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   Check,
@@ -91,22 +90,14 @@ const PRICING = [
 // ── Component ───────────────────────────────────────────────
 
 export default function Home() {
-  const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [typedText, setTypedText] = useState("");
   const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
   const [activeAgents, setActiveAgents] = useState<number[]>([]);
   const [isTypingDone, setIsTypingDone] = useState(false);
-  const [isChecking, setIsChecking] = useState(true);
   const typingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stepRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Redirect if logged in
-  useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    if (token) { router.push("/dashboard"); } else { setIsChecking(false); }
-  }, [router]);
 
   // Scroll handler
   useEffect(() => {
@@ -148,21 +139,12 @@ export default function Home() {
   }, [currentPromptIndex]);
 
   useEffect(() => {
-    if (isChecking) return;
     startTyping();
     return () => {
       if (typingRef.current) clearInterval(typingRef.current);
       if (stepRef.current) clearInterval(stepRef.current);
     };
-  }, [currentPromptIndex, startTyping, isChecking]);
-
-  if (isChecking) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0A0A0A]">
-        <Sparkles className="h-8 w-8 text-[#7c3aed] animate-pulse" />
-      </div>
-    );
-  }
+  }, [currentPromptIndex, startTyping]);
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-[#EDEDED] overflow-x-hidden">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Book,
   Key,
@@ -15,7 +15,6 @@ import {
   Check,
   ArrowLeft,
 } from "lucide-react";
-import { AppLayout } from "@/components/layout/app-layout";
 import { cn } from "@/lib/utils";
 
 type DocSection = "overview" | "auth" | "projects" | "engine" | "skills" | "usage" | "webhooks";
@@ -76,17 +75,32 @@ function Endpoint({ method, path, description }: { method: string; path: string;
 }
 
 export default function DocsPage() {
-  const router = useRouter();
   const [activeSection, setActiveSection] = useState<DocSection>("overview");
 
   return (
-    <AppLayout>
+    <div className="min-h-screen bg-[#0A0A0A] text-[#EDEDED]">
+      {/* Top nav */}
+      <nav className="sticky top-0 z-50 bg-[#0A0A0A]/80 backdrop-blur-xl border-b border-[#2A2A2A]">
+        <div className="max-w-5xl mx-auto px-6 flex items-center justify-between h-14">
+          <Link href="/" className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-[#7c3aed]" />
+            <span className="text-lg font-bold">Arya AI</span>
+          </Link>
+          <div className="flex items-center gap-4">
+            <Link href="/login" className="text-sm text-[#8888a0] hover:text-[#EDEDED] transition-colors">Login</Link>
+            <Link href="/register" className="rounded-lg bg-[#7c3aed] px-4 py-1.5 text-sm font-medium text-white hover:bg-[#6d28d9] transition-colors">
+              Registrarse
+            </Link>
+          </div>
+        </div>
+      </nav>
+
       <div className="mx-auto max-w-5xl px-6 py-8">
         {/* Header */}
         <div className="mb-8">
-          <button onClick={() => router.push("/settings")} className="flex items-center gap-1.5 text-sm text-[#8888a0] hover:text-[#EDEDED] mb-4 transition-colors">
-            <ArrowLeft className="h-4 w-4" /> Volver a ajustes
-          </button>
+          <Link href="/" className="flex items-center gap-1.5 text-sm text-[#8888a0] hover:text-[#EDEDED] mb-4 transition-colors">
+            <ArrowLeft className="h-4 w-4" /> Volver al inicio
+          </Link>
           <h1 className="text-2xl font-bold text-[#EDEDED]">API Documentation</h1>
           <p className="text-sm text-[#8888a0] mt-1">Integrate Arya into your workflow with the public API</p>
         </div>
@@ -186,7 +200,7 @@ curl -H "Authorization: Bearer arya_key_YOUR_KEY" \\
                   <h2 className="text-xl font-bold text-[#EDEDED] mb-2">Authentication</h2>
                   <p className="text-sm text-[#8888a0] leading-relaxed">
                     API requests are authenticated using Bearer tokens. Create an API key in
-                    <button onClick={() => router.push("/settings")} className="text-[#7c3aed] hover:underline ml-1">Settings &gt; API Keys</button>.
+                    <Link href="/settings" className="text-[#7c3aed] hover:underline ml-1">Settings &gt; API Keys</Link>.
                   </p>
                 </div>
 
@@ -433,7 +447,7 @@ console.log('Engine started with skill:', data.skillUsed.name);`} />
                   <h2 className="text-xl font-bold text-[#EDEDED] mb-2">Webhooks</h2>
                   <p className="text-sm text-[#8888a0]">
                     Receive real-time HTTP notifications when events occur. Configure webhooks in
-                    <button onClick={() => router.push("/settings")} className="text-[#7c3aed] hover:underline ml-1">Settings &gt; Webhooks</button>.
+                    <Link href="/settings" className="text-[#7c3aed] hover:underline ml-1">Settings &gt; Webhooks</Link>.
                   </p>
                 </div>
 
@@ -516,6 +530,6 @@ app.post('/webhook', (req, res) => {
           </div>
         </div>
       </div>
-    </AppLayout>
+    </div>
   );
 }

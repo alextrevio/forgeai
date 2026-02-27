@@ -68,11 +68,10 @@ class ApiClient {
         }
         return retryResponse.json();
       }
-      // Redirect to login
+      // Clear invalid tokens — let calling code handle the redirect
       if (typeof window !== "undefined") {
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
-        window.location.href = "/login";
       }
       throw new ApiError(401, "Unauthorized");
     }
