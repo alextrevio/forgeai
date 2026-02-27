@@ -61,6 +61,7 @@ model User {
   notifications   Notification[]
   refreshTokens   RefreshToken[]
   apiKeys         ApiKey[]
+  webhooks        Webhook[]
   skills          Skill[]
   usageRecords    UsageRecord[]
   ownedTeams      Team[]          @relation("OwnedTeams")
@@ -188,11 +189,44 @@ model ApiKey {
   name       String
   keyHash    String    @unique
   prefix     String
+  scopes     String[]  // ["projects.read", "projects.write", "engine.start", "engine.read", "skills.read", "usage.read"]
+  isActive   Boolean   @default(true)
+  expiresAt  DateTime?
   lastUsedAt DateTime?
   createdAt  DateTime  @default(now())
 
   @@index([userId])
   @@index([keyHash])
+}
+
+model Webhook {
+  id         String            @id @default(cuid())
+  userId     String
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  url        String
+  events     String[]          // ["engine.completed", "engine.failed", "project.created"]
+  secret     String
+  isActive   Boolean           @default(true)
+  deliveries WebhookDelivery[]
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@index([userId])
+}
+
+model WebhookDelivery {
+  id         String   @id @default(cuid())
+  webhookId  String
+  webhook    Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  event      String
+  payload    Json
+  statusCode Int?
+  response   String?  @db.Text
+  success    Boolean  @default(false)
+  durationMs Int?
+  createdAt  DateTime @default(now())
+
+  @@index([webhookId, createdAt])
 }
 
 // ─── Arya Skills: Natural-language instructions for agents ───────────────────

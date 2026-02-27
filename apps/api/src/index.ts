@@ -23,7 +23,9 @@ import { skillsRouter } from "./routes/skills";
 import { adminRouter } from "./routes/admin";
 import { usageRouter } from "./routes/usage";
 import { teamRouter } from "./routes/teams";
+import { v1Router } from "./routes/v1";
 import { authenticate } from "./middleware/auth";
+import { apiKeyAuth } from "./middleware/api-key-auth";
 import { errorHandler } from "./middleware/error-handler";
 import { rateLimit } from "./middleware/rate-limit";
 import { setupSocketHandlers } from "./socket";
@@ -177,6 +179,10 @@ app.use("/api/skills", authenticate, generalLimiter, skillsRouter);
 app.use("/api/admin", authenticate, generalLimiter, adminRouter);
 app.use("/api/usage", authenticate, generalLimiter, usageRouter);
 app.use("/api/teams", authenticate, generalLimiter, teamRouter);
+
+// Public API v1 (API key auth, separate rate limit)
+const v1Limiter = rateLimit({ windowMs: 60_000, max: 60, keyPrefix: "v1" });
+app.use("/api/v1", apiKeyAuth, v1Limiter, v1Router);
 
 // 404 handler for API routes
 app.use("/api/*", (req, res) => {

@@ -197,32 +197,96 @@ authRouter.patch("/me/settings", authenticate, validateBody(updateSettingsSchema
 
 // ── API Keys ─────────────────────────────────────────────
 
+const ALL_SCOPES = [
+  "projects.read",
+  "projects.write",
+  "engine.start",
+  "engine.read",
+  "skills.read",
+  "usage.read",
+];
+
 authRouter.get("/api-keys", authenticate, async (req: AuthRequest, res: Response) => {
   const keys = await prisma.apiKey.findMany({
     where: { userId: req.userId },
-    select: { id: true, name: true, prefix: true, lastUsedAt: true, createdAt: true },
+    select: { id: true, name: true, prefix: true, scopes: true, isActive: true, expiresAt: true, lastUsedAt: true, createdAt: true },
     orderBy: { createdAt: "desc" },
   });
   return res.json(keys);
 });
 
-authRouter.post("/api-keys", authenticate, validateBody(createApiKeySchema), async (req: AuthRequest, res: Response) => {
+authRouter.post("/api-keys", authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const { name } = req.body;
+    const { name, scopes, expiresInDays } = req.body;
+    if (!name || typeof name !== "string" || name.length < 1 || name.length > 100) {
+      return res.status(400).json({ error: { code: "VALIDATION", message: "Name is required (1-100 chars)" } });
+    }
 
-    // Generate a random API key
-    const rawKey = `fai_${randomBytes(32).toString("hex")}`;
+    // Validate scopes
+    const requestedScopes: string[] = Array.isArray(scopes) ? scopes : ALL_SCOPES;
+    const invalidScopes = requestedScopes.filter((s: string) => !ALL_SCOPES.includes(s));
+    if (invalidScopes.length > 0) {
+      return res.status(400).json({ error: { code: "VALIDATION", message: `Invalid scopes: ${invalidScopes.join(", ")}`, validScopes: ALL_SCOPES } });
+    }
+
+    // Generate arya_key_ prefixed API key
+    const rawKey = `arya_key_${randomBytes(32).toString("hex")}`;
     const keyHash = createHash("sha256").update(rawKey).digest("hex");
-    const prefix = rawKey.slice(0, 12);
+    const prefix = rawKey.slice(0, 17); // "arya_key_" + 8 chars
 
-    await prisma.apiKey.create({
-      data: { userId: req.userId!, name, keyHash, prefix },
+    let expiresAt: Date | null = null;
+    if (expiresInDays && typeof expiresInDays === "number" && expiresInDays > 0) {
+      expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000);
+    }
+
+    const apiKey = await prisma.apiKey.create({
+      data: {
+        userId: req.userId!,
+        name,
+        keyHash,
+        prefix,
+        scopes: requestedScopes,
+        isActive: true,
+        expiresAt,
+      },
     });
 
     // Only time the full key is returned
-    return res.status(201).json({ key: rawKey, prefix, name });
+    return res.status(201).json({
+      key: rawKey,
+      id: apiKey.id,
+      prefix,
+      name,
+      scopes: requestedScopes,
+      expiresAt,
+    });
   } catch (err) {
     logger.error(err, "Create API key error");
+    return res.status(500).json({ error: { code: "INTERNAL", message: "Internal server error" } });
+  }
+});
+
+authRouter.patch("/api-keys/:keyId", authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const keyId = req.params.keyId as string;
+    const { isActive } = req.body;
+
+    const key = await prisma.apiKey.findFirst({
+      where: { id: keyId, userId: req.userId },
+    });
+    if (!key) {
+      return res.status(404).json({ error: { code: "NOT_FOUND", message: "API key not found" } });
+    }
+
+    const updated = await prisma.apiKey.update({
+      where: { id: keyId },
+      data: { isActive: typeof isActive === "boolean" ? isActive : key.isActive },
+      select: { id: true, name: true, prefix: true, scopes: true, isActive: true, expiresAt: true, lastUsedAt: true, createdAt: true },
+    });
+
+    return res.json(updated);
+  } catch (err) {
+    logger.error(err, "Update API key error");
     return res.status(500).json({ error: { code: "INTERNAL", message: "Internal server error" } });
   }
 });
@@ -233,4 +297,118 @@ authRouter.delete("/api-keys/:keyId", authenticate, async (req: AuthRequest, res
     where: { id: keyId, userId: req.userId },
   });
   return res.json({ message: "API key deleted" });
+});
+
+// ── Webhooks ─────────────────────────────────────────────
+
+authRouter.get("/webhooks", authenticate, async (req: AuthRequest, res: Response) => {
+  const webhooks = await prisma.webhook.findMany({
+    where: { userId: req.userId },
+    select: { id: true, url: true, events: true, isActive: true, createdAt: true, updatedAt: true },
+    orderBy: { createdAt: "desc" },
+  });
+  return res.json(webhooks);
+});
+
+authRouter.post("/webhooks", authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { url, events } = req.body;
+    if (!url || typeof url !== "string") {
+      return res.status(400).json({ error: { code: "VALIDATION", message: "URL is required" } });
+    }
+
+    const validEvents = ["engine.completed", "engine.failed", "engine.started", "project.created", "project.deleted"];
+    const requestedEvents: string[] = Array.isArray(events) ? events : validEvents;
+    const invalidEvents = requestedEvents.filter((e: string) => !validEvents.includes(e));
+    if (invalidEvents.length > 0) {
+      return res.status(400).json({ error: { code: "VALIDATION", message: `Invalid events: ${invalidEvents.join(", ")}`, validEvents } });
+    }
+
+    // Generate a webhook signing secret
+    const secret = `whsec_${randomBytes(24).toString("hex")}`;
+
+    const webhook = await prisma.webhook.create({
+      data: {
+        userId: req.userId!,
+        url,
+        events: requestedEvents,
+        secret,
+        isActive: true,
+      },
+    });
+
+    // Return the secret only on creation
+    return res.status(201).json({
+      id: webhook.id,
+      url: webhook.url,
+      events: webhook.events,
+      isActive: webhook.isActive,
+      secret,
+      createdAt: webhook.createdAt,
+    });
+  } catch (err) {
+    logger.error(err, "Create webhook error");
+    return res.status(500).json({ error: { code: "INTERNAL", message: "Internal server error" } });
+  }
+});
+
+authRouter.patch("/webhooks/:webhookId", authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const webhookId = req.params.webhookId as string;
+    const webhook = await prisma.webhook.findFirst({
+      where: { id: webhookId, userId: req.userId },
+    });
+    if (!webhook) {
+      return res.status(404).json({ error: { code: "NOT_FOUND", message: "Webhook not found" } });
+    }
+
+    const { url, events, isActive } = req.body;
+    const data: Record<string, unknown> = {};
+    if (typeof url === "string") data.url = url;
+    if (Array.isArray(events)) data.events = events;
+    if (typeof isActive === "boolean") data.isActive = isActive;
+
+    const updated = await prisma.webhook.update({
+      where: { id: webhookId },
+      data,
+      select: { id: true, url: true, events: true, isActive: true, createdAt: true, updatedAt: true },
+    });
+
+    return res.json(updated);
+  } catch (err) {
+    logger.error(err, "Update webhook error");
+    return res.status(500).json({ error: { code: "INTERNAL", message: "Internal server error" } });
+  }
+});
+
+authRouter.delete("/webhooks/:webhookId", authenticate, async (req: AuthRequest, res: Response) => {
+  const webhookId = req.params.webhookId as string;
+  await prisma.webhook.deleteMany({
+    where: { id: webhookId, userId: req.userId },
+  });
+  return res.json({ message: "Webhook deleted" });
+});
+
+authRouter.get("/webhooks/:webhookId/deliveries", authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const webhookId = req.params.webhookId as string;
+    const webhook = await prisma.webhook.findFirst({
+      where: { id: webhookId, userId: req.userId },
+    });
+    if (!webhook) {
+      return res.status(404).json({ error: { code: "NOT_FOUND", message: "Webhook not found" } });
+    }
+
+    const deliveries = await prisma.webhookDelivery.findMany({
+      where: { webhookId },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      select: { id: true, event: true, statusCode: true, success: true, durationMs: true, createdAt: true },
+    });
+
+    return res.json(deliveries);
+  } catch (err) {
+    logger.error(err, "Get webhook deliveries error");
+    return res.status(500).json({ error: { code: "INTERNAL", message: "Internal server error" } });
+  }
 });

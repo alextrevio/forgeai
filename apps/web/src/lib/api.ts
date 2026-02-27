@@ -538,6 +538,61 @@ class ApiClient {
     const qs = params.toString();
     return this.request<any>(`/api/teams/${teamId}/audit${qs ? `?${qs}` : ""}`);
   }
+
+  // ── API Keys ──────────────────────────────────────────────
+
+  async listApiKeys() {
+    const data = await this.request<any>("/api/auth/api-keys");
+    return ensureArray(data);
+  }
+
+  async createApiKey(name: string, scopes?: string[], expiresInDays?: number) {
+    return this.request<{ key: string; id: string; prefix: string; name: string; scopes: string[]; expiresAt: string | null }>(
+      "/api/auth/api-keys",
+      { method: "POST", body: JSON.stringify({ name, scopes, expiresInDays }) }
+    );
+  }
+
+  async updateApiKey(keyId: string, data: { isActive?: boolean }) {
+    return this.request<any>(`/api/auth/api-keys/${keyId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteApiKey(keyId: string) {
+    return this.request<any>(`/api/auth/api-keys/${keyId}`, { method: "DELETE" });
+  }
+
+  // ── Webhooks ──────────────────────────────────────────────
+
+  async listWebhooks() {
+    const data = await this.request<any>("/api/auth/webhooks");
+    return ensureArray(data);
+  }
+
+  async createWebhook(url: string, events?: string[]) {
+    return this.request<{ id: string; url: string; events: string[]; secret: string; isActive: boolean }>(
+      "/api/auth/webhooks",
+      { method: "POST", body: JSON.stringify({ url, events }) }
+    );
+  }
+
+  async updateWebhook(webhookId: string, data: { url?: string; events?: string[]; isActive?: boolean }) {
+    return this.request<any>(`/api/auth/webhooks/${webhookId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteWebhook(webhookId: string) {
+    return this.request<any>(`/api/auth/webhooks/${webhookId}`, { method: "DELETE" });
+  }
+
+  async getWebhookDeliveries(webhookId: string) {
+    const data = await this.request<any>(`/api/auth/webhooks/${webhookId}/deliveries`);
+    return ensureArray(data);
+  }
 }
 
 /** Safely extract an array from an API response that might be a wrapper object */
