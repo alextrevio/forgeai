@@ -5,6 +5,7 @@ import { shutdownPostHog } from "./lib/posthog";
 initSentry();
 
 import express from "express";
+import compression from "compression";
 import cors from "cors";
 import helmet from "helmet";
 import { createServer } from "http";
@@ -87,7 +88,21 @@ app.use(cors({
   maxAge: 86400,
 }));
 
+app.use(compression());
 app.use(express.json({ limit: "10mb" }));
+
+// ── Block common scanner/bot requests early ──────────────
+app.use((req, res, next) => {
+  const path = req.path.toLowerCase();
+  // Drop requests for PHP, .env, wp-admin, etc.
+  if (
+    /\.(php|asp|aspx|jsp|cgi)$/.test(path) ||
+    /\/(\.env|\.git|wp-admin|wp-login|vendor|phpunit|phpmyadmin|adminer)/.test(path)
+  ) {
+    return res.status(404).end();
+  }
+  next();
+});
 
 // ── Request logging ──────────────────────────────────────
 app.use((req, _res, next) => {

@@ -9,6 +9,94 @@ import { previewManager } from "../services/preview-server";
 // Max file content size: 5MB
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
+// Max command length
+const MAX_COMMAND_LENGTH = 2000;
+
+/**
+ * Validate a sandbox command for safety.
+ * Returns an error message if blocked, or null if safe.
+ */
+function validateSandboxCommand(command: string): string | null {
+  if (command.length > MAX_COMMAND_LENGTH) {
+    return "Command too long";
+  }
+
+  const normalized = command.toLowerCase().replace(/\s+/g, " ").trim();
+
+  // Block dangerous binaries
+  const blockedBinaries = [
+    "rm -rf /", "rm -rf /*", "rm -rf ~", "rm -rf .",
+    "mkfs", "dd if=", "fdisk", "parted", "mount", "umount",
+    ":(){ :|:& };:", // fork bomb
+    "chmod 777 /", "chown root",
+  ];
+  if (blockedBinaries.some((b) => normalized.includes(b))) {
+    return "Command blocked for safety";
+  }
+
+  // Block network attack tools and reverse shells
+  const networkPatterns = [
+    /\bnc\b.*-[elp]/, // netcat listeners
+    /\bncat\b/, /\bsocat\b/,
+    /\/dev\/(tcp|udp)\//, // bash reverse shells
+    /\bmkfifo\b/, // named pipes for shells
+    /\btcpdump\b/, /\bnmap\b/, /\bwireshark\b/,
+    /\biptables\b/, /\bufw\b/,
+  ];
+  if (networkPatterns.some((p) => p.test(normalized))) {
+    return "Network tools are not allowed in sandbox";
+  }
+
+  // Block crypto miners and suspicious downloads
+  const minerPatterns = [
+    /xmrig|cryptonight|minerd|cgminer|cpuminer/,
+    /stratum\+tcp/,
+  ];
+  if (minerPatterns.some((p) => p.test(normalized))) {
+    return "Command blocked for safety";
+  }
+
+  // Block system modification commands
+  const systemPatterns = [
+    /\buseradd\b/, /\buserdel\b/, /\bgroupadd\b/,
+    /\bpasswd\b/, /\bvisudo\b/, /\bsudo\b/,
+    /\bsystemctl\b/, /\bservice\b.*(?:start|stop|restart)/,
+    /\bshutdown\b/, /\breboot\b/, /\binit\b\s+\d/,
+    /\bcrontab\b/, /\/etc\/cron/,
+    /\bkill\b.*-9\s+1\b/, // kill init
+    /\bkillall\b/,
+  ];
+  if (systemPatterns.some((p) => p.test(normalized))) {
+    return "System modification commands are not allowed";
+  }
+
+  // Block access to sensitive paths
+  const sensitivePaths = [
+    /\/etc\/(?:passwd|shadow|sudoers|ssh)/,
+    /\/proc\//, /\/sys\//,
+    /\/root\//,
+    /\.ssh\//,
+    /\.env(?:\.|$|\s)/,
+    /\.git\/config/,
+  ];
+  if (sensitivePaths.some((p) => p.test(normalized))) {
+    return "Access to system paths is not allowed";
+  }
+
+  // Block piping to shell interpreters (common exploit pattern)
+  const shellPipePatterns = [
+    /curl\b.*\|\s*(?:bash|sh|zsh|python|perl|ruby|node)/,
+    /wget\b.*\|\s*(?:bash|sh|zsh|python|perl|ruby|node)/,
+    /\beval\b.*\$\(/, // eval $(...)
+    /\bexec\b.*\d+[<>]/,
+  ];
+  if (shellPipePatterns.some((p) => p.test(normalized))) {
+    return "Piping downloads to shell interpreters is not allowed";
+  }
+
+  return null;
+}
+
 /** Reject paths containing traversal sequences or absolute references */
 function isSafePath(filePath: string): boolean {
   if (!filePath) return false;
@@ -157,10 +245,10 @@ sandboxRouter.post("/:id/terminal", async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: "Command must be a non-empty string" });
     }
 
-    // Basic safety: block dangerous commands
-    const blocked = ["rm -rf /", "rm -rf /*", "mkfs", "dd if=", ":(){ :|:& };:"];
-    if (blocked.some((b) => command.includes(b))) {
-      return res.status(400).json({ error: "Command blocked for safety" });
+    // ── Command safety validation ──────────────────────────
+    const sanitizeError = validateSandboxCommand(command);
+    if (sanitizeError) {
+      return res.status(400).json({ error: sanitizeError });
     }
 
     const result = await sandboxManager.executeCommand(project.sandboxId, command);
