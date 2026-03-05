@@ -42,20 +42,16 @@ export function AppLayout({ children, onNewProject }: AppLayoutProps) {
     const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY);
     if (stored === "true") setCollapsed(true);
 
-    const handleStorage = () => {
+    const handleUpdate = () => {
       setCollapsed(localStorage.getItem(SIDEBAR_STORAGE_KEY) === "true");
     };
 
-    // Poll for changes since storage events don't fire in same tab
-    const interval = setInterval(() => {
-      const current = localStorage.getItem(SIDEBAR_STORAGE_KEY) === "true";
-      setCollapsed((prev) => (prev !== current ? current : prev));
-    }, 200);
-
-    window.addEventListener("storage", handleStorage);
+    // Listen for cross-tab storage events + same-tab custom event from sidebar
+    window.addEventListener("storage", handleUpdate);
+    window.addEventListener("sidebar-toggle", handleUpdate);
     return () => {
-      window.removeEventListener("storage", handleStorage);
-      clearInterval(interval);
+      window.removeEventListener("storage", handleUpdate);
+      window.removeEventListener("sidebar-toggle", handleUpdate);
     };
   }, []);
 

@@ -100,7 +100,11 @@ export const engineWorker = new Worker(
   },
   {
     connection,
-    concurrency: 3, // Max 3 projects executing in parallel
+    concurrency: 3,               // Max 3 projects executing in parallel
+    lockDuration: 600_000,        // 10 min — engine tasks are long-running
+    lockRenewTime: 300_000,       // Renew lock halfway
+    stalledInterval: 120_000,     // Check stalled every 2 min
+    maxStalledCount: 3,           // Allow 3 stall recoveries before failing
   }
 );
 
@@ -141,7 +145,11 @@ export const agentWorker = new Worker(
   },
   {
     connection,
-    concurrency: 5, // Max 5 agents simultaneously
+    concurrency: 5,               // Max 5 agents simultaneously
+    lockDuration: 300_000,        // 5 min — individual agent tasks
+    lockRenewTime: 150_000,
+    stalledInterval: 60_000,
+    maxStalledCount: 3,
   }
 );
 
@@ -151,7 +159,7 @@ export const agentWorker = new Worker(
 
 engineWorker.on("completed", (job) => {
   const projectId = job?.data?.projectId;
-  const failedCount = job?.returnvalue?.failedCount ?? 0;
+  const failedCount = (job?.returnvalue as any)?.failedCount ?? 0;
   logger.info({ jobId: job?.id, projectId }, "Engine job completed");
 
   if (projectId) {

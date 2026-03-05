@@ -4,6 +4,16 @@ import { z } from "zod";
 import { prisma } from "@forgeai/db";
 import { AuthRequest } from "../middleware/auth";
 import { sandboxManager } from "../sandbox/manager";
+import { encrypt, decrypt } from "../lib/encryption";
+
+/** Safely decrypt a stored key (handles both encrypted and legacy plaintext) */
+function decryptKey(stored: string): string {
+  try {
+    return decrypt(stored);
+  } catch {
+    return stored;
+  }
+}
 
 export const supabaseRouter: RouterType = Router();
 
@@ -33,7 +43,7 @@ supabaseRouter.post("/connect", async (req: AuthRequest, res: Response) => {
       where: { id: req.userId },
       data: {
         supabaseUrl: body.url,
-        supabaseKey: body.anonKey,
+        supabaseKey: encrypt(body.anonKey),
       },
     });
 
@@ -90,14 +100,16 @@ supabaseRouter.get("/tables", async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: "Supabase not connected" });
     }
 
+    const anonKey = decryptKey(user.supabaseKey);
+
     // Query information_schema for tables
     const response = await fetch(
       `${user.supabaseUrl}/rest/v1/rpc/get_tables`,
       {
         method: "POST",
         headers: {
-          apikey: user.supabaseKey,
-          Authorization: `Bearer ${user.supabaseKey}`,
+          apikey: anonKey,
+          Authorization: `Bearer ${anonKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({}),
@@ -138,11 +150,13 @@ supabaseRouter.post("/:id/generate-client", async (req: AuthRequest, res: Respon
       return res.status(400).json({ error: "Supabase not connected" });
     }
 
+    const anonKey = decryptKey(user.supabaseKey);
+
     // Generate supabase client file
     const clientCode = `import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = "${user.supabaseUrl}";
-const supabaseAnonKey = "${user.supabaseKey}";
+const supabaseAnonKey = "${anonKey}";
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 `;
@@ -224,8 +238,10 @@ supabaseRouter.post("/:id/generate-types", async (req: AuthRequest, res: Respons
       return res.status(400).json({ error: "Supabase not connected" });
     }
 
+    const anonKey = decryptKey(user.supabaseKey);
+
     // Fetch OpenAPI schema from Supabase
-    const openApiRes = await fetch(`${user.supabaseUrl}/rest/v1/?apikey=${user.supabaseKey}`);
+    const openApiRes = await fetch(`${user.supabaseUrl}/rest/v1/?apikey=${anonKey}`);
 
     if (!openApiRes.ok) {
       return res.status(400).json({ error: "Could not fetch schema from Supabase" });

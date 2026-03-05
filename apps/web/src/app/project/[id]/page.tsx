@@ -106,23 +106,29 @@ export default function ProjectPage() {
         const project = await api.getProject(projectId);
         store.setProject(project.id, project.name, project.framework);
 
-        const messages = await api.getMessages(projectId);
-        store.setMessages(safeArray(messages));
-
-        // Load snapshots
-        api.getSnapshots(projectId)
-          .then((s) => store.setSnapshots(safeArray(s)))
-          .catch(() => {});
+        // Parallelize all independent fetches
+        const fetches: Promise<void>[] = [
+          api.getMessages(projectId)
+            .then((m) => store.setMessages(safeArray(m)))
+            .catch(() => {}),
+          api.getSnapshots(projectId)
+            .then((s) => store.setSnapshots(safeArray(s)))
+            .catch(() => {}),
+        ];
 
         if (project.sandboxId) {
           store.setSandboxStatus("running");
-          try {
-            const tree = await api.getFileTree(projectId);
-            store.setFileTree(safeArray(tree));
-            const preview = await api.getPreviewUrl(projectId);
-            store.setPreviewUrl(preview.url);
-          } catch { /* sandbox may not be running */ }
+          fetches.push(
+            api.getFileTree(projectId)
+              .then((t) => store.setFileTree(safeArray(t)))
+              .catch(() => {}),
+            api.getPreviewUrl(projectId)
+              .then((p) => store.setPreviewUrl(p.url))
+              .catch(() => {}),
+          );
         }
+
+        await Promise.all(fetches);
       } catch (err) {
         console.error("Failed to load project:", err);
       }

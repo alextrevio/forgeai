@@ -1,0 +1,14 @@
+node_modules
+.git
+.gitignore
+.env
+.env.*
+dist
+.next
+.turbo
+*.md
+.DS_Store
+.claude
+backups
+.vscode
+coverage

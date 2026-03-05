@@ -168,6 +168,7 @@ model Notification {
 
   @@index([userId])
   @@index([userId, read])
+  @@index([projectId])
 }
 
 model RefreshToken {
@@ -247,7 +248,7 @@ model Skill {
   isBuiltin     Boolean  @default(false)
   isPublic      Boolean  @default(true)
   authorId      String?
-  author        User?    @relation(fields: [authorId], references: [id])
+  author        User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
 
   installCount  Int      @default(0)
   rating        Float    @default(0)
@@ -258,6 +259,7 @@ model Skill {
   @@index([category])
   @@index([agentType])
   @@index([isPublic, isBuiltin])
+  @@index([authorId])
 }
 
 // ─── Arya Engine: Autonomous Agent Orchestration ─────────────────────────────
@@ -360,6 +362,7 @@ model AuditLog {
 
   @@index([teamId, createdAt])
   @@index([userId, createdAt])
+  @@index([userId])
 }
 
 // ─── Usage Tracking: Token costs & spending caps ────────────────────────────

@@ -4,10 +4,21 @@ import { z } from "zod";
 import { prisma } from "@forgeai/db";
 import { AuthRequest } from "../middleware/auth";
 import { sandboxManager } from "../sandbox/manager";
+import { encrypt, decrypt } from "../lib/encryption";
 
 export const githubRouter: RouterType = Router();
 
 const GITHUB_API = "https://api.github.com";
+
+/** Safely decrypt a stored GitHub token (handles both encrypted and legacy plaintext) */
+function decryptToken(stored: string): string {
+  try {
+    return decrypt(stored);
+  } catch {
+    // Legacy plaintext token — return as-is
+    return stored;
+  }
+}
 
 async function githubFetch(token: string, path: string, options: RequestInit = {}) {
   const res = await fetch(`${GITHUB_API}${path}`, {
@@ -39,7 +50,7 @@ githubRouter.post("/connect", async (req: AuthRequest, res: Response) => {
     await prisma.user.update({
       where: { id: req.userId },
       data: {
-        githubToken: body.token,
+        githubToken: encrypt(body.token),
         githubUsername: ghUser.login,
       },
     });
@@ -109,6 +120,8 @@ githubRouter.post("/:id/export", async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: "GitHub not connected" });
     }
 
+    const ghToken = decryptToken(user.githubToken);
+
     const repoName = project.name
       .toLowerCase()
       .replace(/[^a-z0-9-]/g, "-")
@@ -116,7 +129,7 @@ githubRouter.post("/:id/export", async (req: AuthRequest, res: Response) => {
       .slice(0, 50);
 
     // Create repo
-    const repo = await githubFetch(user.githubToken, "/user/repos", {
+    const repo = await githubFetch(ghToken, "/user/repos", {
       method: "POST",
       body: JSON.stringify({
         name: repoName,
@@ -152,7 +165,7 @@ githubRouter.post("/:id/export", async (req: AuthRequest, res: Response) => {
     // Step 1: Create blobs for each file
     const blobs: Array<{ path: string; sha: string }> = [];
     for (const [filePath, content] of Object.entries(files)) {
-      const blob = await githubFetch(user.githubToken, `/repos/${repo.full_name}/git/blobs`, {
+      const blob = await githubFetch(ghToken, `/repos/${repo.full_name}/git/blobs`, {
         method: "POST",
         body: JSON.stringify({
           content: Buffer.from(content).toString("base64"),
@@ -163,7 +176,7 @@ githubRouter.post("/:id/export", async (req: AuthRequest, res: Response) => {
     }
 
     // Step 2: Create tree
-    const tree = await githubFetch(user.githubToken, `/repos/${repo.full_name}/git/trees`, {
+    const tree = await githubFetch(ghToken, `/repos/${repo.full_name}/git/trees`, {
       method: "POST",
       body: JSON.stringify({
         tree: blobs.map((b) => ({
@@ -176,7 +189,7 @@ githubRouter.post("/:id/export", async (req: AuthRequest, res: Response) => {
     });
 
     // Step 3: Create commit
-    const commit = await githubFetch(user.githubToken, `/repos/${repo.full_name}/git/commits`, {
+    const commit = await githubFetch(ghToken, `/repos/${repo.full_name}/git/commits`, {
       method: "POST",
       body: JSON.stringify({
         message: "Initial commit from ForgeAI",
@@ -185,7 +198,7 @@ githubRouter.post("/:id/export", async (req: AuthRequest, res: Response) => {
     });
 
     // Step 4: Update main ref
-    await githubFetch(user.githubToken, `/repos/${repo.full_name}/git/refs`, {
+    await githubFetch(ghToken, `/repos/${repo.full_name}/git/refs`, {
       method: "POST",
       body: JSON.stringify({
         ref: "refs/heads/main",
@@ -230,8 +243,10 @@ githubRouter.post("/:id/push", async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: "GitHub not connected" });
     }
 
+    const ghToken = decryptToken(user.githubToken);
+
     // Get latest commit SHA
-    const ref = await githubFetch(user.githubToken, `/repos/${project.githubRepo}/git/ref/heads/main`);
+    const ref = await githubFetch(ghToken, `/repos/${project.githubRepo}/git/ref/heads/main`);
     const parentSha = ref.object.sha;
 
     // Collect files
@@ -252,7 +267,7 @@ githubRouter.post("/:id/push", async (req: AuthRequest, res: Response) => {
     // Create blobs
     const blobs: Array<{ path: string; sha: string }> = [];
     for (const [filePath, content] of Object.entries(files)) {
-      const blob = await githubFetch(user.githubToken, `/repos/${project.githubRepo}/git/blobs`, {
+      const blob = await githubFetch(ghToken, `/repos/${project.githubRepo}/git/blobs`, {
         method: "POST",
         body: JSON.stringify({
           content: Buffer.from(content).toString("base64"),
@@ -263,7 +278,7 @@ githubRouter.post("/:id/push", async (req: AuthRequest, res: Response) => {
     }
 
     // Create tree
-    const tree = await githubFetch(user.githubToken, `/repos/${project.githubRepo}/git/trees`, {
+    const tree = await githubFetch(ghToken, `/repos/${project.githubRepo}/git/trees`, {
       method: "POST",
       body: JSON.stringify({
         tree: blobs.map((b) => ({
@@ -276,7 +291,7 @@ githubRouter.post("/:id/push", async (req: AuthRequest, res: Response) => {
     });
 
     // Create commit with parent
-    const commit = await githubFetch(user.githubToken, `/repos/${project.githubRepo}/git/commits`, {
+    const commit = await githubFetch(ghToken, `/repos/${project.githubRepo}/git/commits`, {
       method: "POST",
       body: JSON.stringify({
         message: req.body.message || "Update from ForgeAI",
@@ -286,7 +301,7 @@ githubRouter.post("/:id/push", async (req: AuthRequest, res: Response) => {
     });
 
     // Update ref
-    await githubFetch(user.githubToken, `/repos/${project.githubRepo}/git/refs/heads/main`, {
+    await githubFetch(ghToken, `/repos/${project.githubRepo}/git/refs/heads/main`, {
       method: "PATCH",
       body: JSON.stringify({ sha: commit.sha }),
     });
@@ -318,17 +333,19 @@ githubRouter.post("/:id/pull", async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: "GitHub not connected" });
     }
 
+    const ghToken = decryptToken(user.githubToken);
+
     // Get the tree recursively
-    const ref = await githubFetch(user.githubToken, `/repos/${project.githubRepo}/git/ref/heads/main`);
-    const commitData = await githubFetch(user.githubToken, `/repos/${project.githubRepo}/git/commits/${ref.object.sha}`);
-    const treeData = await githubFetch(user.githubToken, `/repos/${project.githubRepo}/git/trees/${commitData.tree.sha}?recursive=1`);
+    const ref = await githubFetch(ghToken, `/repos/${project.githubRepo}/git/ref/heads/main`);
+    const commitData = await githubFetch(ghToken, `/repos/${project.githubRepo}/git/commits/${ref.object.sha}`);
+    const treeData = await githubFetch(ghToken, `/repos/${project.githubRepo}/git/trees/${commitData.tree.sha}?recursive=1`);
 
     let filesUpdated = 0;
     for (const item of treeData.tree) {
       if (item.type !== "blob") continue;
       if (item.path.includes("node_modules/") || item.path === ".git") continue;
 
-      const blob = await githubFetch(user.githubToken, `/repos/${project.githubRepo}/git/blobs/${item.sha}`);
+      const blob = await githubFetch(ghToken, `/repos/${project.githubRepo}/git/blobs/${item.sha}`);
       const content = Buffer.from(blob.content, "base64").toString("utf-8");
       await sandboxManager.writeFile(project.sandboxId, item.path, content);
       filesUpdated++;

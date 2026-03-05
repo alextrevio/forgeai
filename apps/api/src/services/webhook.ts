@@ -48,10 +48,9 @@ class WebhookService {
     let responseText: string | null = null;
     let success = false;
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000); // 10s timeout
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10_000); // 10s timeout
-
       const response = await fetch(url, {
         method: "POST",
         headers: {
@@ -65,12 +64,13 @@ class WebhookService {
         signal: controller.signal,
       });
 
-      clearTimeout(timeout);
       statusCode = response.status;
       responseText = await response.text().catch(() => null);
       success = response.ok;
     } catch (err: any) {
       responseText = err.message || "Request failed";
+    } finally {
+      clearTimeout(timeout);
     }
 
     const durationMs = Date.now() - startTime;

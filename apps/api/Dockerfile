@@ -62,11 +62,12 @@ RUN mkdir -p deploys .sandboxes tmp && chown -R forgeai:forgeai /app
 
 ENV NODE_ENV=production
 ENV PORT=8000
+ENV NODE_OPTIONS="--max-old-space-size=1536"
 
 USER forgeai
 EXPOSE 8000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
   CMD wget --spider -q http://localhost:8000/api/health || exit 1
 
 CMD ["node", "dist/index.js"]

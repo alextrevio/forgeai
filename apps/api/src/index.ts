@@ -5,7 +5,6 @@ import { shutdownPostHog } from "./lib/posthog";
 initSentry();
 
 import express from "express";
-import compression from "compression";
 import cors from "cors";
 import helmet from "helmet";
 import { createServer } from "http";
@@ -88,8 +87,8 @@ app.use(cors({
   maxAge: 86400,
 }));
 
-app.use(compression());
-app.use(express.json({ limit: "10mb" }));
+// Compression handled by nginx reverse proxy — skip in Express to avoid double-encoding
+app.use(express.json({ limit: "5mb" }));
 
 // ── Block common scanner/bot requests early ──────────────
 app.use((req, res, next) => {

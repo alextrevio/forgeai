@@ -486,38 +486,48 @@ export class EngineOrchestrator {
   }
 
   private async createTasks(planSteps: PlanStep[], prompt: string): Promise<TaskRecord[]> {
-    const tasks: TaskRecord[] = [];
+    // Batch-create all tasks in a single transaction to avoid N+1 inserts
+    const tasks = await prisma.$transaction(
+      planSteps.map((step) =>
+        prisma.task.create({
+          data: {
+            projectId: this.projectId,
+            agentType: step.agentType,
+            title: step.title,
+            description: step.description,
+            inputPrompt: prompt,
+            order: step.order,
+            status: "pending",
+          },
+        })
+      )
+    );
 
-    for (const step of planSteps) {
-      const task = await prisma.task.create({
-        data: {
-          projectId: this.projectId,
-          agentType: step.agentType,
-          title: step.title,
-          description: step.description,
-          inputPrompt: prompt,
-          order: step.order,
-          status: "pending",
-        },
-      });
+    const taskRecords: TaskRecord[] = tasks.map((t) => ({
+      id: t.id,
+      title: t.title,
+      agentType: t.agentType,
+      status: t.status,
+      order: t.order,
+    }));
 
-      tasks.push({
-        id: task.id,
-        title: task.title,
-        agentType: task.agentType,
-        status: task.status,
-        order: task.order,
-      });
+    // Batch activity logs in a single createMany
+    await prisma.activityLog.createMany({
+      data: tasks.map((task, i) => ({
+        projectId: this.projectId,
+        taskId: task.id,
+        type: "agent_spawn",
+        agentType: planSteps[i].agentType,
+        content: {
+          taskTitle: planSteps[i].title,
+          agentType: planSteps[i].agentType,
+          order: planSteps[i].order,
+          priority: planSteps[i].priority,
+        } as Prisma.InputJsonValue,
+      })),
+    });
 
-      await this.logActivity("agent_spawn", {
-        taskTitle: step.title,
-        agentType: step.agentType,
-        order: step.order,
-        priority: step.priority,
-      }, { taskId: task.id, agentType: step.agentType });
-    }
-
-    return tasks;
+    return taskRecords;
   }
 
   // ── Execution Helpers ──────────────────────────────────────────
