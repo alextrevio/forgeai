@@ -211,7 +211,9 @@ export function ChatPanel() {
 
   const handleSubmit = async (overrideContent?: string) => {
     const content = (overrideContent ?? input).trim();
-    if (!content || !currentProjectId || isAgentRunning) return;
+    if (!content || !currentProjectId) return;
+    // Block only when legacy agent is running (not engine)
+    if (isAgentRunning && !engine.isRunning) return;
 
     setInput("");
     setIsSending(true);
@@ -251,9 +253,34 @@ export function ChatPanel() {
       // Engine started — it handles everything via WebSocket events
       setIsSending(false);
       return;
-    } catch (engineErr) {
-      console.error("[ChatPanel] engine start failed, falling back to chat:", engineErr);
+    } catch (engineErr: any) {
+      const errMsg = engineErr?.message || "";
+      console.error("[ChatPanel] engine start failed:", engineErr);
       Sentry.captureException(engineErr, { tags: { component: "chat_panel", action: "engine_start" } });
+
+      // Show user-friendly error in chat
+      let displayError = "";
+      if (errMsg.includes("credit balance") || errMsg.includes("insufficient") || engineErr?.status === 402) {
+        displayError = "El proveedor de AI no tiene créditos suficientes. Verifica tu API key en console.anthropic.com.";
+      } else if (errMsg.includes("API key") || errMsg.includes("authentication") || errMsg.includes("invalid_api_key")) {
+        displayError = "La API key de AI no es válida. Configúrala en Settings.";
+      } else if (errMsg.includes("already running") || engineErr?.status === 409) {
+        displayError = "El engine ya está ejecutándose. Espera a que termine o cancélalo.";
+      }
+
+      if (displayError) {
+        addMessage({
+          id: generateId(),
+          projectId: currentProjectId,
+          role: "SYSTEM",
+          content: displayError,
+          messageType: null, plan: null, codeChanges: null, tokensUsed: null, creditsConsumed: 0, model: null,
+          createdAt: new Date().toISOString(),
+        });
+        setAgentRunning(false);
+        setIsSending(false);
+        return;
+      }
     }
 
     // Fallback: engine failed to start, use regular message flow
@@ -497,49 +524,37 @@ export function ChatPanel() {
           }
 
           // ── ASSISTANT message — left aligned with avatar ──
-          return (
-            <div key={msg.id} className="msg-enter">
-              <div className="flex gap-3 py-1">
-                <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-[#7c3aed] to-[#3b82f6] flex items-center justify-center shrink-0 mt-0.5">
-                  <Sparkles className="h-3.5 w-3.5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[12px] font-bold text-[#EDEDED]">Arya</span>
-                    {msg.createdAt && <span className="text-[10px] text-[#8888a0]/40">{formatTime(msg.createdAt)}</span>}
-                  </div>
-                  <RichMessage message={msg} />
-                </div>
-              </div>
-            </div>
-          );
-        })}
-
-        {/* Agent messages from engine */}
-        {engine.activities
-          .filter((a) => a.type === "agent_message" && a.content.message)
-          .map((a) => {
-            const agentType = a.agentType || "planner";
-            const style = getAgentStyle(agentType);
-            const message = a.content.message as string;
+          {
+            const msgAgentType = (msg as any).agentType as string | undefined;
+            const msgStyle = msgAgentType ? getAgentStyle(msgAgentType) : null;
             return (
-              <div key={a.id} className="msg-enter">
+              <div key={msg.id} className="msg-enter">
                 <div className="flex gap-3 py-1">
-                  <AgentAvatar agentType={agentType} size="md" className="mt-0.5" />
+                  {msgAgentType ? (
+                    <AgentAvatar agentType={msgAgentType} size="md" className="mt-0.5" />
+                  ) : (
+                    <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-[#7c3aed] to-[#3b82f6] flex items-center justify-center shrink-0 mt-0.5">
+                      <Sparkles className="h-3.5 w-3.5 text-white" />
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[12px] font-bold" style={{ color: style.color }}>
-                        {style.icon} {style.label}
-                      </span>
+                      {msgAgentType && msgStyle ? (
+                        <span className="text-[12px] font-bold" style={{ color: msgStyle.color }}>
+                          {msgStyle.icon} {msgStyle.label}
+                        </span>
+                      ) : (
+                        <span className="text-[12px] font-bold text-[#EDEDED]">Arya</span>
+                      )}
+                      {msg.createdAt && <span className="text-[10px] text-[#8888a0]/40">{formatTime(msg.createdAt)}</span>}
                     </div>
-                    <div className="text-[13px] text-[#EDEDED] leading-relaxed whitespace-pre-wrap">
-                      {message}
-                    </div>
+                    <RichMessage message={msg} />
                   </div>
                 </div>
               </div>
             );
-          })}
+          }
+        })}
 
         {/* Plan steps */}
         {planSteps.length > 0 && (
@@ -623,15 +638,15 @@ export function ChatPanel() {
           <button
             data-chat-send
             onClick={() => handleSubmit()}
-            disabled={!input.trim() || isAgentRunning || isSending}
+            disabled={!input.trim() || (isAgentRunning && !engine.isRunning) || isSending}
             className={cn(
               "flex items-center justify-center rounded-full transition-all duration-200 shrink-0",
-              input.trim() && !isAgentRunning && !isSending
+              input.trim() && !(isAgentRunning && !engine.isRunning) && !isSending
                 ? "h-9 w-9 bg-gradient-to-br from-[#7c3aed] to-[#6d28d9] text-white shadow-lg shadow-[#7c3aed]/20 hover:shadow-[#7c3aed]/40 hover:scale-105"
                 : "h-9 w-9 bg-transparent text-[#8888a0]/30 cursor-default"
             )}
           >
-            {isSending || isAgentRunning ? (
+            {isSending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <ArrowUp className={cn("h-4 w-4 transition-opacity", input.trim() ? "opacity-100" : "opacity-0")} />

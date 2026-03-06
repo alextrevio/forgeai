@@ -187,13 +187,17 @@ export function ComputerPanel() {
 
   useEffect(() => { if (previewUrl) setUrlInput(previewUrl); }, [previewUrl]);
 
-  // Auto-switch to Preview tab when engine completes
+  // Auto-switch to Preview or Results tab when engine completes
   useEffect(() => {
-    if (previewAutoSwitch && previewUrl) {
-      setActiveTab("preview");
+    if (previewAutoSwitch) {
+      if (previewUrl) {
+        setActiveTab("preview");
+      } else if (engine.planSteps.filter((s) => s.status === "completed").length > 0) {
+        setActiveTab("results");
+      }
       setPreviewAutoSwitch(false);
     }
-  }, [previewAutoSwitch, previewUrl, setPreviewAutoSwitch]);
+  }, [previewAutoSwitch, previewUrl, setPreviewAutoSwitch, engine.planSteps]);
 
   useEffect(() => {
     if (!isAgentRunning) return;

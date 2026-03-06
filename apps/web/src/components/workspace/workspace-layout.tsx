@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Panel, PanelGroup, PanelResizeHandle, type ImperativePanelGroupHandle } from "react-resizable-panels";
-import { Activity, Clock, Coins, X } from "lucide-react";
+import { Activity, Clock, Coins, X, WifiOff, Wifi } from "lucide-react";
 import { ChatPanel } from "./chat-panel";
 import { ComputerPanel } from "./computer-panel";
 import { ActivityFeed } from "./activity-feed";
 import { useProjectStore } from "@/stores/project-store";
 import { useEngineActivity } from "@/hooks/useEngineActivity";
+import { onConnectionChange } from "@/lib/socket";
 import { cn } from "@/lib/utils";
 
 function safeArray<T>(data: T[]): T[];
@@ -32,6 +33,19 @@ export function WorkspaceLayout() {
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const engineStartRef = useRef<number | null>(null);
+  const [connectionState, setConnectionState] = useState<"connected" | "disconnected" | "reconnecting" | "reconnected">("connected");
+
+  // Socket connection monitoring
+  useEffect(() => {
+    const unsub = onConnectionChange((state) => {
+      setConnectionState(state);
+      if (state === "reconnected") {
+        // Auto-dismiss after 3s
+        setTimeout(() => setConnectionState("connected"), 3000);
+      }
+    });
+    return unsub;
+  }, []);
 
   const engine = useEngineActivity(currentProjectId);
   const activityCount = safeArray(activityItems).length + engine.activities.length;
@@ -138,6 +152,22 @@ export function WorkspaceLayout() {
               animation: engineProgress.total === 0 ? "topProgress 2s ease-in-out infinite" : undefined,
             }}
           />
+        </div>
+      )}
+
+      {/* Connection status banner */}
+      {(connectionState === "disconnected" || connectionState === "reconnecting") && (
+        <div className="flex items-center gap-2 bg-[#ef4444]/10 border-b border-[#ef4444]/20 px-4 py-1.5 shrink-0 animate-fade-in">
+          <WifiOff className="h-3.5 w-3.5 text-[#ef4444] shrink-0" />
+          <p className="text-xs text-[#ef4444] flex-1">
+            {connectionState === "reconnecting" ? "Reconectando..." : "Conexión perdida. Intentando reconectar..."}
+          </p>
+        </div>
+      )}
+      {connectionState === "reconnected" && (
+        <div className="flex items-center gap-2 bg-[#22c55e]/10 border-b border-[#22c55e]/20 px-4 py-1.5 shrink-0 animate-fade-in">
+          <Wifi className="h-3.5 w-3.5 text-[#22c55e] shrink-0" />
+          <p className="text-xs text-[#22c55e] flex-1">Reconectado exitosamente</p>
         </div>
       )}
 

@@ -60,10 +60,14 @@ export default function DashboardPage() {
         await api.startEngine(project.id, text);
       } catch (engineErr: any) {
         const msg = engineErr?.message || "";
-        if (msg.includes("credit balance") || engineErr?.status === 402) {
-          addToast("error", "AI provider has no credits. Check your Anthropic API key billing at console.anthropic.com.");
+        if (msg.includes("credit balance") || msg.includes("insufficient") || engineErr?.status === 402) {
+          addToast("error", "El proveedor de AI no tiene créditos. Verifica tu API key de Anthropic en console.anthropic.com.");
+        } else if (msg.includes("API key") || msg.includes("authentication") || msg.includes("invalid_api_key")) {
+          addToast("error", "API key inválida. Verifica tu configuración de Anthropic API key.");
+        } else if (msg.includes("rate limit") || msg.includes("too many")) {
+          addToast("warning", "Límite de solicitudes alcanzado. Espera un momento e intenta de nuevo.");
         } else {
-          addToast("warning", "Engine could not start — you can retry from the project page.");
+          addToast("warning", "El engine no pudo iniciar — puedes reintentar desde la página del proyecto.");
         }
       }
       router.push(`/project/${project.id}`);

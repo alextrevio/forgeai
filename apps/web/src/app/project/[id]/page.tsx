@@ -429,7 +429,7 @@ export default function ProjectPage() {
           s.addActivity({ type: "step_error", stepId: event.data.taskId, stepDescription: event.data.error });
           break;
 
-        case "engine:completed":
+        case "engine:completed": {
           s.setAgentRunning(false);
           s.setAgentThinking(null);
           s.setActiveAgent(null);
@@ -438,23 +438,53 @@ export default function ProjectPage() {
           api.getPreviewUrl(projectId).then((p) => s.setPreviewUrl(p.url)).catch(() => {});
           // Signal ComputerPanel to auto-switch to Preview tab
           s.setPreviewAutoSwitch(true);
-          s.addActivity({ type: "complete", summary: "Engine completed all tasks" });
+          // Build informative completion message
+          const completedCount = event.data.completedCount || event.data.taskCount || 0;
+          const failedCount = event.data.failedCount || 0;
+          const totalTokens = event.data.totalTokensUsed;
+          const cost = event.data.estimatedCost;
+          let completionMsg = `Proyecto completado exitosamente.`;
+          if (completedCount > 0) completionMsg += ` ${completedCount} tareas ejecutadas.`;
+          if (failedCount > 0) completionMsg += ` ${failedCount} fallidas.`;
+          if (totalTokens) completionMsg += ` ${totalTokens >= 1000 ? `${(totalTokens / 1000).toFixed(1)}k` : totalTokens} tokens usados.`;
+          if (cost && cost > 0) completionMsg += ` Costo estimado: ~$${cost < 0.01 ? cost.toFixed(4) : cost.toFixed(2)}.`;
+          s.addMessage({
+            id: generateId(),
+            projectId,
+            role: "ASSISTANT",
+            content: completionMsg,
+            messageType: null, plan: null, codeChanges: null, tokensUsed: null, creditsConsumed: 0, model: null,
+            createdAt: new Date().toISOString(),
+          });
+          s.addActivity({ type: "complete", summary: completionMsg });
           break;
+        }
 
-        case "engine:failed":
+        case "engine:failed": {
           s.setAgentRunning(false);
           s.setAgentThinking(null);
           s.setActiveAgent(null);
+          const errorMsg = event.data.error || "Unknown error";
+          // Detect common errors and provide user-friendly messages
+          let displayError = errorMsg;
+          if (errorMsg.includes("credit balance") || errorMsg.includes("insufficient")) {
+            displayError = "El proveedor de AI no tiene créditos suficientes. Verifica tu API key en console.anthropic.com.";
+          } else if (errorMsg.includes("API key") || errorMsg.includes("authentication") || errorMsg.includes("invalid_api_key")) {
+            displayError = "La API key de AI no es válida. Verifica tu configuración en Settings.";
+          } else if (errorMsg.includes("rate limit") || errorMsg.includes("too many")) {
+            displayError = "Se alcanzó el límite de solicitudes. Espera un momento e intenta de nuevo.";
+          }
           s.addMessage({
             id: generateId(),
             projectId,
             role: "SYSTEM",
-            content: `Engine error: ${event.data.error || "Unknown error"}`,
+            content: `Error del engine: ${displayError}`,
             messageType: null, plan: null, codeChanges: null, tokensUsed: null, creditsConsumed: 0, model: null,
             createdAt: new Date().toISOString(),
           });
-          s.addActivity({ type: "error", errorMessage: event.data.error });
+          s.addActivity({ type: "error", errorMessage: errorMsg });
           break;
+        }
 
         case "engine:activity": {
           const actData = event.data;
@@ -464,9 +494,33 @@ export default function ProjectPage() {
             s.setAgentThinking((actContent.message as string) || null);
             s.addActivity({ type: "thinking", thinkingText: actContent.message as string });
           } else if (actType === "file_change") {
-            s.addActivity({ type: "file_change", filePath: actContent.file as string, fileAction: actContent.action as "create" | "edit" | "delete" });
+            s.addActivity({ type: "file_change", filePath: (actContent.path as string) || (actContent.file as string), fileAction: actContent.action as "create" | "edit" | "delete" });
           } else if (actType === "terminal_cmd") {
             s.addActivity({ type: "terminal_cmd", command: actContent.command as string });
+          } else if (actType === "agent_message") {
+            const agentType = actData.agentType as string || "planner";
+            s.addMessage({
+              id: generateId(),
+              projectId,
+              role: "ASSISTANT",
+              content: actContent.message as string,
+              messageType: "agent",
+              plan: null, codeChanges: null, tokensUsed: null, creditsConsumed: 0, model: null,
+              createdAt: new Date().toISOString(),
+              agentType,
+            } as any);
+          } else if (actType === "task_result") {
+            const summary = actContent.summary as string;
+            if (summary) {
+              s.addMessage({
+                id: generateId(),
+                projectId,
+                role: "SYSTEM",
+                content: `✅ ${summary}`,
+                messageType: null, plan: null, codeChanges: null, tokensUsed: null, creditsConsumed: 0, model: null,
+                createdAt: new Date().toISOString(),
+              });
+            }
           } else if (actType === "error") {
             s.addActivity({ type: "error", errorMessage: actContent.message as string });
           }
