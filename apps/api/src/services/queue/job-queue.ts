@@ -7,6 +7,7 @@ import { logger } from "../../lib/logger";
 import { EngineOrchestrator } from "../orchestrator";
 import { notificationService } from "../notifications";
 import { memoryService } from "../memory-service";
+import { versionService } from "../version-service";
 import { engineAbortControllers } from "../../engine/service";
 import type { PlanStep } from "../agents/base-agent";
 
@@ -172,6 +173,13 @@ engineWorker.on("completed", (job) => {
     if (userId) {
       memoryService.extractMemoriesFromProject(userId, projectId).catch(() => {});
     }
+    // Auto-create version snapshot on engine completion (fire-and-forget)
+    versionService.createVersion({
+      projectId,
+      label: "Engine run completado",
+      trigger: "engine_complete",
+      io: ioInstance || undefined,
+    }).catch(() => {});
     // Track engine completion (fire-and-forget)
     prisma.project.findUnique({ where: { id: projectId }, select: { userId: true } })
       .then((p) => {

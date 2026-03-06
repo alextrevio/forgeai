@@ -675,6 +675,33 @@ class ApiClient {
     return this.request<{ success: boolean }>(`/api/memory/extract/${projectId}`, { method: "POST" });
   }
 
+  // ── Versions ──────────────────────────────────────────────
+
+  async getVersions(projectId: string) {
+    return this.request<{ versions: any[] }>(`/api/projects/${projectId}/versions`);
+  }
+
+  async getVersion(projectId: string, versionId: string) {
+    return this.request<{ version: any }>(`/api/projects/${projectId}/versions/${versionId}`);
+  }
+
+  async createManualVersion(projectId: string, label?: string) {
+    return this.request<{ version: any }>(`/api/projects/${projectId}/versions`, {
+      method: "POST",
+      body: JSON.stringify({ label }),
+    });
+  }
+
+  async restoreVersion(projectId: string, versionId: string) {
+    return this.request<{ restored: boolean; version: number }>(`/api/projects/${projectId}/versions/${versionId}/restore`, {
+      method: "POST",
+    });
+  }
+
+  async compareVersions(projectId: string, a: string, b: string) {
+    return this.request<{ diffs: any[] }>(`/api/projects/${projectId}/versions-compare?a=${a}&b=${b}`);
+  }
+
   // ── Provider API Keys ────────────────────────────────────
 
   async getProviderKeyStatus() {

@@ -21,6 +21,7 @@ import {
   Link,
   BarChart3,
   Home,
+  History,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useProjectStore } from "@/stores/project-store";
@@ -28,6 +29,7 @@ import { useEngineActivity } from "@/hooks/useEngineActivity";
 import { ConsolePanel, useConsoleCapture } from "./console-panel";
 import { CodePanel } from "./code-panel";
 import { ResultsPanel } from "./results-panel";
+import { VersionHistory } from "./version-history";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { WorkspaceHeader } from "./workspace-header";
@@ -40,7 +42,7 @@ function safeArray(data: any): any[] {
   return [];
 }
 
-type ComputerTab = "preview" | "code" | "terminal" | "console" | "results";
+type ComputerTab = "preview" | "code" | "terminal" | "console" | "results" | "versions";
 type DeviceMode = "desktop" | "tablet" | "mobile";
 
 const DEVICE_SIZES: Record<DeviceMode, { width: string; label: string }> = {
@@ -55,6 +57,7 @@ const TABS: { id: ComputerTab; label: string; icon: React.ReactNode }[] = [
   { id: "terminal", label: "Terminal", icon: <Terminal className="h-3.5 w-3.5" /> },
   { id: "console", label: "Console", icon: <MessageSquare className="h-3.5 w-3.5" /> },
   { id: "results", label: "Results", icon: <BarChart3 className="h-3.5 w-3.5" /> },
+  { id: "versions", label: "Versions", icon: <History className="h-3.5 w-3.5" /> },
 ];
 
 const IFRAME_LOAD_TIMEOUT = 15000;
@@ -545,6 +548,11 @@ export function ComputerPanel() {
         {/* === Results Tab === */}
         {activeTab === "results" && (
           <ResultsPanel planSteps={engine.planSteps} />
+        )}
+
+        {/* === Versions Tab === */}
+        {activeTab === "versions" && (
+          <VersionHistory projectId={currentProjectId} />
         )}
       </div>
     </div>
