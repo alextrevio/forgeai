@@ -576,7 +576,10 @@ export function ChatPanel() {
                 <div className="text-[13px] font-medium text-[#EDEDED] truncate">{projectName}</div>
                 <div className="text-[11px] text-[#8888a0]">Proyecto Inicializado</div>
               </div>
-              <button className="flex items-center gap-1 rounded-lg bg-[#7c3aed]/10 px-3 py-1.5 text-[11px] font-medium text-[#a78bfa] hover:bg-[#7c3aed]/20 transition-colors shrink-0">
+              <button
+                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                className="flex items-center gap-1 rounded-lg bg-[#7c3aed]/10 px-3 py-1.5 text-[11px] font-medium text-[#a78bfa] hover:bg-[#7c3aed]/20 transition-colors shrink-0"
+              >
                 <Eye className="h-3 w-3" /> Ver
               </button>
             </div>

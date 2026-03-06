@@ -66,6 +66,7 @@ export interface AgentContext {
   dependencyContext: string;
   io: SocketIOServer;
   signal: AbortSignal;
+  userId?: string;
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -98,7 +99,8 @@ export abstract class BaseAgent {
         this.ctx.step.agentType,
         this.getSystemPrompt(),
         messages,
-        this.ctx.signal
+        this.ctx.signal,
+        this.ctx.userId
       );
 
       if (this.ctx.signal.aborted) {

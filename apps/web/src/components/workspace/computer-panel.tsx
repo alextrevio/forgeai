@@ -20,7 +20,9 @@ import {
   AlertCircle,
   Link,
   BarChart3,
+  Home,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useProjectStore } from "@/stores/project-store";
 import { useEngineActivity } from "@/hooks/useEngineActivity";
 import { ConsolePanel, useConsoleCapture } from "./console-panel";
@@ -152,6 +154,7 @@ function TerminalTab({ terminalLines, terminalEndRef, projectId }: {
 }
 
 export function ComputerPanel() {
+  const router = useRouter();
   const {
     previewUrl,
     sandboxStatus,
@@ -282,6 +285,13 @@ export function ComputerPanel() {
       {/* ─── Header ─── */}
       <div className="flex items-center justify-between border-b border-[#2A2A2A] bg-[#0A0A0A] px-4 py-2">
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="flex h-6 w-6 items-center justify-center rounded-md text-[#8888a0] hover:bg-[#1A1A1A] hover:text-[#EDEDED] transition-colors"
+            title="Volver al dashboard"
+          >
+            <Home className="h-3.5 w-3.5" />
+          </button>
           <div className="h-5 w-5 rounded-md bg-gradient-to-br from-[#7c3aed] to-[#3b82f6] flex items-center justify-center">
             <Monitor className="h-3 w-3 text-white" />
           </div>

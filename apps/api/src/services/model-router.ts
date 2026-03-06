@@ -1,7 +1,9 @@
 import { callLLM, callLLMForJSON, LLM_CONFIGS } from "@forgeai/agents";
 import type { LLMConfig } from "@forgeai/agents";
+import { prisma } from "@forgeai/db";
 import { Sentry } from "../lib/sentry";
 import { logger } from "../lib/logger";
+import { decrypt } from "../lib/encryption";
 import { usageTracker } from "./usage-tracker";
 
 // ══════════════════════════════════════════════════════════════════
@@ -70,7 +72,48 @@ const MODEL_CONFIG: Record<string, ModelConfig> = {
 // MODEL ROUTER
 // ══════════════════════════════════════════════════════════════════
 
+// In-memory cache for user API keys (avoids DB hit on every LLM call)
+const apiKeyCache = new Map<string, { key: string | undefined; expiresAt: number }>();
+const CACHE_TTL_MS = 60_000; // 60 seconds
+
 export class ModelRouter {
+  /**
+   * Resolve the user's encrypted Anthropic API key from the DB (with cache).
+   */
+  private async getUserApiKey(userId?: string): Promise<string | undefined> {
+    if (!userId) return undefined;
+
+    const cached = apiKeyCache.get(userId);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.key;
+    }
+
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { settings: true },
+      });
+
+      const settings = (user?.settings as Record<string, unknown>) || {};
+      const encryptedKey = settings.encryptedAnthropicKey as string | undefined;
+
+      let decryptedKey: string | undefined;
+      if (encryptedKey) {
+        try {
+          decryptedKey = decrypt(encryptedKey);
+        } catch (err) {
+          logger.warn({ userId }, "Failed to decrypt user Anthropic key");
+        }
+      }
+
+      apiKeyCache.set(userId, { key: decryptedKey, expiresAt: Date.now() + CACHE_TTL_MS });
+      return decryptedKey;
+    } catch (err) {
+      logger.warn({ err, userId }, "Failed to fetch user API key");
+      return undefined;
+    }
+  }
+
   /**
    * Get the full model configuration for an agent type.
    */
@@ -108,15 +151,17 @@ export class ModelRouter {
     agentType: string,
     systemPrompt: string,
     messages: Array<{ role: "user" | "assistant"; content: string }>,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    userId?: string
   ): Promise<{ text: string; model: string }> {
     this.applyConfig(agentType);
     const model = this.getModelName(agentType);
+    const userApiKey = await this.getUserApiKey(userId);
 
-    logger.info({ agentType, model }, "ModelRouter: calling LLM");
+    logger.info({ agentType, model, customKey: !!userApiKey }, "ModelRouter: calling LLM");
 
     try {
-      const text = await callLLM(agentType, systemPrompt, messages, signal);
+      const text = await callLLM(agentType, systemPrompt, messages, signal, undefined, userApiKey);
       return { text, model };
     } catch (err) {
       Sentry.captureException(err, {
@@ -133,15 +178,17 @@ export class ModelRouter {
     agentType: string,
     systemPrompt: string,
     messages: Array<{ role: "user" | "assistant"; content: string }>,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    userId?: string
   ): Promise<{ text: string; parsed: T | null; parseError?: string; model: string }> {
     this.applyConfig(agentType);
     const model = this.getModelName(agentType);
+    const userApiKey = await this.getUserApiKey(userId);
 
-    logger.info({ agentType, model }, "ModelRouter: calling LLM for JSON");
+    logger.info({ agentType, model, customKey: !!userApiKey }, "ModelRouter: calling LLM for JSON");
 
     try {
-      const result = await callLLMForJSON<T>(agentType, systemPrompt, messages, signal);
+      const result = await callLLMForJSON<T>(agentType, systemPrompt, messages, signal, undefined, userApiKey);
       return { ...result, model };
     } catch (err) {
       Sentry.captureException(err, {
@@ -159,15 +206,17 @@ export class ModelRouter {
     overrideModel: string | undefined,
     systemPrompt: string,
     messages: Array<{ role: "user" | "assistant"; content: string }>,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    userId?: string
   ): Promise<{ text: string; parsed: T | null; parseError?: string; model: string }> {
     this.applyConfig(agentType, overrideModel);
     const model = overrideModel || this.getModelName(agentType);
+    const userApiKey = await this.getUserApiKey(userId);
 
-    logger.info({ agentType, model, override: !!overrideModel }, "ModelRouter: calling LLM with override");
+    logger.info({ agentType, model, override: !!overrideModel, customKey: !!userApiKey }, "ModelRouter: calling LLM with override");
 
     try {
-      const result = await callLLMForJSON<T>(agentType, systemPrompt, messages, signal);
+      const result = await callLLMForJSON<T>(agentType, systemPrompt, messages, signal, undefined, userApiKey);
       return { ...result, model };
     } catch (err) {
       Sentry.captureException(err, {

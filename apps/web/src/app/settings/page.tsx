@@ -10,8 +10,6 @@ import {
   AlertTriangle,
   Loader2,
   Check,
-  Eye,
-  EyeOff,
   Save,
   Plus,
   Trash2,
@@ -20,6 +18,9 @@ import {
   Shield,
   ToggleLeft,
   ToggleRight,
+  CheckCircle,
+  XCircle,
+  Lock,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuthStore } from "@/stores/auth-store";
@@ -85,10 +86,6 @@ export default function SettingsPage() {
   const [fontSize, setFontSize] = useState(14);
   const [defaultFramework, setDefaultFramework] = useState("react-vite");
   const [autoSave, setAutoSave] = useState(true);
-  const [anthropicKey, setAnthropicKey] = useState("");
-  const [openaiKey, setOpenaiKey] = useState("");
-  const [showAnthropicKey, setShowAnthropicKey] = useState(false);
-  const [showOpenaiKey, setShowOpenaiKey] = useState(false);
   const [monthlyBudget, setMonthlyBudget] = useState(10);
   const [budgetSaving, setBudgetSaving] = useState(false);
   const [budgetSaved, setBudgetSaved] = useState(false);
@@ -114,6 +111,18 @@ export default function SettingsPage() {
   const [creatingWebhook, setCreatingWebhook] = useState(false);
   const [newlyCreatedSecret, setNewlyCreatedSecret] = useState<string | null>(null);
   const [copiedSecret, setCopiedSecret] = useState(false);
+
+  // Provider API Keys state
+  const [providerKeyStatus, setProviderKeyStatus] = useState<{ anthropic: boolean; openai: boolean }>({ anthropic: false, openai: false });
+  const [providerAnthropicKey, setProviderAnthropicKey] = useState("");
+  const [providerKeySaving, setProviderKeySaving] = useState(false);
+  const [providerKeySaved, setProviderKeySaved] = useState(false);
+  const [providerKeyValidating, setProviderKeyValidating] = useState(false);
+  const [providerKeyValid, setProviderKeyValid] = useState<boolean | null>(null);
+  const [providerKeyError, setProviderKeyError] = useState<string | null>(null);
+
+  // Danger zone state
+  const [deleteConfirm, setDeleteConfirm] = useState("");
 
   useEffect(() => { loadUser(); }, [loadUser]);
 
@@ -141,6 +150,50 @@ export default function SettingsPage() {
       } catch { /* ignore */ }
     })();
   }, [isAuthenticated]);
+
+  // Fetch provider key status when api-keys tab is active
+  const fetchProviderKeyStatus = useCallback(async () => {
+    try {
+      const status = await api.getProviderKeyStatus();
+      setProviderKeyStatus(status);
+      if (status.anthropic) setProviderKeyValid(true);
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "api-keys" && isAuthenticated) fetchProviderKeyStatus();
+  }, [activeTab, isAuthenticated, fetchProviderKeyStatus]);
+
+  const handleSaveProviderKey = async () => {
+    if (!providerAnthropicKey.trim()) return;
+    setProviderKeySaving(true);
+    setProviderKeyError(null);
+    try {
+      const status = await api.saveProviderKeys({ anthropic: providerAnthropicKey });
+      setProviderKeyStatus(status);
+      setProviderKeySaved(true);
+      setTimeout(() => setProviderKeySaved(false), 2000);
+
+      // Validate after saving
+      setProviderKeyValidating(true);
+      try {
+        const validation = await api.validateProviderKey("anthropic", providerAnthropicKey);
+        setProviderKeyValid(validation.valid);
+        if (!validation.valid) setProviderKeyError(validation.error || "Key invalida");
+      } catch {
+        setProviderKeyValid(null);
+      } finally {
+        setProviderKeyValidating(false);
+      }
+
+      setProviderAnthropicKey("");
+    } catch (err) {
+      console.error("Save provider key failed:", err);
+      setProviderKeyError("Error al guardar la key");
+    } finally {
+      setProviderKeySaving(false);
+    }
+  };
 
   // Fetch API keys when tab is active
   const fetchApiKeys = useCallback(async () => {
@@ -184,7 +237,7 @@ export default function SettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.updateUserSettings({ theme, editorFontSize: fontSize, defaultFramework, autoSave, anthropicApiKey: anthropicKey || undefined, openaiApiKey: openaiKey || undefined });
+      await api.updateUserSettings({ theme, editorFontSize: fontSize, defaultFramework, autoSave });
       setSaved(true); setTimeout(() => setSaved(false), 2000);
     } catch (err) { console.error("Save settings failed:", err); }
     finally { setSaving(false); }
@@ -366,44 +419,125 @@ export default function SettingsPage() {
                   </button>
                 </div>
 
-                {/* Provider API Keys (existing) */}
-                <div className="pt-4 border-t border-[#2A2A2A]">
-                  <h3 className="text-sm font-semibold text-[#EDEDED] mb-3">Provider API Keys</h3>
-                  <p className="text-xs text-[#8888a0] mb-4">Conecta tus propias API keys para uso extendido</p>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-[#EDEDED] mb-1.5">Anthropic API Key</label>
-                      <div className="relative max-w-md">
-                        <input type={showAnthropicKey ? "text" : "password"} value={anthropicKey} onChange={(e) => setAnthropicKey(e.target.value)}
-                          className="w-full rounded-lg border border-[#2A2A2A] bg-[#0A0A0A] px-4 py-2.5 pr-10 text-sm text-[#EDEDED] placeholder:text-[#8888a0]/50 outline-none focus:border-[#7c3aed]"
-                          placeholder="sk-ant-..." />
-                        <button onClick={() => setShowAnthropicKey(!showAnthropicKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8888a0] hover:text-[#EDEDED]">
-                          {showAnthropicKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-[#EDEDED] mb-1.5">OpenAI API Key</label>
-                      <div className="relative max-w-md">
-                        <input type={showOpenaiKey ? "text" : "password"} value={openaiKey} onChange={(e) => setOpenaiKey(e.target.value)}
-                          className="w-full rounded-lg border border-[#2A2A2A] bg-[#0A0A0A] px-4 py-2.5 pr-10 text-sm text-[#EDEDED] placeholder:text-[#8888a0]/50 outline-none focus:border-[#7c3aed]"
-                          placeholder="sk-..." />
-                        <button onClick={() => setShowOpenaiKey(!showOpenaiKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8888a0] hover:text-[#EDEDED]">
-                          {showOpenaiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </div>
             )}
 
             {/* ─── API Keys Tab ─────────────────────────────────────── */}
             {activeTab === "api-keys" && (
-              <div className="space-y-6 animate-fade-in">
+              <div className="space-y-8 animate-fade-in">
+                {/* ── Provider API Keys Section ─────────────────────── */}
+                <div className="space-y-4">
+                  <div>
+                    <h2 className="text-lg font-semibold text-[#EDEDED] mb-1">Provider API Keys</h2>
+                    <p className="text-sm text-[#8888a0]">Usa tus propias API keys para que los agentes utilicen tus creditos</p>
+                  </div>
+
+                  {/* Anthropic card */}
+                  <div className="rounded-xl border border-[#2A2A2A] bg-[#111111] p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-lg bg-[#7c3aed]/10 flex items-center justify-center">
+                          <span className="text-sm font-bold text-[#7c3aed]">A</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-[#EDEDED]">Anthropic</p>
+                          <p className="text-xs text-[#8888a0]">Claude models</p>
+                        </div>
+                      </div>
+                      {providerKeyStatus.anthropic ? (
+                        <span className="flex items-center gap-1.5 text-xs font-medium text-[#22c55e]">
+                          <CheckCircle className="h-3.5 w-3.5" /> Conectada
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1.5 text-xs font-medium text-[#8888a0]">
+                          <XCircle className="h-3.5 w-3.5" /> No configurada
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-end gap-3">
+                      <div className="flex-1">
+                        <div className="relative">
+                          <input
+                            type="password"
+                            value={providerAnthropicKey}
+                            onChange={(e) => { setProviderAnthropicKey(e.target.value); setProviderKeyError(null); }}
+                            className="w-full rounded-lg border border-[#2A2A2A] bg-[#0A0A0A] px-4 py-2.5 text-sm text-[#EDEDED] placeholder:text-[#8888a0]/50 outline-none focus:border-[#7c3aed]"
+                            placeholder={providerKeyStatus.anthropic ? "••••••••••••••••" : "sk-ant-..."}
+                          />
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleSaveProviderKey}
+                        disabled={providerKeySaving || !providerAnthropicKey.trim()}
+                        className="flex items-center gap-1.5 rounded-lg bg-[#7c3aed] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#6d28d9] transition-colors disabled:opacity-50"
+                      >
+                        {providerKeySaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : providerKeySaved ? <Check className="h-3.5 w-3.5" /> : <Save className="h-3.5 w-3.5" />}
+                        {providerKeySaved ? "Guardada" : "Guardar"}
+                      </button>
+                    </div>
+                    {providerKeyValidating && (
+                      <div className="flex items-center gap-2 mt-2 text-xs text-[#8888a0]">
+                        <Loader2 className="h-3 w-3 animate-spin" /> Validando key...
+                      </div>
+                    )}
+                    {providerKeyValid === true && !providerKeyValidating && providerKeyStatus.anthropic && (
+                      <div className="flex items-center gap-2 mt-2 text-xs text-[#22c55e]">
+                        <CheckCircle className="h-3 w-3" /> Key valida y funcionando
+                      </div>
+                    )}
+                    {providerKeyError && (
+                      <div className="flex items-center gap-2 mt-2 text-xs text-[#ef4444]">
+                        <XCircle className="h-3 w-3" /> {providerKeyError}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* OpenAI card (coming soon) */}
+                  <div className="rounded-xl border border-[#2A2A2A] bg-[#111111] p-5 opacity-60">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-lg bg-[#10a37f]/10 flex items-center justify-center">
+                          <span className="text-sm font-bold text-[#10a37f]">O</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-[#EDEDED]">OpenAI</p>
+                          <p className="text-xs text-[#8888a0]">GPT models</p>
+                        </div>
+                      </div>
+                      <span className="rounded-full bg-[#2A2A2A] px-2.5 py-0.5 text-[10px] font-medium text-[#8888a0]">Proximamente</span>
+                    </div>
+                  </div>
+
+                  {/* Google AI card (coming soon) */}
+                  <div className="rounded-xl border border-[#2A2A2A] bg-[#111111] p-5 opacity-60">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-lg bg-[#4285f4]/10 flex items-center justify-center">
+                          <span className="text-sm font-bold text-[#4285f4]">G</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-[#EDEDED]">Google AI</p>
+                          <p className="text-xs text-[#8888a0]">Gemini models</p>
+                        </div>
+                      </div>
+                      <span className="rounded-full bg-[#2A2A2A] px-2.5 py-0.5 text-[10px] font-medium text-[#8888a0]">Proximamente</span>
+                    </div>
+                  </div>
+
+                  {/* Security note */}
+                  <div className="flex items-start gap-2 rounded-lg bg-[#1A1A1A] px-4 py-3">
+                    <Lock className="h-3.5 w-3.5 text-[#8888a0] mt-0.5 shrink-0" />
+                    <p className="text-xs text-[#8888a0]">
+                      Tus API keys se encriptan con AES-256 y nunca se muestran despues de guardarlas.
+                    </p>
+                  </div>
+                </div>
+
+                {/* ── Arya API Keys Section ─────────────────────────── */}
+                <div className="border-t border-[#2A2A2A] pt-6 space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-lg font-semibold text-[#EDEDED] mb-1">API Keys</h2>
+                    <h2 className="text-lg font-semibold text-[#EDEDED] mb-1">Arya API Keys</h2>
                     <p className="text-sm text-[#8888a0]">Gestiona tus API keys para acceder a la API publica v1</p>
                   </div>
                   <button
@@ -552,6 +686,7 @@ export default function SettingsPage() {
                       Ver docs
                     </button>
                   </div>
+                </div>
                 </div>
               </div>
             )}
@@ -795,7 +930,25 @@ function verifySignature(payload, signature, secret) {
                 <div className="rounded-xl border border-[#ef4444]/20 bg-[#ef4444]/5 p-6">
                   <h3 className="text-sm font-medium text-[#EDEDED] mb-1">Eliminar cuenta</h3>
                   <p className="text-xs text-[#8888a0] mb-4">Elimina permanentemente tu cuenta y todos los datos asociados. Esta accion no se puede deshacer.</p>
-                  <button className="rounded-lg border border-[#ef4444]/30 bg-[#ef4444]/10 px-4 py-2 text-sm font-medium text-[#ef4444] hover:bg-[#ef4444]/20 transition-colors">Eliminar cuenta</button>
+                  <div className="space-y-3 max-w-md">
+                    <div>
+                      <label className="block text-xs text-[#8888a0] mb-1.5">Escribe <code className="text-[#ef4444]">ELIMINAR</code> para confirmar</label>
+                      <input
+                        type="text"
+                        value={deleteConfirm}
+                        onChange={(e) => setDeleteConfirm(e.target.value)}
+                        className="w-full rounded-lg border border-[#ef4444]/20 bg-[#0A0A0A] px-4 py-2.5 text-sm text-[#EDEDED] placeholder:text-[#8888a0]/50 outline-none focus:border-[#ef4444]"
+                        placeholder="ELIMINAR"
+                      />
+                    </div>
+                    <button
+                      disabled={deleteConfirm !== "ELIMINAR"}
+                      onClick={() => { alert("Contacta soporte para eliminar tu cuenta: soporte@arya.ai"); setDeleteConfirm(""); }}
+                      className="rounded-lg border border-[#ef4444]/30 bg-[#ef4444]/10 px-4 py-2 text-sm font-medium text-[#ef4444] hover:bg-[#ef4444]/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      Eliminar cuenta
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

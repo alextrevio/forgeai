@@ -666,8 +666,8 @@ export default function Home() {
             <div>
               <h4 className="text-xs font-semibold text-[#8888a0] uppercase tracking-wider mb-4">Legal</h4>
               <ul className="space-y-2.5">
-                <li><a href="#" className="text-sm text-[#666] hover:text-[#EDEDED] transition-colors">T&eacute;rminos</a></li>
-                <li><a href="#" className="text-sm text-[#666] hover:text-[#EDEDED] transition-colors">Privacidad</a></li>
+                <li><Link href="/docs" className="text-sm text-[#666] hover:text-[#EDEDED] transition-colors">T&eacute;rminos</Link></li>
+                <li><Link href="/docs" className="text-sm text-[#666] hover:text-[#EDEDED] transition-colors">Privacidad</Link></li>
               </ul>
             </div>
 
@@ -675,8 +675,8 @@ export default function Home() {
             <div>
               <h4 className="text-xs font-semibold text-[#8888a0] uppercase tracking-wider mb-4">Social</h4>
               <ul className="space-y-2.5">
-                <li><a href="#" className="text-sm text-[#666] hover:text-[#EDEDED] transition-colors">Twitter</a></li>
-                <li><a href="#" className="text-sm text-[#666] hover:text-[#EDEDED] transition-colors">GitHub</a></li>
+                <li><a href="https://x.com" target="_blank" rel="noopener noreferrer" className="text-sm text-[#666] hover:text-[#EDEDED] transition-colors">Twitter</a></li>
+                <li><a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-sm text-[#666] hover:text-[#EDEDED] transition-colors">GitHub</a></li>
               </ul>
             </div>
           </div>

@@ -418,11 +418,19 @@ export function Sidebar({ onNewProject }: SidebarProps) {
             collapsed ? "justify-center" : "gap-3 px-2 py-2"
           )}
         >
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#7c3aed]/20 text-xs font-semibold text-[#7c3aed]">
+          <button
+            onClick={() => router.push("/settings")}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#7c3aed]/20 text-xs font-semibold text-[#7c3aed] hover:bg-[#7c3aed]/30 transition-colors"
+            title="Ir a ajustes"
+          >
             {userInitial}
-          </div>
+          </button>
           {!collapsed && (
-            <div className="min-w-0 flex-1">
+            <button
+              onClick={() => router.push("/settings")}
+              className="min-w-0 flex-1 text-left hover:opacity-80 transition-opacity"
+              title="Ir a ajustes"
+            >
               <p className="truncate text-sm font-medium text-[#EDEDED]">{firstName}</p>
               <span
                 className={cn(
@@ -432,7 +440,7 @@ export function Sidebar({ onNewProject }: SidebarProps) {
               >
                 {user?.plan || "FREE"}
               </span>
-            </div>
+            </button>
           )}
           {!collapsed && (
             <button

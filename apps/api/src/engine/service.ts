@@ -17,7 +17,8 @@ export const engineAbortControllers = new Map<string, AbortController>();
 export async function startEngine(
   projectId: string,
   prompt: string,
-  io: SocketIOServer
+  io: SocketIOServer,
+  userId?: string
 ): Promise<{
   planSteps: PlanStep[];
   tasks: Array<{ id: string; title: string; agentType: string; status: string; order: number }>;
@@ -34,7 +35,7 @@ export async function startEngine(
     if (!project) throw new Error("Project not found");
 
     // Phase 1: Plan (synchronous — fast LLM call)
-    const orchestrator = new EngineOrchestrator(projectId, io, controller.signal);
+    const orchestrator = new EngineOrchestrator(projectId, io, controller.signal, userId);
     const planResult = await orchestrator.plan(prompt);
 
     // Phase 2: Execute in background via BullMQ queue
@@ -42,7 +43,8 @@ export async function startEngine(
       projectId,
       planResult.planSteps,
       planResult.tasks,
-      prompt
+      prompt,
+      userId
     );
 
     // Clean up the abort controller — the worker will create its own

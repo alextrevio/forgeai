@@ -122,9 +122,14 @@ export async function callLLM(
   systemPrompt: string,
   messages: Array<{ role: "user" | "assistant"; content: string }>,
   signal?: AbortSignal,
-  options?: CallLLMOptions
+  options?: CallLLMOptions,
+  apiKey?: string
 ): Promise<string> {
-  if (isDemo || !anthropic) {
+  // Use per-user API key if provided, otherwise fall back to global client
+  const client = apiKey ? new Anthropic({ apiKey }) : anthropic;
+  const effectiveDemo = !apiKey && (isDemo || !client);
+
+  if (effectiveDemo || !client) {
     console.log(`[LLM:demo] callLLM(${agentType}) — demo mode, returning mock`);
     return getDemoResponse(agentType, messages);
   }
@@ -144,10 +149,10 @@ export async function callLLM(
 
     try {
       console.log(
-        `[LLM:${agentType}] API call (attempt ${attempt + 1}/${MAX_API_RETRIES}, model=${config.model}, maxTokens=${config.maxTokens})`
+        `[LLM:${agentType}] API call (attempt ${attempt + 1}/${MAX_API_RETRIES}, model=${config.model}, maxTokens=${config.maxTokens}, customKey=${!!apiKey})`
       );
 
-      const response = await anthropic.messages.create(
+      const response = await client.messages.create(
         {
           model: config.model,
           max_tokens: config.maxTokens,
@@ -273,12 +278,13 @@ export async function callLLMForJSON<T = unknown>(
   systemPrompt: string,
   messages: Array<{ role: "user" | "assistant"; content: string }>,
   signal?: AbortSignal,
-  maxRetries: number = 2
+  maxRetries: number = 2,
+  apiKey?: string
 ): Promise<{ text: string; parsed: T | null; parseError?: string }> {
   // First call with assistant prefill
   let responseText = await callLLM(agentType, systemPrompt, messages, signal, {
     prefillJSON: true,
-  });
+  }, apiKey);
 
   let result: ExtractionResult<T> = extractJSON<T>(responseText);
   if (result.success && result.data !== null) {
@@ -306,7 +312,7 @@ export async function callLLMForJSON<T = unknown>(
 
     responseText = await callLLM(agentType, systemPrompt, retryMessages, signal, {
       prefillJSON: true,
-    });
+    }, apiKey);
 
     result = extractJSON<T>(responseText);
     if (result.success && result.data !== null) {

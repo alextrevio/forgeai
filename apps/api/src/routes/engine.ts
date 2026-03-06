@@ -60,7 +60,7 @@ engineRouter.post("/start", checkCredits, async (req: AuthRequest, res: Response
     });
 
     const io: SocketIOServer = req.app.get("io");
-    const result = await startEngine(project.id, body.prompt, io);
+    const result = await startEngine(project.id, body.prompt, io, req.userId);
 
     auditLogService.log({
       teamId: project.teamId ?? undefined,

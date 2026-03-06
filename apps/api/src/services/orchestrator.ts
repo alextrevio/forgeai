@@ -88,11 +88,13 @@ export class EngineOrchestrator {
   private io: SocketIOServer;
   private signal: AbortSignal;
   private originalPrompt: string = "";
+  private userId?: string;
 
-  constructor(projectId: string, io: SocketIOServer, signal: AbortSignal) {
+  constructor(projectId: string, io: SocketIOServer, signal: AbortSignal, userId?: string) {
     this.projectId = projectId;
     this.io = io;
     this.signal = signal;
+    this.userId = userId;
   }
 
   // ── Phase 1: Plan ──────────────────────────────────────────────
@@ -117,7 +119,8 @@ export class EngineOrchestrator {
       "planner",
       ENHANCED_PLANNER_PROMPT,
       [{ role: "user", content: plannerInput }],
-      this.signal
+      this.signal,
+      this.userId
     );
 
     if (this.signal.aborted) {
@@ -330,6 +333,7 @@ export class EngineOrchestrator {
         dependencyContext,
         io: this.io,
         signal: this.signal,
+        userId: this.userId,
       };
 
       const agent = AgentFactory.create(step.agentType, agentCtx);

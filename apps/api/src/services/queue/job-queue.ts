@@ -73,10 +73,11 @@ function getIO(): SocketIOServer {
 export const engineWorker = new Worker(
   "engine-tasks",
   async (job: Job) => {
-    const { projectId, planSteps, tasks } = job.data as {
+    const { projectId, planSteps, tasks, userId } = job.data as {
       projectId: string;
       planSteps: PlanStep[];
       tasks: Array<{ id: string; title: string; agentType: string; status: string; order: number }>;
+      userId?: string;
     };
 
     logger.info({ jobId: job.id, projectId }, "Engine worker: starting execution");
@@ -86,7 +87,7 @@ export const engineWorker = new Worker(
     engineAbortControllers.set(projectId, controller);
 
     try {
-      const orchestrator = new EngineOrchestrator(projectId, io, controller.signal);
+      const orchestrator = new EngineOrchestrator(projectId, io, controller.signal, userId);
       // Set the original prompt from job data so dependency context works
       (orchestrator as any).originalPrompt = job.data.originalPrompt || "";
 
@@ -115,11 +116,12 @@ export const engineWorker = new Worker(
 export const agentWorker = new Worker(
   "agent-tasks",
   async (job: Job) => {
-    const { projectId, taskId, step, originalPrompt } = job.data as {
+    const { projectId, taskId, step, originalPrompt, userId } = job.data as {
       projectId: string;
       taskId: string;
       step: PlanStep;
       originalPrompt: string;
+      userId?: string;
     };
 
     logger.info({ jobId: job.id, projectId, taskId }, "Agent worker: starting task");
@@ -129,7 +131,7 @@ export const agentWorker = new Worker(
     engineAbortControllers.set(`agent-${taskId}`, controller);
 
     try {
-      const orchestrator = new EngineOrchestrator(projectId, io, controller.signal);
+      const orchestrator = new EngineOrchestrator(projectId, io, controller.signal, userId);
       (orchestrator as any).originalPrompt = originalPrompt;
 
       await orchestrator.execute(
@@ -265,11 +267,12 @@ export async function enqueueEngineExecution(
   projectId: string,
   planSteps: PlanStep[],
   tasks: Array<{ id: string; title: string; agentType: string; status: string; order: number }>,
-  originalPrompt: string
+  originalPrompt: string,
+  userId?: string
 ): Promise<Job> {
   return engineQueue.add(
     "execute",
-    { projectId, planSteps, tasks, originalPrompt },
+    { projectId, planSteps, tasks, originalPrompt, userId },
     { jobId: `engine-${projectId}-${Date.now()}` }
   );
 }
