@@ -15,6 +15,7 @@ import {
   ExternalLink,
   Copy,
   Trash2,
+  Pencil,
   LogOut,
   Users,
   Loader2,
@@ -58,6 +59,10 @@ export function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [contextMenu, setContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [hoveredProject, setHoveredProject] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
   const contextRef = useRef<HTMLDivElement>(null);
 
   // Load collapsed state from localStorage
@@ -133,7 +138,6 @@ export function Sidebar() {
 
   const handleDeleteProject = async (id: string) => {
     setContextMenu(null);
-    if (!confirm("¿Estás seguro de que quieres eliminar este proyecto?")) return;
     try {
       await api.deleteProject(id);
       setProjects((prev) => prev.filter((p) => p.id !== id));
@@ -153,6 +157,18 @@ export function Sidebar() {
     } catch (err) {
       console.error("Fork failed:", err);
     }
+  };
+
+  const handleRenameProject = async (id: string) => {
+    const trimmed = renameValue.trim();
+    if (!trimmed) { setRenamingId(null); return; }
+    try {
+      await api.renameProject(id, trimmed);
+      setProjects((prev) => prev.map((p) => p.id === id ? { ...p, name: trimmed } : p));
+    } catch (err) {
+      console.error("Rename failed:", err);
+    }
+    setRenamingId(null);
   };
 
   const activeProjectId = pathname?.startsWith("/project/")
@@ -237,60 +253,118 @@ export function Sidebar() {
         )}
         <div className="space-y-0.5">
           {filteredProjects.slice(0, 20).map((project, index) => (
-            <button
+            <div
               key={project.id}
-              onClick={() => router.push(`/project/${project.id}`)}
-              onContextMenu={(e) => handleContextMenu(e, project.id)}
-              className={cn(
-                "flex w-full items-center gap-2.5 rounded-md text-sm transition-colors duration-150",
-                collapsed ? "justify-center p-2.5" : "px-3 py-2",
-                activeProjectId === project.id
-                  ? "bg-[#1A1A1A] border-l-2 border-[#7c3aed]"
-                  : "hover:bg-[#1A1A1A] border-l-2 border-transparent"
-              )}
-              title={collapsed ? project.name : undefined}
-              style={{
-                animationDelay: `${index * 30}ms`,
-              }}
+              className="relative group"
+              onMouseEnter={() => setHoveredProject(project.id)}
+              onMouseLeave={() => setHoveredProject(null)}
             >
-              <div className="relative shrink-0">
-                <FileText
-                  className={cn(
-                    "h-4 w-4",
-                    activeProjectId === project.id ? "text-[#7c3aed]" : "text-[#555555]"
-                  )}
-                />
-                {(project.engineStatus === "running" || project.engineStatus === "planning") && (
-                  <div className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-[#22c55e] live-pulse" />
-                )}
-              </div>
-              {!collapsed && (
-                <div className="flex-1 min-w-0">
-                  <span
-                    className={cn(
-                      "block truncate text-left",
-                      activeProjectId === project.id ? "text-[#EDEDED]" : "text-[#8888a0]"
-                    )}
+              {/* Delete confirmation overlay */}
+              {deleteConfirmId === project.id && (
+                <div className="absolute inset-0 z-10 flex items-center gap-1.5 rounded-md bg-[#1A1A1A] border border-[#ef4444]/30 px-2 animate-fade-in">
+                  <span className="text-[11px] text-[#ef4444] flex-1 truncate">¿Eliminar?</span>
+                  <button
+                    onClick={() => {
+                      handleDeleteProject(project.id);
+                      setDeleteConfirmId(null);
+                    }}
+                    className="rounded px-2 py-0.5 text-[10px] font-medium bg-[#ef4444] text-white hover:bg-[#dc2626] transition-colors"
                   >
-                    {project.name}
-                  </span>
-                  {(project.engineStatus === "running" || project.engineStatus === "planning") &&
-                    project.activeAgents &&
-                    Array.isArray(project.activeAgents) &&
-                    project.activeAgents.length > 0 && (
-                    <span className="text-[9px] text-[#22c55e] font-medium">
-                      {project.activeAgents.length} agente{project.activeAgents.length !== 1 ? "s" : ""}
-                    </span>
-                  )}
-                  {(project.engineStatus === "running" || project.engineStatus === "planning") &&
-                    (!project.activeAgents || !Array.isArray(project.activeAgents) || project.activeAgents.length === 0) && (
-                    <span className="text-[9px] text-[#22c55e] font-medium">
-                      en ejecución
-                    </span>
-                  )}
+                    Sí
+                  </button>
+                  <button
+                    onClick={() => setDeleteConfirmId(null)}
+                    className="rounded px-2 py-0.5 text-[10px] font-medium bg-[#2A2A2A] text-[#8888a0] hover:bg-[#333] transition-colors"
+                  >
+                    No
+                  </button>
                 </div>
               )}
-            </button>
+
+              {/* Rename input overlay */}
+              {renamingId === project.id && (
+                <div className="absolute inset-0 z-10 flex items-center rounded-md bg-[#1A1A1A] border border-[#7c3aed]/30 px-2 animate-fade-in">
+                  <input
+                    autoFocus
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleRenameProject(project.id);
+                      if (e.key === "Escape") setRenamingId(null);
+                    }}
+                    onBlur={() => handleRenameProject(project.id)}
+                    className="w-full bg-transparent text-sm text-[#EDEDED] outline-none"
+                    placeholder="Nombre del proyecto"
+                  />
+                </div>
+              )}
+
+              <button
+                onClick={() => router.push(`/project/${project.id}`)}
+                onContextMenu={(e) => handleContextMenu(e, project.id)}
+                className={cn(
+                  "flex w-full items-center gap-2.5 rounded-md text-sm transition-colors duration-150",
+                  collapsed ? "justify-center p-2.5" : "px-3 py-2",
+                  activeProjectId === project.id
+                    ? "bg-[#1A1A1A] border-l-2 border-[#7c3aed]"
+                    : "hover:bg-[#1A1A1A] border-l-2 border-transparent"
+                )}
+                title={collapsed ? project.name : undefined}
+                style={{ animationDelay: `${index * 30}ms` }}
+              >
+                <div className="relative shrink-0">
+                  <FileText
+                    className={cn(
+                      "h-4 w-4",
+                      activeProjectId === project.id ? "text-[#7c3aed]" : "text-[#555555]"
+                    )}
+                  />
+                  {(project.engineStatus === "running" || project.engineStatus === "planning") && (
+                    <div className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-[#22c55e] live-pulse" />
+                  )}
+                </div>
+                {!collapsed && (
+                  <div className="flex-1 min-w-0">
+                    <span
+                      className={cn(
+                        "block truncate text-left",
+                        activeProjectId === project.id ? "text-[#EDEDED]" : "text-[#8888a0]"
+                      )}
+                    >
+                      {project.name}
+                    </span>
+                    {(project.engineStatus === "running" || project.engineStatus === "planning") &&
+                      project.activeAgents &&
+                      Array.isArray(project.activeAgents) &&
+                      project.activeAgents.length > 0 && (
+                      <span className="text-[9px] text-[#22c55e] font-medium">
+                        {project.activeAgents.length} agente{project.activeAgents.length !== 1 ? "s" : ""}
+                      </span>
+                    )}
+                    {(project.engineStatus === "running" || project.engineStatus === "planning") &&
+                      (!project.activeAgents || !Array.isArray(project.activeAgents) || project.activeAgents.length === 0) && (
+                      <span className="text-[9px] text-[#22c55e] font-medium">
+                        en ejecución
+                      </span>
+                    )}
+                  </div>
+                )}
+              </button>
+
+              {/* Hover delete button */}
+              {!collapsed && hoveredProject === project.id && deleteConfirmId !== project.id && renamingId !== project.id && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDeleteConfirmId(project.id);
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-[#555555] hover:text-[#ef4444] hover:bg-[#ef4444]/10 transition-colors z-10"
+                  title="Eliminar proyecto"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
           ))}
           {filteredProjects.length === 0 && !collapsed && (
             <p className="px-3 py-4 text-xs text-[#555555] text-center">
@@ -483,6 +557,17 @@ export function Sidebar() {
         className="flex w-full items-center gap-2 px-3 py-2 text-xs text-[#EDEDED] hover:bg-[#2A2A2A] transition-colors"
       >
         <ExternalLink className="h-3.5 w-3.5" /> Abrir
+      </button>
+      <button
+        onClick={() => {
+          const project = projects.find((p) => p.id === contextMenu.id);
+          setRenameValue(project?.name || "");
+          setRenamingId(contextMenu.id);
+          setContextMenu(null);
+        }}
+        className="flex w-full items-center gap-2 px-3 py-2 text-xs text-[#EDEDED] hover:bg-[#2A2A2A] transition-colors"
+      >
+        <Pencil className="h-3.5 w-3.5" /> Renombrar
       </button>
       <button
         onClick={() => handleForkProject(contextMenu.id)}

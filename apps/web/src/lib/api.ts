@@ -206,6 +206,19 @@ class ApiClient {
     return data;
   }
 
+  async deleteAllProjects() {
+    const data = await this.request<{ success: boolean; count: number }>("/api/projects", { method: "DELETE" });
+    posthog.capture('all_projects_deleted');
+    return data;
+  }
+
+  async renameProject(id: string, name: string) {
+    return this.request<any>(`/api/projects/${id}/name`, {
+      method: "PATCH",
+      body: JSON.stringify({ name }),
+    });
+  }
+
   async deployProject(id: string) {
     const data = await this.request<any>(`/api/projects/${id}/deploy`, { method: "POST" });
     posthog.capture('project_deployed', { projectId: id });

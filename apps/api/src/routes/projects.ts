@@ -83,6 +83,20 @@ projectRouter.post("/", async (req: AuthRequest, res: Response) => {
   }
 });
 
+// Delete ALL user projects
+projectRouter.delete("/", async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.userId!;
+    const deleted = await prisma.project.deleteMany({
+      where: { userId },
+    });
+    return res.json({ success: true, count: deleted.count });
+  } catch (err) {
+    console.error("Delete all projects error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // Get project details
 projectRouter.get("/:id", async (req: AuthRequest, res: Response) => {
   try {
@@ -121,6 +135,31 @@ projectRouter.delete("/:id", async (req: AuthRequest, res: Response) => {
     return res.json({ success: true });
   } catch (err) {
     console.error("Delete project error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Rename project
+projectRouter.patch("/:id/name", async (req: AuthRequest, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const { name } = req.body as { name: string };
+    if (!name || typeof name !== "string" || name.trim().length === 0) {
+      return res.status(400).json({ error: "Name is required" });
+    }
+    const project = await prisma.project.findFirst({
+      where: { id, userId: req.userId },
+    });
+    if (!project) {
+      return res.status(404).json({ error: "Project not found" });
+    }
+    const updated = await prisma.project.update({
+      where: { id },
+      data: { name: name.trim().slice(0, 100) },
+    });
+    return res.json(updated);
+  } catch (err) {
+    console.error("Rename project error:", err);
     return res.status(500).json({ error: "Internal server error" });
   }
 });

@@ -126,6 +126,9 @@ export default function SettingsPage() {
 
   // Danger zone state
   const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [deleteAllProjectsConfirm, setDeleteAllProjectsConfirm] = useState("");
+  const [deletingAllProjects, setDeletingAllProjects] = useState(false);
+  const [deletedAllProjects, setDeletedAllProjects] = useState(false);
 
   useEffect(() => { loadUser(); }, [loadUser]);
 
@@ -996,6 +999,40 @@ function verifySignature(payload, signature, secret) {
                   <h2 className="text-lg font-semibold text-[#ef4444] mb-1">Zona peligrosa</h2>
                   <p className="text-sm text-[#8888a0]">Acciones irreversibles y destructivas</p>
                 </div>
+                <div className="rounded-xl border border-[#ef4444]/20 bg-[#ef4444]/5 p-6">
+                  <h3 className="text-sm font-medium text-[#EDEDED] mb-1">Borrar todos los proyectos</h3>
+                  <p className="text-xs text-[#8888a0] mb-4">Elimina permanentemente TODOS tus proyectos, incluyendo archivos, tareas y versiones. Esta accion no se puede deshacer.</p>
+                  <div className="space-y-3 max-w-md">
+                    <div>
+                      <label className="block text-xs text-[#8888a0] mb-1.5">Escribe <code className="text-[#ef4444]">ELIMINAR</code> para confirmar</label>
+                      <input
+                        type="text"
+                        value={deleteAllProjectsConfirm}
+                        onChange={(e) => setDeleteAllProjectsConfirm(e.target.value)}
+                        className="w-full rounded-lg border border-[#ef4444]/20 bg-[#0A0A0A] px-4 py-2.5 text-sm text-[#EDEDED] placeholder:text-[#8888a0]/50 outline-none focus:border-[#ef4444]"
+                        placeholder="ELIMINAR"
+                      />
+                    </div>
+                    <button
+                      disabled={deleteAllProjectsConfirm !== "ELIMINAR" || deletingAllProjects}
+                      onClick={async () => {
+                        setDeletingAllProjects(true);
+                        try {
+                          await api.deleteAllProjects();
+                          setDeletedAllProjects(true);
+                          setDeleteAllProjectsConfirm("");
+                          setTimeout(() => setDeletedAllProjects(false), 3000);
+                        } catch (err) { console.error("Delete all projects failed:", err); }
+                        finally { setDeletingAllProjects(false); }
+                      }}
+                      className="flex items-center gap-2 rounded-lg border border-[#ef4444]/30 bg-[#ef4444]/10 px-4 py-2 text-sm font-medium text-[#ef4444] hover:bg-[#ef4444]/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      {deletingAllProjects ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : deletedAllProjects ? <Check className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
+                      {deletedAllProjects ? "Proyectos eliminados" : "Borrar todos los proyectos"}
+                    </button>
+                  </div>
+                </div>
+
                 <div className="rounded-xl border border-[#ef4444]/20 bg-[#ef4444]/5 p-6">
                   <h3 className="text-sm font-medium text-[#EDEDED] mb-1">Eliminar cuenta</h3>
                   <p className="text-xs text-[#8888a0] mb-4">Elimina permanentemente tu cuenta y todos los datos asociados. Esta accion no se puede deshacer.</p>
