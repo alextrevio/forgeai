@@ -99,8 +99,7 @@ export abstract class BaseAgent {
         this.ctx.step.agentType,
         this.getSystemPrompt(),
         messages,
-        this.ctx.signal,
-        this.ctx.userId
+        this.ctx.signal
       );
 
       if (this.ctx.signal.aborted) {

@@ -120,8 +120,7 @@ export class EngineOrchestrator {
       "planner",
       ENHANCED_PLANNER_PROMPT,
       [{ role: "user", content: plannerInput }],
-      this.signal,
-      this.userId
+      this.signal
     );
 
     if (this.signal.aborted) {

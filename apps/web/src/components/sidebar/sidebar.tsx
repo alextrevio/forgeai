@@ -17,6 +17,7 @@ import {
   Trash2,
   LogOut,
   Users,
+  Loader2,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/auth-store";
 import { useTeamStore } from "@/stores/team-store";
@@ -45,16 +46,13 @@ const planColors: Record<string, string> = {
 
 const STORAGE_KEY = "arya-sidebar-collapsed";
 
-interface SidebarProps {
-  onNewProject?: () => void;
-}
-
-export function Sidebar({ onNewProject }: SidebarProps) {
+export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
   const { teams, activeTeamId, setActiveTeam, fetchTeams } = useTeamStore();
 
+  const [creatingProject, setCreatingProject] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -203,16 +201,29 @@ export function Sidebar({ onNewProject }: SidebarProps) {
       {/* New project button */}
       <div className="px-3 pt-4 pb-2 shrink-0">
         <button
-          onClick={() => {
+          onClick={async () => {
             setMobileOpen(false);
-            onNewProject?.();
+            if (creatingProject) return;
+            setCreatingProject(true);
+            try {
+              const project = await api.createProject("Proyecto sin título", "react-vite");
+              router.push(`/project/${project.id}`);
+            } catch (err) {
+              console.error("Failed to create project:", err);
+            } finally {
+              setCreatingProject(false);
+            }
           }}
           className={cn(
             "flex w-full items-center gap-2 rounded-lg border border-[#2A2A2A] text-sm font-medium text-[#EDEDED] transition-colors hover:bg-[#1A1A1A]",
             collapsed ? "justify-center p-2.5" : "px-3 py-2.5"
           )}
         >
-          <Plus className="h-4 w-4 shrink-0" />
+          {creatingProject ? (
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+          ) : (
+            <Plus className="h-4 w-4 shrink-0" />
+          )}
           {!collapsed && <span>Nuevo proyecto</span>}
         </button>
       </div>

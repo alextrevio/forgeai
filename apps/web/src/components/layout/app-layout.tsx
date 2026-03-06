@@ -10,10 +10,9 @@ import { cn } from "@/lib/utils";
 
 interface AppLayoutProps {
   children: React.ReactNode;
-  onNewProject?: () => void;
 }
 
-export function AppLayout({ children, onNewProject }: AppLayoutProps) {
+export function AppLayout({ children }: AppLayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [teamDropdownOpen, setTeamDropdownOpen] = useState(false);
@@ -66,7 +65,7 @@ export function AppLayout({ children, onNewProject }: AppLayoutProps) {
 
   return (
     <div className="flex h-screen bg-[#0A0A0A]">
-      <Sidebar onNewProject={onNewProject} />
+      <Sidebar />
       <main
         className={cn(
           "flex-1 overflow-auto transition-all duration-200",

@@ -18,9 +18,6 @@ import {
   Shield,
   ToggleLeft,
   ToggleRight,
-  CheckCircle,
-  XCircle,
-  Lock,
   Brain,
   Pencil,
   X,
@@ -116,15 +113,6 @@ export default function SettingsPage() {
   const [newlyCreatedSecret, setNewlyCreatedSecret] = useState<string | null>(null);
   const [copiedSecret, setCopiedSecret] = useState(false);
 
-  // Provider API Keys state
-  const [providerKeyStatus, setProviderKeyStatus] = useState<{ anthropic: boolean; openai: boolean }>({ anthropic: false, openai: false });
-  const [providerAnthropicKey, setProviderAnthropicKey] = useState("");
-  const [providerKeySaving, setProviderKeySaving] = useState(false);
-  const [providerKeySaved, setProviderKeySaved] = useState(false);
-  const [providerKeyValidating, setProviderKeyValidating] = useState(false);
-  const [providerKeyValid, setProviderKeyValid] = useState<boolean | null>(null);
-  const [providerKeyError, setProviderKeyError] = useState<string | null>(null);
-
   // Memory state
   const [memories, setMemories] = useState<any[]>([]);
   const [memoriesLoading, setMemoriesLoading] = useState(false);
@@ -166,19 +154,6 @@ export default function SettingsPage() {
     })();
   }, [isAuthenticated]);
 
-  // Fetch provider key status when api-keys tab is active
-  const fetchProviderKeyStatus = useCallback(async () => {
-    try {
-      const status = await api.getProviderKeyStatus();
-      setProviderKeyStatus(status);
-      if (status.anthropic) setProviderKeyValid(true);
-    } catch { /* ignore */ }
-  }, []);
-
-  useEffect(() => {
-    if (activeTab === "api-keys" && isAuthenticated) fetchProviderKeyStatus();
-  }, [activeTab, isAuthenticated, fetchProviderKeyStatus]);
-
   // Fetch memories when memory tab is active
   const fetchMemories = useCallback(async () => {
     setMemoriesLoading(true);
@@ -192,37 +167,6 @@ export default function SettingsPage() {
   useEffect(() => {
     if (activeTab === "memory" && isAuthenticated) fetchMemories();
   }, [activeTab, isAuthenticated, fetchMemories]);
-
-  const handleSaveProviderKey = async () => {
-    if (!providerAnthropicKey.trim()) return;
-    setProviderKeySaving(true);
-    setProviderKeyError(null);
-    try {
-      const status = await api.saveProviderKeys({ anthropic: providerAnthropicKey });
-      setProviderKeyStatus(status);
-      setProviderKeySaved(true);
-      setTimeout(() => setProviderKeySaved(false), 2000);
-
-      // Validate after saving
-      setProviderKeyValidating(true);
-      try {
-        const validation = await api.validateProviderKey("anthropic", providerAnthropicKey);
-        setProviderKeyValid(validation.valid);
-        if (!validation.valid) setProviderKeyError(validation.error || "Key invalida");
-      } catch {
-        setProviderKeyValid(null);
-      } finally {
-        setProviderKeyValidating(false);
-      }
-
-      setProviderAnthropicKey("");
-    } catch (err) {
-      console.error("Save provider key failed:", err);
-      setProviderKeyError("Error al guardar la key");
-    } finally {
-      setProviderKeySaving(false);
-    }
-  };
 
   // Fetch API keys when tab is active
   const fetchApiKeys = useCallback(async () => {
@@ -658,116 +602,8 @@ export default function SettingsPage() {
             {/* ─── API Keys Tab ─────────────────────────────────────── */}
             {activeTab === "api-keys" && (
               <div className="space-y-8 animate-fade-in">
-                {/* ── Provider API Keys Section ─────────────────────── */}
-                <div className="space-y-4">
-                  <div>
-                    <h2 className="text-lg font-semibold text-[#EDEDED] mb-1">Provider API Keys</h2>
-                    <p className="text-sm text-[#8888a0]">Usa tus propias API keys para que los agentes utilicen tus creditos</p>
-                  </div>
-
-                  {/* Anthropic card */}
-                  <div className="rounded-xl border border-[#2A2A2A] bg-[#111111] p-5">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-lg bg-[#7c3aed]/10 flex items-center justify-center">
-                          <span className="text-sm font-bold text-[#7c3aed]">A</span>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-[#EDEDED]">Anthropic</p>
-                          <p className="text-xs text-[#8888a0]">Claude models</p>
-                        </div>
-                      </div>
-                      {providerKeyStatus.anthropic ? (
-                        <span className="flex items-center gap-1.5 text-xs font-medium text-[#22c55e]">
-                          <CheckCircle className="h-3.5 w-3.5" /> Conectada
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1.5 text-xs font-medium text-[#8888a0]">
-                          <XCircle className="h-3.5 w-3.5" /> No configurada
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-end gap-3">
-                      <div className="flex-1">
-                        <div className="relative">
-                          <input
-                            type="password"
-                            value={providerAnthropicKey}
-                            onChange={(e) => { setProviderAnthropicKey(e.target.value); setProviderKeyError(null); }}
-                            className="w-full rounded-lg border border-[#2A2A2A] bg-[#0A0A0A] px-4 py-2.5 text-sm text-[#EDEDED] placeholder:text-[#8888a0]/50 outline-none focus:border-[#7c3aed]"
-                            placeholder={providerKeyStatus.anthropic ? "••••••••••••••••" : "sk-ant-..."}
-                          />
-                        </div>
-                      </div>
-                      <button
-                        onClick={handleSaveProviderKey}
-                        disabled={providerKeySaving || !providerAnthropicKey.trim()}
-                        className="flex items-center gap-1.5 rounded-lg bg-[#7c3aed] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#6d28d9] transition-colors disabled:opacity-50"
-                      >
-                        {providerKeySaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : providerKeySaved ? <Check className="h-3.5 w-3.5" /> : <Save className="h-3.5 w-3.5" />}
-                        {providerKeySaved ? "Guardada" : "Guardar"}
-                      </button>
-                    </div>
-                    {providerKeyValidating && (
-                      <div className="flex items-center gap-2 mt-2 text-xs text-[#8888a0]">
-                        <Loader2 className="h-3 w-3 animate-spin" /> Validando key...
-                      </div>
-                    )}
-                    {providerKeyValid === true && !providerKeyValidating && providerKeyStatus.anthropic && (
-                      <div className="flex items-center gap-2 mt-2 text-xs text-[#22c55e]">
-                        <CheckCircle className="h-3 w-3" /> Key valida y funcionando
-                      </div>
-                    )}
-                    {providerKeyError && (
-                      <div className="flex items-center gap-2 mt-2 text-xs text-[#ef4444]">
-                        <XCircle className="h-3 w-3" /> {providerKeyError}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* OpenAI card (coming soon) */}
-                  <div className="rounded-xl border border-[#2A2A2A] bg-[#111111] p-5 opacity-60">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-lg bg-[#10a37f]/10 flex items-center justify-center">
-                          <span className="text-sm font-bold text-[#10a37f]">O</span>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-[#EDEDED]">OpenAI</p>
-                          <p className="text-xs text-[#8888a0]">GPT models</p>
-                        </div>
-                      </div>
-                      <span className="rounded-full bg-[#2A2A2A] px-2.5 py-0.5 text-[10px] font-medium text-[#8888a0]">Proximamente</span>
-                    </div>
-                  </div>
-
-                  {/* Google AI card (coming soon) */}
-                  <div className="rounded-xl border border-[#2A2A2A] bg-[#111111] p-5 opacity-60">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-lg bg-[#4285f4]/10 flex items-center justify-center">
-                          <span className="text-sm font-bold text-[#4285f4]">G</span>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-[#EDEDED]">Google AI</p>
-                          <p className="text-xs text-[#8888a0]">Gemini models</p>
-                        </div>
-                      </div>
-                      <span className="rounded-full bg-[#2A2A2A] px-2.5 py-0.5 text-[10px] font-medium text-[#8888a0]">Proximamente</span>
-                    </div>
-                  </div>
-
-                  {/* Security note */}
-                  <div className="flex items-start gap-2 rounded-lg bg-[#1A1A1A] px-4 py-3">
-                    <Lock className="h-3.5 w-3.5 text-[#8888a0] mt-0.5 shrink-0" />
-                    <p className="text-xs text-[#8888a0]">
-                      Tus API keys se encriptan con AES-256 y nunca se muestran despues de guardarlas.
-                    </p>
-                  </div>
-                </div>
-
                 {/* ── Arya API Keys Section ─────────────────────────── */}
-                <div className="border-t border-[#2A2A2A] pt-6 space-y-6">
+                <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-lg font-semibold text-[#EDEDED] mb-1">Arya API Keys</h2>

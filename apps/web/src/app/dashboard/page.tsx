@@ -7,8 +7,6 @@ import {
   ArrowUp,
   Paperclip,
   Loader2,
-  AlertTriangle,
-  X,
   Brain,
   Mic,
   MicOff,
@@ -36,8 +34,6 @@ export default function DashboardPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { addToast } = useToast();
-  const [showApiKeyBanner, setShowApiKeyBanner] = useState(false);
-  const [bannerDismissed, setBannerDismissed] = useState(false);
   const [memorySummary, setMemorySummary] = useState<string | null>(null);
   const handleVoiceResultRef = useRef<((text: string) => void) | null>(null);
 
@@ -62,14 +58,10 @@ export default function DashboardPage() {
     if (!isAuthenticated) { router.push("/login"); return; }
   }, [authLoading, isAuthenticated, router]);
 
-  // Check if user has configured their Anthropic API key + fetch memory summary
+  // Fetch memory summary
   useEffect(() => {
     if (!isAuthenticated) return;
     (async () => {
-      try {
-        const status = await api.getProviderKeyStatus();
-        if (!status.anthropic) setShowApiKeyBanner(true);
-      } catch { /* ignore */ }
       try {
         const data = await api.getMemorySummary();
         if (data.summary) setMemorySummary(data.summary);
@@ -153,28 +145,6 @@ export default function DashboardPage() {
   return (
     <AppLayout>
       <div className="flex flex-col items-center justify-center min-h-screen max-w-2xl w-full mx-auto px-6">
-        {/* API Key Banner */}
-        {showApiKeyBanner && !bannerDismissed && (
-          <div className="w-full mb-6 rounded-xl border border-[#f59e0b]/30 bg-[#f59e0b]/5 p-4 flex items-center gap-3 animate-fade-in">
-            <AlertTriangle className="h-4.5 w-4.5 text-[#f59e0b] shrink-0" />
-            <p className="flex-1 text-sm text-[#EDEDED]">
-              Configura tu API key de Anthropic para empezar a usar los agentes.{" "}
-              <button
-                onClick={() => router.push("/settings")}
-                className="text-[#7c3aed] hover:text-[#6d28d9] font-medium transition-colors"
-              >
-                Configurar &rarr;
-              </button>
-            </p>
-            <button
-              onClick={() => setBannerDismissed(true)}
-              className="text-[#8888a0] hover:text-[#EDEDED] transition-colors shrink-0"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        )}
-
         {/* Greeting */}
         <div className="flex flex-col items-center animate-fade-in-up">
           <Sparkles className="w-10 h-10 text-[#7c3aed] animate-sparkle-pulse" />

@@ -702,26 +702,6 @@ class ApiClient {
     return this.request<{ diffs: any[] }>(`/api/projects/${projectId}/versions-compare?a=${a}&b=${b}`);
   }
 
-  // ── Provider API Keys ────────────────────────────────────
-
-  async getProviderKeyStatus() {
-    return this.request<{ anthropic: boolean; openai: boolean }>("/api/settings/api-keys");
-  }
-
-  async saveProviderKeys(data: { anthropic?: string; openai?: string }) {
-    return this.request<{ anthropic: boolean; openai: boolean }>("/api/settings/api-keys", {
-      method: "PUT",
-      body: JSON.stringify(data),
-    });
-  }
-
-  async validateProviderKey(provider: "anthropic", key: string) {
-    return this.request<{ valid: boolean; error?: string }>("/api/settings/api-keys/validate", {
-      method: "POST",
-      body: JSON.stringify({ provider, key }),
-    });
-  }
-
   // ── API Keys ──────────────────────────────────────────────
 
   async listApiKeys() {

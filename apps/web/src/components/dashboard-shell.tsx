@@ -10,9 +10,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
+  Loader2,
 } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { useAuthStore } from "@/stores/auth-store";
+import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 const planColors: Record<string, string> = {
@@ -30,15 +32,28 @@ const NAV_ITEMS = [
 
 interface DashboardShellProps {
   children: React.ReactNode;
-  onNewProject?: () => void;
 }
 
-export function DashboardShell({ children, onNewProject }: DashboardShellProps) {
+export function DashboardShell({ children }: DashboardShellProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [creatingProject, setCreatingProject] = useState(false);
+
+  const handleNewProject = async () => {
+    if (creatingProject) return;
+    setCreatingProject(true);
+    try {
+      const project = await api.createProject("Proyecto sin título", "react-vite");
+      router.push(`/project/${project.id}`);
+    } catch (err) {
+      console.error("Failed to create project:", err);
+    } finally {
+      setCreatingProject(false);
+    }
+  };
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -69,14 +84,16 @@ export function DashboardShell({ children, onNewProject }: DashboardShellProps) 
           </div>
           <div className="flex items-center gap-2">
             <NotificationBell />
-            {onNewProject && (
-              <button
-                onClick={onNewProject}
-                className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#7c3aed] text-white"
-              >
+            <button
+              onClick={handleNewProject}
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#7c3aed] text-white"
+            >
+              {creatingProject ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
                 <Plus className="h-4 w-4" />
-              </button>
-            )}
+              )}
+            </button>
           </div>
         </header>
 
@@ -135,20 +152,22 @@ export function DashboardShell({ children, onNewProject }: DashboardShellProps) 
         </div>
 
         {/* New project button */}
-        {onNewProject && (
-          <div className="px-3 pt-4 pb-2">
-            <button
-              onClick={onNewProject}
-              className={cn(
-                "flex w-full items-center gap-2 rounded-lg bg-[#7c3aed] text-white text-sm font-medium transition-all hover:bg-[#6d28d9] shadow-lg shadow-[#7c3aed]/20",
-                sidebarCollapsed ? "justify-center p-2.5" : "px-3 py-2.5"
-              )}
-            >
+        <div className="px-3 pt-4 pb-2">
+          <button
+            onClick={handleNewProject}
+            className={cn(
+              "flex w-full items-center gap-2 rounded-lg bg-[#7c3aed] text-white text-sm font-medium transition-all hover:bg-[#6d28d9] shadow-lg shadow-[#7c3aed]/20",
+              sidebarCollapsed ? "justify-center p-2.5" : "px-3 py-2.5"
+            )}
+          >
+            {creatingProject ? (
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+            ) : (
               <Plus className="h-4 w-4 shrink-0" />
-              {!sidebarCollapsed && <span>Nueva conversación</span>}
-            </button>
-          </div>
-        )}
+            )}
+            {!sidebarCollapsed && <span>Nueva conversación</span>}
+          </button>
+        </div>
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-3 space-y-0.5">
