@@ -21,6 +21,10 @@ import {
   Figma,
   Globe,
   LayoutTemplate,
+  Mic,
+  MicOff,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { useProjectStore } from "@/stores/project-store";
 import { useEngineActivity } from "@/hooks/useEngineActivity";
@@ -31,6 +35,9 @@ import { SuggestionChips } from "./suggestion-chips";
 import { PlanOverview } from "./plan-overview";
 import { AgentsPanel } from "./agents-panel";
 import { AgentAvatar, getAgentStyle } from "./agent-badge";
+import { useVoiceInput } from "@/hooks/useVoiceInput";
+import { useVoiceOutput } from "@/hooks/useVoiceOutput";
+import { VoiceWaveform } from "@/components/ui/voice-waveform";
 
 function safeArray<T>(data: T[]): T[];
 function safeArray<T>(data: null | undefined): T[];
@@ -173,6 +180,18 @@ export function ChatPanel() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dragCounter = useRef(0);
+  const handleVoiceSubmitRef = useRef<((text: string) => void) | null>(null);
+
+  // Voice input
+  const { isListening, transcript, isSupported, toggleListening } = useVoiceInput({
+    language: "es-MX",
+    onResult: (text) => {
+      handleVoiceSubmitRef.current?.(text);
+    },
+  });
+
+  // Voice output
+  const voiceOutput = useVoiceOutput({ language: "es-MX" });
 
   const {
     currentProjectId,
@@ -187,6 +206,28 @@ export function ChatPanel() {
   } = useProjectStore();
 
   const engine = useEngineActivity(currentProjectId);
+
+  // Wire voice submit after handleSubmit is available
+  useEffect(() => {
+    handleVoiceSubmitRef.current = (text: string) => {
+      setInput(text);
+      setTimeout(() => handleSubmit(text), 500);
+    };
+  });
+
+  // Auto-speak agent responses when voice output is enabled
+  const prevMessageCountRef = useRef(0);
+  useEffect(() => {
+    if (!voiceOutput.isEnabled) return;
+    const msgCount = messages?.length || 0;
+    if (msgCount > prevMessageCountRef.current) {
+      const lastMsg = messages?.[msgCount - 1];
+      if (lastMsg && lastMsg.role === "ASSISTANT" && lastMsg.content) {
+        voiceOutput.speak(lastMsg.content);
+      }
+    }
+    prevMessageCountRef.current = msgCount;
+  }, [messages?.length, voiceOutput.isEnabled]);
 
   const safeMessages = useMemo(() => safeArray(messages), [messages]);
   const isEmpty = safeMessages.length === 0 && !isAgentRunning && !engine.isRunning;
@@ -382,16 +423,43 @@ export function ChatPanel() {
             <span className="text-[11px] text-[#8888a0]">{projectName || "Nuevo proyecto"}</span>
           </div>
         </div>
-        {(isAgentRunning || engine.isRunning) && (
-          <div className="flex items-center gap-1.5">
-            <div className="h-2 w-2 rounded-full bg-[#22c55e] live-pulse" />
-            <span className="text-[11px] text-[#22c55e] font-medium">
-              {engine.engineStatus === "planning" ? "Planificando" :
-               engine.isRunning ? `Ejecutando (${engine.progress.completed}/${engine.progress.total})` :
-               "Trabajando"}
-            </span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {/* Voice output toggle */}
+          {isSupported && (
+            <button
+              onClick={voiceOutput.toggleEnabled}
+              className={cn(
+                "p-1.5 rounded-lg transition-colors",
+                voiceOutput.isEnabled
+                  ? "text-[#7c3aed] bg-[#7c3aed]/10"
+                  : "text-[#555] hover:text-[#888]"
+              )}
+              title={
+                voiceOutput.isEnabled
+                  ? "Desactivar respuestas por voz"
+                  : "Activar respuestas por voz"
+              }
+            >
+              {voiceOutput.isEnabled ? (
+                <Volume2 className="w-4 h-4" />
+              ) : (
+                <VolumeX className="w-4 h-4" />
+              )}
+            </button>
+          )}
+          {/* Speaking waveform indicator */}
+          {voiceOutput.isSpeaking && <VoiceWaveform isActive color="#7c3aed" />}
+          {(isAgentRunning || engine.isRunning) && (
+            <div className="flex items-center gap-1.5">
+              <div className="h-2 w-2 rounded-full bg-[#22c55e] live-pulse" />
+              <span className="text-[11px] text-[#22c55e] font-medium">
+                {engine.engineStatus === "planning" ? "Planificando" :
+                 engine.isRunning ? `Ejecutando (${engine.progress.completed}/${engine.progress.total})` :
+                 "Trabajando"}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Plan Overview — shown when engine has steps */}
@@ -618,15 +686,29 @@ export function ChatPanel() {
 
       {/* ─── Chat Input ─── */}
       <div className="border-t border-[#2A2A2A] p-3">
+        {/* Voice listening indicator */}
+        {isListening && (
+          <div className="flex items-center justify-center mb-2 animate-fade-in">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/10 border border-red-500/30">
+              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-sm text-red-400">
+                {transcript || "Escuchando..."}
+              </span>
+              <VoiceWaveform isActive={isListening} color="#ef4444" />
+            </div>
+          </div>
+        )}
         <div className="relative flex items-end gap-2 rounded-2xl border border-[#2A2A2A] bg-[#0A0A0A] px-4 py-3 focus-within:border-[#7c3aed]/40 transition-colors">
           <textarea
             ref={textareaRef}
             data-chat-input
-            value={input}
+            value={isListening && transcript ? transcript : input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={
-              engine.isRunning
+              isListening
+                ? "Escuchando..."
+                : engine.isRunning
                 ? "Puedes dar instrucciones adicionales..."
                 : engine.engineStatus === "completed"
                 ? "¿Qué más quieres ajustar?"
@@ -634,10 +716,30 @@ export function ChatPanel() {
                 ? "Arya está trabajando..."
                 : PLACEHOLDERS[placeholderIdx]
             }
-            disabled={isAgentRunning && !engine.isRunning}
+            disabled={(isAgentRunning && !engine.isRunning) || isListening}
             rows={1}
             className="flex-1 resize-none bg-transparent text-[13px] text-[#EDEDED] placeholder:text-[#8888a0]/50 outline-none disabled:opacity-40 min-h-[36px] max-h-[200px] py-0.5 leading-relaxed"
           />
+          {/* Mic button */}
+          {isSupported && (
+            <button
+              onClick={toggleListening}
+              disabled={isAgentRunning && !engine.isRunning}
+              className={cn(
+                "flex items-center justify-center rounded-full transition-all duration-200 shrink-0 h-9 w-9",
+                isListening
+                  ? "bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/30"
+                  : "text-[#555] hover:text-[#888] hover:bg-[#1A1A1A]"
+              )}
+              title={isListening ? "Detener" : "Hablar con Arya"}
+            >
+              {isListening ? (
+                <MicOff className="h-4 w-4" />
+              ) : (
+                <Mic className="h-4 w-4" />
+              )}
+            </button>
+          )}
           <button
             data-chat-send
             onClick={() => handleSubmit()}
@@ -657,7 +759,7 @@ export function ChatPanel() {
           </button>
         </div>
         <div className="mt-1.5 px-1">
-          <span className="text-[10px] text-[#8888a0]/40">Enter para enviar · Shift+Enter nueva línea · Cmd+K enfocar chat</span>
+          <span className="text-[10px] text-[#8888a0]/40">Enter para enviar · Shift+Enter nueva línea{isSupported ? " · Mic para voz" : ""}</span>
         </div>
       </div>
     </div>

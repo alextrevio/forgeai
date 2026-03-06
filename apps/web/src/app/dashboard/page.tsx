@@ -10,11 +10,15 @@ import {
   AlertTriangle,
   X,
   Brain,
+  Mic,
+  MicOff,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuthStore } from "@/stores/auth-store";
 import { useToast } from "@/components/toast";
 import { api } from "@/lib/api";
+import { useVoiceInput } from "@/hooks/useVoiceInput";
+import { cn } from "@/lib/utils";
 
 const QUICK_CHIPS = [
   { emoji: "\uD83D\uDED2", label: "E-commerce", skillSlug: "ecommerce", prompt: "Crear una tienda online con catálogo de productos, carrito de compras y checkout" },
@@ -35,6 +39,21 @@ export default function DashboardPage() {
   const [showApiKeyBanner, setShowApiKeyBanner] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [memorySummary, setMemorySummary] = useState<string | null>(null);
+  const handleVoiceResultRef = useRef<((text: string) => void) | null>(null);
+
+  const { isListening, transcript, isSupported, toggleListening } = useVoiceInput({
+    language: "es-MX",
+    onResult: (text) => {
+      handleVoiceResultRef.current?.(text);
+    },
+  });
+
+  useEffect(() => {
+    handleVoiceResultRef.current = (text: string) => {
+      setPrompt(text);
+      setTimeout(() => handleSubmit(), 500);
+    };
+  });
 
   useEffect(() => { loadUser(); }, [loadUser]);
 
@@ -178,15 +197,26 @@ export default function DashboardPage() {
           className="relative w-full mt-8 animate-fade-in-up"
           style={{ animationDelay: "0.1s" }}
         >
+          {/* Voice listening indicator */}
+          {isListening && (
+            <div className="absolute -top-12 left-0 right-0 flex items-center justify-center z-10">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/10 border border-red-500/30 animate-fade-in">
+                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-sm text-red-400">
+                  {transcript || "Escuchando..."}
+                </span>
+              </div>
+            </div>
+          )}
           <textarea
             ref={textareaRef}
-            value={prompt}
+            value={isListening && transcript ? transcript : prompt}
             onChange={(e) => setPrompt(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Describe lo que necesitas..."
-            disabled={isSubmitting}
+            disabled={isSubmitting || isListening}
             rows={1}
-            className="w-full rounded-2xl border border-[#2A2A2A] bg-[#111111] p-4 pb-12 pr-14 text-[#EDEDED] text-sm placeholder:text-[#555555] resize-none focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed] focus:outline-none transition-colors disabled:opacity-60"
+            className="w-full rounded-2xl border border-[#2A2A2A] bg-[#111111] p-4 pb-12 pr-24 text-[#EDEDED] text-sm placeholder:text-[#555555] resize-none focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed] focus:outline-none transition-colors disabled:opacity-60"
             style={{ minHeight: "56px", maxHeight: "200px" }}
           />
           {/* Attach button */}
@@ -198,10 +228,30 @@ export default function DashboardPage() {
           >
             <Paperclip className="h-4.5 w-4.5" />
           </button>
+          {/* Mic button */}
+          {isSupported && (
+            <button
+              onClick={toggleListening}
+              disabled={isSubmitting}
+              className={cn(
+                "absolute right-14 bottom-3 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200",
+                isListening
+                  ? "bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/30"
+                  : "text-[#555] hover:text-[#888] hover:bg-[#1A1A1A]"
+              )}
+              title={isListening ? "Detener" : "Hablar con Arya"}
+            >
+              {isListening ? (
+                <MicOff className="w-4 h-4" />
+              ) : (
+                <Mic className="w-4 h-4" />
+              )}
+            </button>
+          )}
           {/* Send button */}
           {prompt.trim() && (
             <button
-              onClick={handleSubmit}
+              onClick={() => handleSubmit()}
               disabled={isSubmitting}
               className="absolute right-3 bottom-3 flex items-center justify-center w-9 h-9 rounded-full bg-[#7c3aed] hover:bg-[#6d28d9] text-white transition-colors disabled:opacity-60"
             >
