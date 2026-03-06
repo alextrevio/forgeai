@@ -66,6 +66,7 @@ model User {
   usageRecords    UsageRecord[]
   ownedTeams      Team[]          @relation("OwnedTeams")
   teamMemberships TeamMember[]
+  memories        UserMemory[]
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 }
@@ -363,6 +364,29 @@ model AuditLog {
   @@index([teamId, createdAt])
   @@index([userId, createdAt])
   @@index([userId])
+}
+
+// ─── User Memory: Persistent cross-project context ──────────────────────────
+
+model UserMemory {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  category   String   // preferences, stack, patterns, context, feedback
+  key        String   // "preferred_framework", "coding_style", etc
+  value      String   @db.Text
+  confidence Float    @default(1.0)
+  source     String   // "auto" (inferred) or "manual" (user-set)
+
+  usageCount Int      @default(1)
+  lastUsedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, category, key])
+  @@index([userId])
+  @@index([userId, category])
 }
 
 // ─── Usage Tracking: Token costs & spending caps ────────────────────────────

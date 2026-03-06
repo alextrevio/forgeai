@@ -646,6 +646,35 @@ class ApiClient {
     return this.request<any>(`/api/teams/${teamId}/audit${qs ? `?${qs}` : ""}`);
   }
 
+  // ── Memory ──────────────────────────────────────────────
+
+  async getMemories() {
+    return this.request<{ memories: any[] }>("/api/memory");
+  }
+
+  async getMemorySummary() {
+    return this.request<{ summary: string | null }>("/api/memory/summary");
+  }
+
+  async saveMemory(data: { category: string; key: string; value: string; source?: string }) {
+    return this.request<{ memory: any }>("/api/memory", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteMemory(id: string) {
+    return this.request<{ success: boolean }>(`/api/memory/${id}`, { method: "DELETE" });
+  }
+
+  async clearMemories() {
+    return this.request<{ success: boolean }>("/api/memory/all", { method: "DELETE" });
+  }
+
+  async extractMemories(projectId: string) {
+    return this.request<{ success: boolean }>(`/api/memory/extract/${projectId}`, { method: "POST" });
+  }
+
   // ── Provider API Keys ────────────────────────────────────
 
   async getProviderKeyStatus() {

@@ -9,6 +9,7 @@ import {
   Loader2,
   AlertTriangle,
   X,
+  Brain,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuthStore } from "@/stores/auth-store";
@@ -33,6 +34,7 @@ export default function DashboardPage() {
   const { addToast } = useToast();
   const [showApiKeyBanner, setShowApiKeyBanner] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [memorySummary, setMemorySummary] = useState<string | null>(null);
 
   useEffect(() => { loadUser(); }, [loadUser]);
 
@@ -41,13 +43,17 @@ export default function DashboardPage() {
     if (!isAuthenticated) { router.push("/login"); return; }
   }, [authLoading, isAuthenticated, router]);
 
-  // Check if user has configured their Anthropic API key
+  // Check if user has configured their Anthropic API key + fetch memory summary
   useEffect(() => {
     if (!isAuthenticated) return;
     (async () => {
       try {
         const status = await api.getProviderKeyStatus();
         if (!status.anthropic) setShowApiKeyBanner(true);
+      } catch { /* ignore */ }
+      try {
+        const data = await api.getMemorySummary();
+        if (data.summary) setMemorySummary(data.summary);
       } catch { /* ignore */ }
     })();
   }, [isAuthenticated]);
@@ -159,6 +165,12 @@ export default function DashboardPage() {
           <p className="text-3xl font-light text-[#EDEDED] mt-1 text-center">
             ¿Qué quieres lograr hoy?
           </p>
+          {memorySummary && (
+            <div className="flex items-center gap-2 mt-3 text-xs text-[#8888a0] animate-fade-in">
+              <Brain className="h-3.5 w-3.5 text-[#7c3aed]" />
+              <span>Arya recuerda tu stack: {memorySummary}</span>
+            </div>
+          )}
         </div>
 
         {/* Input area */}

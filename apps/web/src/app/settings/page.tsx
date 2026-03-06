@@ -21,16 +21,20 @@ import {
   CheckCircle,
   XCircle,
   Lock,
+  Brain,
+  Pencil,
+  X,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuthStore } from "@/stores/auth-store";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
-type SettingsTab = "profile" | "preferences" | "api-keys" | "webhooks" | "billing" | "danger";
+type SettingsTab = "profile" | "memory" | "preferences" | "api-keys" | "webhooks" | "billing" | "danger";
 
 const TABS: Array<{ id: SettingsTab; label: string; icon: React.ReactNode }> = [
   { id: "profile", label: "Perfil", icon: <User className="h-4 w-4" /> },
+  { id: "memory", label: "Memoria", icon: <Brain className="h-4 w-4" /> },
   { id: "preferences", label: "Preferencias", icon: <Palette className="h-4 w-4" /> },
   { id: "api-keys", label: "API Keys", icon: <Key className="h-4 w-4" /> },
   { id: "webhooks", label: "Webhooks", icon: <Globe className="h-4 w-4" /> },
@@ -121,6 +125,17 @@ export default function SettingsPage() {
   const [providerKeyValid, setProviderKeyValid] = useState<boolean | null>(null);
   const [providerKeyError, setProviderKeyError] = useState<string | null>(null);
 
+  // Memory state
+  const [memories, setMemories] = useState<any[]>([]);
+  const [memoriesLoading, setMemoriesLoading] = useState(false);
+  const [editingMemoryId, setEditingMemoryId] = useState<string | null>(null);
+  const [editingMemoryValue, setEditingMemoryValue] = useState("");
+  const [showAddMemory, setShowAddMemory] = useState(false);
+  const [newMemoryCategory, setNewMemoryCategory] = useState("preferences");
+  const [newMemoryKey, setNewMemoryKey] = useState("");
+  const [newMemoryValue, setNewMemoryValue] = useState("");
+  const [memoryAdding, setMemoryAdding] = useState(false);
+
   // Danger zone state
   const [deleteConfirm, setDeleteConfirm] = useState("");
 
@@ -163,6 +178,20 @@ export default function SettingsPage() {
   useEffect(() => {
     if (activeTab === "api-keys" && isAuthenticated) fetchProviderKeyStatus();
   }, [activeTab, isAuthenticated, fetchProviderKeyStatus]);
+
+  // Fetch memories when memory tab is active
+  const fetchMemories = useCallback(async () => {
+    setMemoriesLoading(true);
+    try {
+      const data = await api.getMemories();
+      setMemories(data.memories || []);
+    } catch { /* ignore */ }
+    setMemoriesLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "memory" && isAuthenticated) fetchMemories();
+  }, [activeTab, isAuthenticated, fetchMemories]);
 
   const handleSaveProviderKey = async () => {
     if (!providerAnthropicKey.trim()) return;
@@ -419,6 +448,210 @@ export default function SettingsPage() {
                   </button>
                 </div>
 
+              </div>
+            )}
+
+            {/* ─── Memory Tab ──────────────────────────────────────── */}
+            {activeTab === "memory" && (
+              <div className="space-y-6 animate-fade-in">
+                <div>
+                  <h2 className="text-lg font-semibold text-[#EDEDED] mb-1">Memoria de Arya</h2>
+                  <p className="text-sm text-[#8888a0]">
+                    Arya recuerda tus preferencias y stack para personalizar cada proyecto.
+                  </p>
+                </div>
+
+                {memoriesLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-6 w-6 animate-spin text-[#7c3aed]" />
+                  </div>
+                ) : memories.length === 0 ? (
+                  <div className="rounded-xl border border-[#1E1E1E] bg-[#111111] p-8 text-center">
+                    <Brain className="h-10 w-10 text-[#555555] mx-auto mb-3" />
+                    <p className="text-sm text-[#8888a0] mb-1">Arya aún no tiene memorias</p>
+                    <p className="text-xs text-[#555555]">
+                      Las memorias se crean automáticamente de tus proyectos, o puedes agregarlas manualmente.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {Object.entries(
+                      memories.reduce((acc: Record<string, any[]>, m: any) => {
+                        if (!acc[m.category]) acc[m.category] = [];
+                        acc[m.category].push(m);
+                        return acc;
+                      }, {} as Record<string, any[]>)
+                    ).map(([category, items]) => {
+                      const categoryLabels: Record<string, { label: string; color: string }> = {
+                        stack: { label: "Stack tecnológico", color: "#3b82f6" },
+                        preferences: { label: "Preferencias", color: "#7c3aed" },
+                        patterns: { label: "Patrones de código", color: "#10b981" },
+                        context: { label: "Contexto", color: "#f59e0b" },
+                        feedback: { label: "Feedback", color: "#ef4444" },
+                      };
+                      const cat = categoryLabels[category] || { label: category, color: "#8888a0" };
+
+                      return (
+                        <div key={category} className="rounded-xl border border-[#1E1E1E] bg-[#111111] overflow-hidden">
+                          <div className="px-4 py-3 border-b border-[#1E1E1E] flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }} />
+                            <span className="text-sm font-medium text-[#EDEDED]">{cat.label}</span>
+                            <span className="text-xs text-[#555555] ml-auto">{items.length} memorias</span>
+                          </div>
+                          <div className="divide-y divide-[#1E1E1E]">
+                            {items.map((mem: any) => (
+                              <div key={mem.id} className="px-4 py-3 flex items-center gap-3 group">
+                                {editingMemoryId === mem.id ? (
+                                  <>
+                                    <span className="text-xs text-[#8888a0] min-w-[120px] shrink-0">{mem.key}</span>
+                                    <input
+                                      value={editingMemoryValue}
+                                      onChange={(e) => setEditingMemoryValue(e.target.value)}
+                                      className="flex-1 rounded-lg border border-[#2A2A2A] bg-[#0A0A0A] px-3 py-1.5 text-sm text-[#EDEDED] outline-none focus:border-[#7c3aed]"
+                                      autoFocus
+                                      onKeyDown={async (e) => {
+                                        if (e.key === "Enter") {
+                                          await api.saveMemory({ category: mem.category, key: mem.key, value: editingMemoryValue, source: "manual" });
+                                          setEditingMemoryId(null);
+                                          fetchMemories();
+                                        }
+                                        if (e.key === "Escape") setEditingMemoryId(null);
+                                      }}
+                                    />
+                                    <button
+                                      onClick={async () => {
+                                        await api.saveMemory({ category: mem.category, key: mem.key, value: editingMemoryValue, source: "manual" });
+                                        setEditingMemoryId(null);
+                                        fetchMemories();
+                                      }}
+                                      className="text-[#10b981] hover:text-[#059669] transition-colors"
+                                    >
+                                      <Check className="h-4 w-4" />
+                                    </button>
+                                    <button onClick={() => setEditingMemoryId(null)} className="text-[#8888a0] hover:text-[#EDEDED] transition-colors">
+                                      <X className="h-4 w-4" />
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="text-xs text-[#8888a0] min-w-[120px] shrink-0">{mem.key}</span>
+                                    <span className="flex-1 text-sm text-[#EDEDED]">{mem.value}</span>
+                                    {mem.source === "auto" && (
+                                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#7c3aed]/10 text-[#7c3aed] shrink-0">auto</span>
+                                    )}
+                                    <button
+                                      onClick={() => { setEditingMemoryId(mem.id); setEditingMemoryValue(mem.value); }}
+                                      className="text-[#555555] hover:text-[#EDEDED] transition-colors opacity-0 group-hover:opacity-100"
+                                    >
+                                      <Pencil className="h-3.5 w-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={async () => {
+                                        await api.deleteMemory(mem.id);
+                                        fetchMemories();
+                                      }}
+                                      className="text-[#555555] hover:text-[#ef4444] transition-colors opacity-0 group-hover:opacity-100"
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Add memory form */}
+                {showAddMemory ? (
+                  <div className="rounded-xl border border-[#7c3aed]/30 bg-[#111111] p-4 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <select
+                        value={newMemoryCategory}
+                        onChange={(e) => setNewMemoryCategory(e.target.value)}
+                        className="rounded-lg border border-[#2A2A2A] bg-[#0A0A0A] px-3 py-2 text-sm text-[#EDEDED] outline-none focus:border-[#7c3aed]"
+                      >
+                        <option value="preferences">Preferencias</option>
+                        <option value="stack">Stack</option>
+                        <option value="patterns">Patrones</option>
+                        <option value="context">Contexto</option>
+                        <option value="feedback">Feedback</option>
+                      </select>
+                      <input
+                        value={newMemoryKey}
+                        onChange={(e) => setNewMemoryKey(e.target.value)}
+                        placeholder="Clave (ej: coding_style)"
+                        className="flex-1 rounded-lg border border-[#2A2A2A] bg-[#0A0A0A] px-3 py-2 text-sm text-[#EDEDED] placeholder:text-[#555555] outline-none focus:border-[#7c3aed]"
+                      />
+                    </div>
+                    <input
+                      value={newMemoryValue}
+                      onChange={(e) => setNewMemoryValue(e.target.value)}
+                      placeholder="Valor (ej: Clean code, well-documented)"
+                      className="w-full rounded-lg border border-[#2A2A2A] bg-[#0A0A0A] px-3 py-2 text-sm text-[#EDEDED] placeholder:text-[#555555] outline-none focus:border-[#7c3aed]"
+                      onKeyDown={async (e) => {
+                        if (e.key === "Enter" && newMemoryKey.trim() && newMemoryValue.trim()) {
+                          setMemoryAdding(true);
+                          await api.saveMemory({ category: newMemoryCategory, key: newMemoryKey.trim(), value: newMemoryValue.trim(), source: "manual" });
+                          setNewMemoryKey("");
+                          setNewMemoryValue("");
+                          setShowAddMemory(false);
+                          setMemoryAdding(false);
+                          fetchMemories();
+                        }
+                      }}
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        disabled={!newMemoryKey.trim() || !newMemoryValue.trim() || memoryAdding}
+                        onClick={async () => {
+                          setMemoryAdding(true);
+                          await api.saveMemory({ category: newMemoryCategory, key: newMemoryKey.trim(), value: newMemoryValue.trim(), source: "manual" });
+                          setNewMemoryKey("");
+                          setNewMemoryValue("");
+                          setShowAddMemory(false);
+                          setMemoryAdding(false);
+                          fetchMemories();
+                        }}
+                        className="rounded-lg bg-[#7c3aed] px-4 py-2 text-sm font-medium text-white hover:bg-[#6d28d9] transition-colors disabled:opacity-50"
+                      >
+                        {memoryAdding ? <Loader2 className="h-4 w-4 animate-spin" /> : "Guardar"}
+                      </button>
+                      <button onClick={() => setShowAddMemory(false)} className="rounded-lg border border-[#2A2A2A] px-4 py-2 text-sm text-[#8888a0] hover:text-[#EDEDED] transition-colors">
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setShowAddMemory(true)}
+                      className="flex items-center gap-2 rounded-lg border border-[#2A2A2A] px-4 py-2.5 text-sm text-[#8888a0] hover:border-[#7c3aed]/50 hover:text-[#EDEDED] transition-colors"
+                    >
+                      <Plus className="h-4 w-4" /> Agregar memoria
+                    </button>
+                    {memories.length > 0 && (
+                      <button
+                        onClick={async () => {
+                          if (confirm("¿Borrar todas las memorias de Arya? Esta acción no se puede deshacer.")) {
+                            await api.clearMemories();
+                            fetchMemories();
+                          }
+                        }}
+                        className="flex items-center gap-2 rounded-lg border border-[#ef4444]/20 px-4 py-2.5 text-sm text-[#ef4444]/70 hover:bg-[#ef4444]/5 hover:text-[#ef4444] transition-colors"
+                      >
+                        <Trash2 className="h-4 w-4" /> Borrar todas
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                <p className="text-xs text-[#555555]">
+                  Las memorias se crean automáticamente de tus proyectos. También puedes agregarlas manualmente.
+                </p>
               </div>
             )}
 

@@ -4,6 +4,7 @@ import { logger } from "../lib/logger";
 import { modelRouter } from "./model-router";
 import { AgentFactory } from "./agents/agent-factory";
 import { skillService } from "./skill-service";
+import { memoryService } from "./memory-service";
 import type { AgentContext, PlanStep } from "./agents/base-agent";
 
 // ══════════════════════════════════════════════════════════════════
@@ -431,6 +432,18 @@ export class EngineOrchestrator {
     }
     if (project?.sandboxId) {
       input += `\n[Proyecto existente con sandbox activo — puede ser una iteración]`;
+    }
+
+    // Inject user memories (cross-project context)
+    if (this.userId) {
+      try {
+        const memoryContext = await memoryService.getRelevantMemories(this.userId);
+        if (memoryContext) {
+          input += memoryContext;
+        }
+      } catch (err) {
+        logger.warn({ error: err }, "Orchestrator: failed to load user memories");
+      }
     }
 
     // Find and include relevant skills as context for the planner

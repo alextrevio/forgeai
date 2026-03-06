@@ -6,6 +6,7 @@ import { trackServerEvent } from "../../lib/posthog";
 import { logger } from "../../lib/logger";
 import { EngineOrchestrator } from "../orchestrator";
 import { notificationService } from "../notifications";
+import { memoryService } from "../memory-service";
 import { engineAbortControllers } from "../../engine/service";
 import type { PlanStep } from "../agents/base-agent";
 
@@ -166,6 +167,11 @@ engineWorker.on("completed", (job) => {
 
   if (projectId) {
     notificationService.onEngineComplete(projectId, "completed", failedCount).catch(() => {});
+    // Extract memories from completed project (fire-and-forget)
+    const userId = job?.data?.userId;
+    if (userId) {
+      memoryService.extractMemoriesFromProject(userId, projectId).catch(() => {});
+    }
     // Track engine completion (fire-and-forget)
     prisma.project.findUnique({ where: { id: projectId }, select: { userId: true } })
       .then((p) => {
