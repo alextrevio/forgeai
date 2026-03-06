@@ -30,6 +30,8 @@ import { ConsolePanel, useConsoleCapture } from "./console-panel";
 import { CodePanel } from "./code-panel";
 import { ResultsPanel } from "./results-panel";
 import { VersionHistory } from "./version-history";
+import { LiveCodeEditor } from "./live-code-editor";
+import { useLiveCode } from "@/hooks/useLiveCode";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { WorkspaceHeader } from "./workspace-header";
@@ -176,6 +178,7 @@ export function ComputerPanel() {
   } = useProjectStore();
 
   const engine = useEngineActivity(currentProjectId);
+  const liveCode = useLiveCode(currentProjectId);
 
   const [activeTab, setActiveTab] = useState<ComputerTab>("preview");
   const [deviceMode, setDeviceMode] = useState<DeviceMode>("desktop");
@@ -307,7 +310,13 @@ export function ComputerPanel() {
       {isAgentRunning && subHeaderText && (
         <div className="flex items-center gap-2 border-b border-[#2A2A2A] bg-[#0A0A0A]/80 px-4 py-1.5">
           <Loader2 className="h-3 w-3 text-[#7c3aed] animate-spin shrink-0" />
-          <span className="text-[11px] text-[#8888a0] truncate">{subHeaderText}</span>
+          <span className="text-[11px] text-[#8888a0] truncate flex-1">{subHeaderText}</span>
+          {liveCode.isAgentTyping && (
+            <span className="flex items-center gap-1.5 text-[10px] font-medium text-[#7c3aed] shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#7c3aed] animate-pulse" />
+              Escribiendo código...
+            </span>
+          )}
         </div>
       )}
 
@@ -337,6 +346,9 @@ export function ComputerPanel() {
                 <span className="ml-1 rounded-full bg-[#7c3aed]/15 px-1.5 py-0.5 text-[9px] text-[#a78bfa]">
                   {consoleCount > 99 ? "99+" : consoleCount}
                 </span>
+              )}
+              {tab.id === "code" && liveCode.isAgentTyping && activeTab !== "code" && (
+                <span className="ml-1 w-1.5 h-1.5 rounded-full bg-[#7c3aed] animate-pulse" />
               )}
               {tab.id === "results" && engine.planSteps.filter((s) => s.status === "completed").length > 0 && activeTab !== "results" && (
                 <span className="ml-1 rounded-full bg-[#22c55e]/15 px-1.5 py-0.5 text-[9px] text-[#4ade80]">
@@ -529,7 +541,18 @@ export function ComputerPanel() {
         )}
 
         {/* === Code Tab === */}
-        {activeTab === "code" && <CodePanel />}
+        {activeTab === "code" && (
+          engine.isRunning && liveCode.activeFile && liveCode.liveFiles.has(liveCode.activeFile) ? (
+            <LiveCodeEditor
+              filePath={liveCode.activeFile}
+              content={liveCode.liveFiles.get(liveCode.activeFile)!.content}
+              isLiveTyping={liveCode.liveFiles.get(liveCode.activeFile)!.isTyping}
+              agentType={liveCode.liveFiles.get(liveCode.activeFile)!.agentType}
+            />
+          ) : (
+            <CodePanel />
+          )
+        )}
 
         {/* === Terminal Tab === */}
         {activeTab === "terminal" && (

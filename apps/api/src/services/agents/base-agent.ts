@@ -144,6 +144,21 @@ export abstract class BaseAgent {
     const sandboxId = await this.getSandboxId();
     let fileTreeChanged = false;
 
+    // Signal that this agent is writing code
+    const hasCodeActions = actions.some(
+      (a) => a.type === "create_file" || a.type === "config_file" || a.type === "modify_file"
+    );
+    if (hasCodeActions) {
+      this.emit("event", {
+        type: "live_code:agent_typing",
+        data: {
+          projectId: this.ctx.projectId,
+          agentType: this.ctx.step.agentType,
+          isTyping: true,
+        },
+      });
+    }
+
     for (const action of actions) {
       if (this.ctx.signal.aborted) return;
 
@@ -154,6 +169,19 @@ export abstract class BaseAgent {
             await sandboxManager.writeFile(sandboxId, action.path, action.content);
             this.emitFileChange("create", action.path);
             fileTreeChanged = true;
+
+            // Emit live code event for typewriter effect
+            this.emit("event", {
+              type: "live_code:file_start",
+              data: {
+                projectId: this.ctx.projectId,
+                path: action.path,
+                content: action.content,
+                action: "create",
+                agentType: this.ctx.step.agentType,
+                timestamp: Date.now(),
+              },
+            });
           }
           break;
 
@@ -164,6 +192,19 @@ export abstract class BaseAgent {
               const modified = existing.replace(action.search, action.replace);
               await sandboxManager.writeFile(sandboxId, action.path, modified);
               this.emitFileChange("modify", action.path);
+
+              // Emit live code update event
+              this.emit("event", {
+                type: "live_code:file_update",
+                data: {
+                  projectId: this.ctx.projectId,
+                  path: action.path,
+                  content: modified,
+                  action: "modify",
+                  agentType: this.ctx.step.agentType,
+                  timestamp: Date.now(),
+                },
+              });
             } catch (err) {
               logger.warn({ err, file: action.path }, "BaseAgent: modify_file failed");
             }
@@ -183,6 +224,18 @@ export abstract class BaseAgent {
           }
           break;
       }
+    }
+
+    // Signal that this agent finished writing code
+    if (hasCodeActions) {
+      this.emit("event", {
+        type: "live_code:agent_typing",
+        data: {
+          projectId: this.ctx.projectId,
+          agentType: this.ctx.step.agentType,
+          isTyping: false,
+        },
+      });
     }
 
     // Emit a single file tree update after all actions complete

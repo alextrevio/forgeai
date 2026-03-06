@@ -476,6 +476,15 @@ select:focus-visible {
   animation: thinkingPulse 2s ease-in-out infinite;
 }
 
+/* Cursor blink — live code editor */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.animate-blink {
+  animation: blink 1s step-end infinite;
+}
+
 /* Voice waveform equalizer */
 @keyframes waveform {
   0%, 100% { height: 4px; }
