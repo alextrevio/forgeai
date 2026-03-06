@@ -119,12 +119,12 @@ export default function LoginPage() {
                   >
                     Password
                   </label>
-                  <a
-                    href="#"
-                    className="text-xs text-primary hover:underline"
+                  <span
+                    className="text-xs text-primary/50 cursor-default"
+                    title="Disponible pronto"
                   >
                     Forgot password?
-                  </a>
+                  </span>
                 </div>
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -190,9 +190,10 @@ export default function LoginPage() {
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                className="flex items-center justify-center gap-2 rounded-lg border border-border py-2.5 text-sm font-medium text-foreground hover:bg-secondary/50 transition-colors"
+                onClick={() => setError("Google login coming soon. Use email to sign in.")}
+                className="flex items-center justify-center gap-2 rounded-lg border border-border py-2.5 text-sm font-medium text-foreground/60 hover:bg-secondary/50 transition-colors relative"
               >
-                <svg className="h-4 w-4" viewBox="0 0 24 24">
+                <svg className="h-4 w-4 opacity-50" viewBox="0 0 24 24">
                   <path
                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
                     fill="#4285F4"
@@ -211,13 +212,16 @@ export default function LoginPage() {
                   />
                 </svg>
                 Google
+                <span className="absolute -top-1.5 -right-1.5 rounded-full bg-[#7c3aed]/20 px-1.5 py-0.5 text-[8px] text-[#a78bfa]">Soon</span>
               </button>
               <button
                 type="button"
-                className="flex items-center justify-center gap-2 rounded-lg border border-border py-2.5 text-sm font-medium text-foreground hover:bg-secondary/50 transition-colors"
+                onClick={() => setError("GitHub login coming soon. Use email to sign in.")}
+                className="flex items-center justify-center gap-2 rounded-lg border border-border py-2.5 text-sm font-medium text-foreground/60 hover:bg-secondary/50 transition-colors relative"
               >
-                <Github className="h-4 w-4" />
+                <Github className="h-4 w-4 opacity-50" />
                 GitHub
+                <span className="absolute -top-1.5 -right-1.5 rounded-full bg-[#7c3aed]/20 px-1.5 py-0.5 text-[8px] text-[#a78bfa]">Soon</span>
               </button>
             </div>
           </div>

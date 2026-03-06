@@ -266,7 +266,7 @@ export default function SettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.updateUserSettings({ theme, editorFontSize: fontSize, defaultFramework, autoSave });
+      await api.updateUserSettings({ name, theme, editorFontSize: fontSize, defaultFramework, autoSave });
       setSaved(true); setTimeout(() => setSaved(false), 2000);
     } catch (err) { console.error("Save settings failed:", err); }
     finally { setSaving(false); }

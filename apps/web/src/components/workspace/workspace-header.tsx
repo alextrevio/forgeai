@@ -310,7 +310,7 @@ export function WorkspaceHeader() {
                       <button onClick={handlePushGitHub} disabled={isPushing} className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#161619] px-3 py-2 text-sm font-medium text-[#e2e2e8] hover:bg-[#1a1a1f] disabled:opacity-50 transition-colors">{isPushing ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowUp className="h-3 w-3" />} Push</button>
                       <button onClick={handlePullGitHub} disabled={isPulling} className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#161619] px-3 py-2 text-sm font-medium text-[#e2e2e8] hover:bg-[#1a1a1f] disabled:opacity-50 transition-colors">{isPulling ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowDown className="h-3 w-3" />} Pull</button>
                     </div>
-                    <button onClick={async () => { await api.disconnectGitHub(); setGithubStatus({ connected: false, username: null }); }} className="w-full text-xs text-[#8888a0] hover:text-[#ef4444] transition-colors">Disconnect GitHub</button>
+                    <button onClick={async () => { try { await api.disconnectGitHub(); setGithubStatus({ connected: false, username: null }); } catch (err) { console.error("Disconnect GitHub failed:", err); } }} className="w-full text-xs text-[#8888a0] hover:text-[#ef4444] transition-colors">Disconnect GitHub</button>
                   </div>
                 )}
               </>
@@ -333,8 +333,8 @@ export function WorkspaceHeader() {
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 rounded-xl bg-[#22c55e]/10 p-3"><Check className="h-4 w-4 text-[#22c55e]" /><span className="text-sm text-[#22c55e] truncate">Connected to {supabaseStatus.url}</span></div>
                     <button onClick={handleGenerateClient} disabled={isConnecting} className="w-full flex items-center justify-center gap-2 rounded-xl btn-gradient px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50">{isConnecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />} Generate Client + Auth Helpers</button>
-                    <button onClick={async () => { if (!currentProjectId) return; setIsConnecting(true); try { await api.generateSupabaseTypes(currentProjectId); const tree = await api.getFileTree(currentProjectId); setFileTree(safeArray(tree)); } catch (err) { console.error(err); } finally { setIsConnecting(false); } }} disabled={isConnecting} className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#161619] px-4 py-2.5 text-sm font-medium text-[#e2e2e8] hover:bg-[#1a1a1f] disabled:opacity-50 transition-colors">Generate Database Types</button>
-                    <button onClick={async () => { await api.disconnectSupabase(); setSupabaseStatus({ connected: false, url: null }); }} className="w-full text-xs text-[#8888a0] hover:text-[#ef4444] transition-colors">Disconnect Supabase</button>
+                    <button onClick={async () => { if (!currentProjectId) return; setIsConnecting(true); try { await api.generateSupabaseTypes(currentProjectId); const tree = await api.getFileTree(currentProjectId); setFileTree(safeArray(tree)); } catch (err) { console.error("Generate database types failed:", err); } finally { setIsConnecting(false); } }} disabled={isConnecting} className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#161619] px-4 py-2.5 text-sm font-medium text-[#e2e2e8] hover:bg-[#1a1a1f] disabled:opacity-50 transition-colors">Generate Database Types</button>
+                    <button onClick={async () => { try { await api.disconnectSupabase(); setSupabaseStatus({ connected: false, url: null }); } catch (err) { console.error("Disconnect Supabase failed:", err); } }} className="w-full text-xs text-[#8888a0] hover:text-[#ef4444] transition-colors">Disconnect Supabase</button>
                   </div>
                 )}
               </>
