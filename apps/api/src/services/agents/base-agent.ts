@@ -10,7 +10,7 @@ import { ProjectSandbox } from "../sandbox";
 // ══════════════════════════════════════════════════════════════════
 
 export interface AgentAction {
-  type: "create_file" | "modify_file" | "terminal" | "message" | "config_file" | "design_spec";
+  type: "create_file" | "modify_file" | "terminal" | "message" | "config_file" | "design_spec" | "read_file";
   path?: string;
   content?: string;
   search?: string;
@@ -217,6 +217,19 @@ export abstract class BaseAgent {
           }
           break;
 
+        case "read_file":
+          if (action.path && sandboxId) {
+            try {
+              const fileContent = await this.readProjectFile(sandboxId, action.path);
+              if (fileContent !== null) {
+                this.emitActivity("file_read", { path: action.path, size: fileContent.length });
+              }
+            } catch (err) {
+              logger.warn({ err, file: action.path }, "BaseAgent: read_file failed");
+            }
+          }
+          break;
+
         case "message":
           if (action.text) {
             this.emitMessage(action.text);
@@ -293,6 +306,86 @@ export abstract class BaseAgent {
       return await sandboxManager.readFile(sandboxId, path);
     } catch {
       return null;
+    }
+  }
+
+  /**
+   * Read and parse an uploaded data file (CSV/XLSX).
+   * Returns headers + rows as JSON, or raw text for other file types.
+   */
+  protected async readUploadedFile(sandboxId: string, path: string): Promise<{
+    type: "spreadsheet" | "text" | "binary";
+    headers?: string[];
+    rows?: Record<string, unknown>[];
+    totalRows?: number;
+    content?: string;
+  } | null> {
+    try {
+      const info = sandboxManager.getSandboxInfo(sandboxId);
+      if (!info) return null;
+
+      const { join } = await import("path");
+      const { existsSync, readFileSync } = await import("fs");
+      const { extname } = await import("path");
+      const fullPath = join(info.workspaceDir, path);
+      if (!existsSync(fullPath)) return null;
+
+      const ext = extname(path).toLowerCase();
+
+      if (ext === ".csv") {
+        const { parse } = await import("csv-parse/sync");
+        const raw = readFileSync(fullPath, "utf-8");
+        const records = parse(raw, { columns: true, skip_empty_lines: true, relax_column_count: true }) as Record<string, unknown>[];
+        const headers = records.length > 0 ? Object.keys(records[0] as object) : [];
+        return { type: "spreadsheet", headers, rows: records.slice(0, 200), totalRows: records.length };
+      }
+
+      if ([".xlsx", ".xls"].includes(ext)) {
+        const XLSX = await import("xlsx");
+        const workbook = XLSX.readFile(fullPath);
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const records: Record<string, unknown>[] = XLSX.utils.sheet_to_json(sheet);
+        const headers = records.length > 0 ? Object.keys(records[0]) : [];
+        return { type: "spreadsheet", headers, rows: records.slice(0, 200), totalRows: records.length };
+      }
+
+      // Text-based files
+      const textExts = [".txt", ".md", ".json", ".js", ".ts", ".py", ".html", ".css", ".sql", ".sh", ".yaml", ".yml", ".xml"];
+      if (textExts.includes(ext)) {
+        const content = readFileSync(fullPath, "utf-8");
+        return { type: "text", content: content.slice(0, 100000) };
+      }
+
+      return { type: "binary" };
+    } catch (err) {
+      logger.warn({ err, path }, "BaseAgent: readUploadedFile failed");
+      return null;
+    }
+  }
+
+  /**
+   * Lists files in the uploads/ directory of the sandbox.
+   */
+  protected async listUploadedFiles(): Promise<Array<{ name: string; path: string; size: number }>> {
+    try {
+      const sandboxId = await this.getSandboxId();
+      if (!sandboxId) return [];
+
+      const info = sandboxManager.getSandboxInfo(sandboxId);
+      if (!info) return [];
+
+      const { join } = await import("path");
+      const { existsSync, readdirSync, statSync } = await import("fs");
+      const uploadsDir = join(info.workspaceDir, "uploads");
+      if (!existsSync(uploadsDir)) return [];
+
+      const files = readdirSync(uploadsDir);
+      return files.map((name: string) => {
+        const stat = statSync(join(uploadsDir, name));
+        return { name, path: `uploads/${name}`, size: stat.size };
+      });
+    } catch {
+      return [];
     }
   }
 

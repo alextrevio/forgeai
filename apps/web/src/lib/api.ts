@@ -513,6 +513,45 @@ class ApiClient {
     return data;
   }
 
+  // File Upload
+  async uploadFiles(projectId: string, files: File[]): Promise<{ success: boolean; files: Array<{ name: string; path: string; size: number; type: string; category: string; icon: string }> }> {
+    const formData = new FormData();
+    for (const file of files) {
+      formData.append("files", file);
+    }
+    const token = this.getToken();
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 120_000); // 2 min for uploads
+    try {
+      const response = await fetch(`${this.baseUrl}/api/projects/${projectId}/upload`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      if (!response.ok) {
+        const body = await response.text();
+        let message = body;
+        try { const parsed = JSON.parse(body); if (parsed?.error) message = parsed.error; } catch {}
+        throw new ApiError(response.status, message);
+      }
+      return response.json();
+    } catch (err: any) {
+      clearTimeout(timeout);
+      if (err instanceof ApiError) throw err;
+      throw err;
+    }
+  }
+
+  async getUploadedFiles(projectId: string): Promise<{ files: Array<{ name: string; path: string; size: number; category: string; icon: string; uploadedAt: string }> }> {
+    return this.request(`/api/projects/${projectId}/uploads`);
+  }
+
+  async getFileContent(projectId: string, path: string): Promise<any> {
+    return this.request(`/api/projects/${projectId}/files/content?path=${encodeURIComponent(path)}`);
+  }
+
   // Export / Import
   async exportZip(projectId: string): Promise<Blob> {
     const token = this.getToken();

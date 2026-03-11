@@ -14,6 +14,8 @@ import {
   Zap,
   Eye,
   Upload,
+  Paperclip,
+  X,
   ShoppingCart,
   BarChart3,
   Palette,
@@ -83,6 +85,27 @@ const ACTION_CHIPS = [
   { icon: <Globe className="h-3 w-3" />, label: "Clonar sitio web", prompt: "Clonar el sitio web: " },
   { icon: <LayoutTemplate className="h-3 w-3" />, label: "Usar template", prompt: "Usar un template de " },
 ];
+
+const ACCEPTED_FILE_TYPES = ".pdf,.csv,.xlsx,.xls,.docx,.doc,.txt,.json,.js,.ts,.tsx,.jsx,.py,.html,.css,.png,.jpg,.jpeg,.gif,.zip,.md,.yaml,.yml,.xml,.sql,.sh";
+const MAX_UPLOAD_SIZE = 50 * 1024 * 1024;
+const MAX_UPLOAD_FILES = 10;
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function getFileEmoji(name: string): string {
+  const ext = name.split(".").pop()?.toLowerCase() || "";
+  if (ext === "pdf") return "\uD83D\uDCC4";
+  if (["csv", "xlsx", "xls"].includes(ext)) return "\uD83D\uDCCA";
+  if (["txt", "doc", "docx", "md"].includes(ext)) return "\uD83D\uDCDD";
+  if (["js", "ts", "tsx", "jsx", "py", "html", "css", "sql", "sh", "go", "rs", "java", "c", "cpp"].includes(ext)) return "\uD83D\uDCBB";
+  if (["png", "jpg", "jpeg", "gif", "svg", "webp"].includes(ext)) return "\uD83D\uDDBC\uFE0F";
+  if (ext === "zip") return "\uD83D\uDCE6";
+  return "\uD83D\uDCC1";
+}
 
 const PLACEHOLDERS = [
   "Describe tu app...",
@@ -177,8 +200,11 @@ export function ChatPanel() {
   const [expandedDebug, setExpandedDebug] = useState<Set<string>>(new Set());
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const dragCounter = useRef(0);
   const handleVoiceSubmitRef = useRef<((text: string) => void) | null>(null);
 
@@ -252,18 +278,32 @@ export function ChatPanel() {
 
   const handleSubmit = async (overrideContent?: string) => {
     const content = (overrideContent ?? input).trim();
-    if (!content || !currentProjectId) return;
+    const hasFiles = attachedFiles.length > 0;
+    if ((!content && !hasFiles) || !currentProjectId) return;
     // Block only when legacy agent is running (not engine)
     if (isAgentRunning && !engine.isRunning) return;
 
+    const filesToUpload = [...attachedFiles];
     setInput("");
+    setAttachedFiles([]);
     setIsSending(true);
+
+    // Build display content with file info
+    let displayContent = content;
+    if (hasFiles) {
+      const fileNames = filesToUpload.map((f) => f.name).join(", ");
+      if (content) {
+        displayContent = `${content}\n\n[Archivos: ${fileNames}]`;
+      } else {
+        displayContent = `[Archivos adjuntos: ${fileNames}]`;
+      }
+    }
 
     addMessage({
       id: generateId(),
       projectId: currentProjectId,
       role: "USER",
-      content,
+      content: displayContent,
       messageType: null,
       plan: null,
       codeChanges: null,
@@ -274,10 +314,33 @@ export function ChatPanel() {
     });
     setAgentRunning(true);
 
-    if (engine.isRunning) {
-      // Engine already running — send as follow-up message
+    // Upload files if any
+    if (filesToUpload.length > 0) {
+      setIsUploading(true);
       try {
-        await api.sendMessage(currentProjectId, content);
+        await api.uploadFiles(currentProjectId, filesToUpload);
+      } catch (uploadErr) {
+        console.error("[ChatPanel] file upload failed:", uploadErr);
+      } finally {
+        setIsUploading(false);
+      }
+    }
+
+    // Build engine prompt with file context
+    let engineContent = content;
+    if (hasFiles) {
+      const fileNames = filesToUpload.map((f) => f.name).join(", ");
+      if (content) {
+        engineContent = `${content}\n\n[Archivos adjuntos en uploads/: ${fileNames}]`;
+      } else {
+        engineContent = `Analiza los siguientes archivos adjuntos y genera insights/reporte: ${fileNames}`;
+      }
+    }
+
+    if (engine.isRunning) {
+      // Engine already running -- send as follow-up message
+      try {
+        await api.sendMessage(currentProjectId, engineContent);
       } catch (apiErr) {
         console.error("[ChatPanel] follow-up sendMessage failed:", apiErr);
         Sentry.captureException(apiErr, { tags: { component: "chat_panel", action: "follow_up_message" } });
@@ -290,8 +353,8 @@ export function ChatPanel() {
 
     // Try to start the engine first
     try {
-      await api.startEngine(currentProjectId, content);
-      // Engine started — it handles everything via WebSocket events
+      await api.startEngine(currentProjectId, engineContent);
+      // Engine started -- it handles everything via WebSocket events
       setIsSending(false);
       return;
     } catch (engineErr: any) {
@@ -302,11 +365,11 @@ export function ChatPanel() {
       // Show user-friendly error in chat
       let displayError = "";
       if (errMsg.includes("credit balance") || errMsg.includes("insufficient") || engineErr?.status === 402) {
-        displayError = "El proveedor de AI no tiene créditos suficientes. Verifica tu API key en console.anthropic.com.";
+        displayError = "El proveedor de AI no tiene creditos suficientes. Verifica tu API key en console.anthropic.com.";
       } else if (errMsg.includes("API key") || errMsg.includes("authentication") || errMsg.includes("invalid_api_key")) {
-        displayError = "La API key de AI no es válida. Configúrala en Settings.";
+        displayError = "La API key de AI no es valida. Configurala en Settings.";
       } else if (errMsg.includes("already running") || engineErr?.status === 409) {
-        displayError = "El engine ya está ejecutándose. Espera a que termine o cancélalo.";
+        displayError = "El engine ya esta ejecutandose. Espera a que termine o cancelalo.";
       }
 
       if (displayError) {
@@ -326,7 +389,7 @@ export function ChatPanel() {
 
     // Fallback: engine failed to start, use regular message flow
     try {
-      await api.sendMessage(currentProjectId, content);
+      await api.sendMessage(currentProjectId, engineContent);
     } catch (apiErr) {
       console.error("[ChatPanel] api.sendMessage FAILED:", apiErr);
       Sentry.captureException(apiErr, { tags: { component: "chat_panel", action: "send_message" } });
@@ -383,9 +446,32 @@ export function ChatPanel() {
     e.preventDefault();
     dragCounter.current = 0;
     setIsDragging(false);
+    // Accept dropped files
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const droppedFiles = Array.from(e.dataTransfer.files);
+      addFiles(droppedFiles);
+      return;
+    }
     // Accept dropped text
     const text = e.dataTransfer.getData("text/plain");
     if (text) { setInput((prev) => prev + text); return; }
+  };
+
+  const addFiles = (newFiles: File[]) => {
+    const total = attachedFiles.length + newFiles.length;
+    if (total > MAX_UPLOAD_FILES) return;
+    const valid = newFiles.filter((f) => f.size <= MAX_UPLOAD_SIZE);
+    setAttachedFiles((prev) => [...prev, ...valid]);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(e.target.files || []);
+    addFiles(selected);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeFile = (index: number) => {
+    setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const planSteps = useMemo(() => {
@@ -405,9 +491,10 @@ export function ChatPanel() {
       {/* Drag overlay */}
       {isDragging && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#0A0A0A]/80 backdrop-blur-sm animate-overlay-fade">
-          <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-[#7c3aed]/50 bg-[#7c3aed]/5 px-12 py-10">
+          <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-[#7c3aed]/50 bg-[#7c3aed]/10 px-12 py-10">
             <Upload className="h-8 w-8 text-[#7c3aed]" />
-            <span className="text-sm font-medium text-[#EDEDED]">Suelta tu imagen aquí</span>
+            <span className="text-sm font-medium text-[#EDEDED]">Suelta los archivos aqui</span>
+            <span className="text-xs text-[#8888a0]">PDF, CSV, XLSX, imagenes, codigo y mas</span>
           </div>
         </div>
       )}
@@ -686,6 +773,15 @@ export function ChatPanel() {
 
       {/* ─── Chat Input ─── */}
       <div className="border-t border-[#2A2A2A] p-3">
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept={ACCEPTED_FILE_TYPES}
+          onChange={handleFileSelect}
+          className="hidden"
+        />
         {/* Voice listening indicator */}
         {isListening && (
           <div className="flex items-center justify-center mb-2 animate-fade-in">
@@ -698,7 +794,52 @@ export function ChatPanel() {
             </div>
           </div>
         )}
+        {/* Attached file badges */}
+        {attachedFiles.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {attachedFiles.slice(0, 5).map((file, i) => (
+              <div
+                key={`${file.name}-${i}`}
+                className="flex items-center gap-1.5 rounded-lg bg-[#1A1A1A] border border-[#2A2A2A] px-2.5 py-1 text-[11px] text-[#EDEDED]"
+              >
+                <span className="text-xs">{getFileEmoji(file.name)}</span>
+                <span className="truncate max-w-[120px]">{file.name}</span>
+                <span className="text-[#8888a0]">({formatFileSize(file.size)})</span>
+                <button
+                  onClick={() => removeFile(i)}
+                  className="text-[#555] hover:text-[#ef4444] transition-colors"
+                >
+                  <X className="h-2.5 w-2.5" />
+                </button>
+              </div>
+            ))}
+            {attachedFiles.length > 5 && (
+              <div className="flex items-center rounded-lg bg-[#1A1A1A] border border-[#2A2A2A] px-2.5 py-1 text-[11px] text-[#8888a0]">
+                +{attachedFiles.length - 5} mas
+              </div>
+            )}
+          </div>
+        )}
+        {/* Uploading indicator */}
+        {isUploading && (
+          <div className="flex items-center gap-2 mb-2 text-[11px] text-[#7c3aed]">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            <span>Subiendo archivos...</span>
+          </div>
+        )}
         <div className="relative flex items-end gap-2 rounded-2xl border border-[#2A2A2A] bg-[#0A0A0A] px-4 py-3 focus-within:border-[#7c3aed]/40 transition-colors">
+          {/* Paperclip button */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={(isAgentRunning && !engine.isRunning) || isSending}
+            className={cn(
+              "flex items-center justify-center rounded-full shrink-0 h-9 w-9 transition-colors",
+              attachedFiles.length > 0 ? "text-[#7c3aed]" : "text-[#555] hover:text-[#888] hover:bg-[#1A1A1A]"
+            )}
+            title="Adjuntar archivos"
+          >
+            <Paperclip className="h-4 w-4" />
+          </button>
           <textarea
             ref={textareaRef}
             data-chat-input
@@ -711,9 +852,9 @@ export function ChatPanel() {
                 : engine.isRunning
                 ? "Puedes dar instrucciones adicionales..."
                 : engine.engineStatus === "completed"
-                ? "¿Qué más quieres ajustar?"
+                ? "Que mas quieres ajustar?"
                 : isAgentRunning
-                ? "Arya está trabajando..."
+                ? "Arya esta trabajando..."
                 : PLACEHOLDERS[placeholderIdx]
             }
             disabled={(isAgentRunning && !engine.isRunning) || isListening}
@@ -743,10 +884,10 @@ export function ChatPanel() {
           <button
             data-chat-send
             onClick={() => handleSubmit()}
-            disabled={!input.trim() || (isAgentRunning && !engine.isRunning) || isSending}
+            disabled={(!input.trim() && attachedFiles.length === 0) || (isAgentRunning && !engine.isRunning) || isSending}
             className={cn(
               "flex items-center justify-center rounded-full transition-all duration-200 shrink-0",
-              input.trim() && !(isAgentRunning && !engine.isRunning) && !isSending
+              (input.trim() || attachedFiles.length > 0) && !(isAgentRunning && !engine.isRunning) && !isSending
                 ? "h-9 w-9 bg-gradient-to-br from-[#7c3aed] to-[#6d28d9] text-white shadow-lg shadow-[#7c3aed]/20 hover:shadow-[#7c3aed]/40 hover:scale-105"
                 : "h-9 w-9 bg-transparent text-[#8888a0]/30 cursor-default"
             )}
@@ -754,12 +895,12 @@ export function ChatPanel() {
             {isSending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <ArrowUp className={cn("h-4 w-4 transition-opacity", input.trim() ? "opacity-100" : "opacity-0")} />
+              <ArrowUp className={cn("h-4 w-4 transition-opacity", (input.trim() || attachedFiles.length > 0) ? "opacity-100" : "opacity-0")} />
             )}
           </button>
         </div>
         <div className="mt-1.5 px-1">
-          <span className="text-[10px] text-[#8888a0]/40">Enter para enviar · Shift+Enter nueva línea{isSupported ? " · Mic para voz" : ""}</span>
+          <span className="text-[10px] text-[#8888a0]/40">Enter para enviar | Shift+Enter nueva linea{isSupported ? " | Mic para voz" : ""} | Clip para archivos</span>
         </div>
       </div>
     </div>

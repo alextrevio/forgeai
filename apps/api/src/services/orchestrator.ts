@@ -431,6 +431,31 @@ export class EngineOrchestrator {
     }
     if (project?.sandboxId) {
       input += `\n[Proyecto existente con sandbox activo — puede ser una iteración]`;
+
+      // List uploaded files so agents know what's available
+      try {
+        const { sandboxManager } = await import("../sandbox/manager");
+        const sandboxInfo = sandboxManager.getSandboxInfo(project.sandboxId);
+        if (sandboxInfo) {
+          const { existsSync, readdirSync, statSync } = await import("fs");
+          const { join } = await import("path");
+          const uploadsDir = join(sandboxInfo.workspaceDir, "uploads");
+          if (existsSync(uploadsDir)) {
+            const files = readdirSync(uploadsDir);
+            if (files.length > 0) {
+              const fileList = files.map((f: string) => {
+                const stat = statSync(join(uploadsDir, f));
+                const sizeMB = (stat.size / (1024 * 1024)).toFixed(1);
+                return `  - uploads/${f} (${sizeMB}MB)`;
+              }).join("\n");
+              input += `\n\n[ARCHIVOS SUBIDOS POR EL USUARIO — los agentes pueden leerlos con read_file]:\n${fileList}`;
+              input += `\n[INSTRUCCION: Si el usuario pide analizar estos archivos, usa el agente analyst para datos (CSV/XLSX) o research para documentos (PDF/TXT). Los agentes pueden leer archivos con la accion read_file pasando el path relativo.]`;
+            }
+          }
+        }
+      } catch (err) {
+        logger.warn({ error: err }, "Orchestrator: failed to list uploaded files");
+      }
     }
 
     // Inject user memories (cross-project context)

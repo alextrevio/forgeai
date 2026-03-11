@@ -32,6 +32,7 @@ import { v1Router } from "./routes/v1";
 import { settingsRouter } from "./routes/settings";
 import { memoryRouter } from "./routes/memory";
 import { versionRouter } from "./routes/versions";
+import { uploadRouter } from "./routes/upload";
 import { authenticate } from "./middleware/auth";
 import { apiKeyAuth } from "./middleware/api-key-auth";
 import { errorHandler } from "./middleware/error-handler";
@@ -206,6 +207,7 @@ app.use("/api/teams", authenticate, generalLimiter, teamRouter);
 app.use("/api/settings", authenticate, generalLimiter, settingsRouter);
 app.use("/api/memory", authenticate, generalLimiter, memoryRouter);
 app.use("/api/projects", authenticate, generalLimiter, versionRouter);
+app.use("/api/projects", authenticate, generalLimiter, uploadRouter);
 
 // Public API v1 (API key auth, separate rate limit)
 const v1Limiter = rateLimit({ windowMs: 60_000, max: 60, keyPrefix: "v1" });

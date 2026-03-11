@@ -101,6 +101,9 @@ function FileTreeItem({ node, depth, onSelect, activeFilePath, changedFiles }: {
           </>
         )}
         <span className="truncate">{node.name}</span>
+        {isDir && node.name === "uploads" && (
+          <span className="ml-auto shrink-0 rounded px-1 py-0 text-[9px] font-medium bg-[#7c3aed]/15 text-[#a78bfa]">uploaded</span>
+        )}
         {isChanged && (
           <Circle className="h-1.5 w-1.5 fill-[#7c3aed] text-[#7c3aed] shrink-0 ml-auto" />
         )}
